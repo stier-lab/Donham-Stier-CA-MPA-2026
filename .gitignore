@@ -1,0 +1,36 @@
+# macOS system files
+.DS_Store
+.DS_Store?
+._*
+
+# R specific
+.Rhistory
+.Rdata
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Temporary R plot files
+Rplots.pdf
+
+# Logs (optional - uncomment to track logs)
+# logs/
+
+# Large data files (stored elsewhere - too big for git)
+data/MBON/
+data/PISCO/
+data/LTER/
+data/LANDSAT/
+data/ALL_sizefreq_2024.csv
+
+# Cache files
+data/cache/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*~
