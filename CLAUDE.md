@@ -151,6 +151,37 @@ run_all.R             - Pipeline orchestration
 - Use roxygen-style documentation for functions
 - Keep functions in `01_utils.R` or `02_pBACIPS_function.R`
 
+## Data Setup
+
+Large data files are stored in Google Drive and symlinked to the project. This allows:
+- Syncing across computers via Google Drive
+- Keeping the git repo small
+- Sharing data with collaborators
+
+**Google Drive location:**
+```
+/Users/[username]/Library/CloudStorage/GoogleDrive-astier@ucsb.edu/My Drive/Stier Lab/People/Emily Donham/Projects/Kelp MPA/data/
+```
+
+**To set up on a new machine:**
+```bash
+GDRIVE="/Users/$(whoami)/Library/CloudStorage/GoogleDrive-astier@ucsb.edu/My Drive/Stier Lab/People/Emily Donham/Projects/Kelp MPA/data"
+PROJECT="path/to/Donham-Stier-CA-MPA-2026/data"
+
+ln -s "$GDRIVE/MBON" "$PROJECT/MBON"
+ln -s "$GDRIVE/PISCO" "$PROJECT/PISCO"
+ln -s "$GDRIVE/LTER" "$PROJECT/LTER"
+ln -s "$GDRIVE/LANDSAT" "$PROJECT/LANDSAT"
+ln -s "$GDRIVE/ALL_sizefreq_2024.csv" "$PROJECT/ALL_sizefreq_2024.csv"
+```
+
+**Data files in Google Drive:**
+- `MBON/` - KFM/NPS monitoring data (~1.1 GB)
+- `PISCO/` - PISCO monitoring data (~113 MB)
+- `LTER/` - LTER monitoring data (~27 MB)
+- `LANDSAT/` - Satellite kelp canopy data
+- `ALL_sizefreq_2024.csv` - Size frequency data (~37 MB)
+
 ## Running the Analysis
 
 ```r
