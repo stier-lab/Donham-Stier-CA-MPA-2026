@@ -79,6 +79,12 @@ source_levels <- c("KFM", "LTER", "PISCO", "Landsat")
 
 cat("=== Starting figure generation ===\n")
 
+# Verify color palette is loaded from 00b_color_palette.R
+if (!exists("col_taxa") || !exists("col_response") || !exists("theme_mpa")) {
+  stop("Color palette not loaded. Please source 00b_color_palette.R first.")
+}
+cat("  Color palette verified: col_taxa, col_response, col_site loaded\n")
+
 # =============================================================================
 # Figure 1: Map of MPAs with Channel Islands + Inset Time Series
 # =============================================================================
@@ -160,11 +166,13 @@ base_map <- ggplot() +
                fill = land_color, color = coastline_color, linewidth = 0.3) +
   geom_point(data = sites_map,
              aes(x = Lon, y = Lat, shape = data_source, fill = data_source),
-             size = 4, color = "grey20", stroke = 0.8) +
+             size = 4.5, color = "grey20", stroke = 1) +
   geom_text(data = sites_map, aes(x = Lon, y = Lat, label = label),
-            nudge_x = 0.12, nudge_y = 0.06, size = 2.8, fontface = "bold", color = "grey10") +
-  scale_shape_manual(name = NULL, values = source_shapes) +
-  scale_fill_manual(name = NULL, values = source_colors) +
+            nudge_x = 0.14, nudge_y = 0.08, size = 3.2, fontface = "bold", color = "grey10") +
+  scale_shape_manual(name = "Data Source", values = source_shapes,
+                     labels = c("NPS-KFM" = "KFM (NPS)", "LTER" = "SBC LTER", "PISCO" = "PISCO")) +
+  scale_fill_manual(name = "Data Source", values = source_colors,
+                    labels = c("NPS-KFM" = "KFM (NPS)", "LTER" = "SBC LTER", "PISCO" = "PISCO")) +
   coord_fixed(ratio = 1.15, xlim = c(-121.1, -117.5), ylim = c(32.85, 35.15), expand = FALSE) +
   scale_x_continuous(breaks = c(-121, -120, -119, -118),
                      labels = c("121.0\u00B0W", "120.0\u00B0W", "119.0\u00B0W", "118.0\u00B0W")) +
@@ -176,13 +184,19 @@ base_map <- ggplot() +
     panel.grid.major = element_line(color = alpha("grey50", 0.3), linewidth = 0.15),
     panel.grid.minor = element_blank(),
     panel.background = element_rect(fill = ocean_color, color = coastline_color, linewidth = 0.5),
-    legend.position = c(0.08, 0.12),
-    legend.background = element_rect(fill = alpha("white", 0.95), color = "grey50", linewidth = 0.3),
-    legend.key.size = unit(0.4, "cm"), legend.text = element_text(size = 8),
-    legend.margin = margin(4, 6, 4, 4), axis.text = element_text(size = 7, color = "grey25"),
-    plot.margin = margin(2, 2, 2, 2)
+    legend.position = c(0.12, 0.18),  # Moved slightly for better visibility
+    legend.background = element_rect(fill = alpha("white", 0.97), color = "grey40", linewidth = 0.4),
+    legend.key.size = unit(0.5, "cm"),
+    legend.title = element_text(size = 9, face = "bold"),
+    legend.text = element_text(size = 8),
+    legend.margin = margin(6, 8, 6, 6),
+    axis.text = element_text(size = 8, color = "grey20"),
+    plot.margin = margin(3, 3, 3, 3)
   ) +
-  guides(shape = guide_legend(order = 1), fill = "none")
+  guides(
+    shape = guide_legend(order = 1, override.aes = list(size = 4)),
+    fill = guide_legend(order = 1, override.aes = list(size = 4))
+  )
 
 # Add scale bar
 km_per_deg <- 92
@@ -205,43 +219,79 @@ panel_labels <- c("(a)", "(b)", "(c)", "(d)", "(e)", "(f)")
 ts_colors <- c("Inside" = "#D4A84B", "Outside" = "#CC6633")
 
 create_ts_inset <- function(mpa_name, panel_label) {
-  mpa_start <- sites_map %>%
+  # Get MPA start year from Site table first, then fall back to sites_map
+  mpa_start <- Site %>%
     dplyr::filter(CA_MPA_Name_Short == mpa_name) %>%
     dplyr::pull(MPA_Start)
+  if (length(mpa_start) == 0 || is.na(mpa_start[1])) {
+    mpa_start <- sites_map %>%
+      dplyr::filter(CA_MPA_Name_Short == mpa_name) %>%
+      dplyr::pull(MPA_Start)
+  }
   if (length(mpa_start) == 0 || is.na(mpa_start[1])) {
     mpa_start <- ifelse(grepl("Point Vicente|Campus", mpa_name), 2012, 2003)
   } else {
     mpa_start <- mpa_start[1]
   }
 
+  # Try multiple species name variants for kelp biomass
   d <- All.Resp.sub %>%
-    dplyr::filter(taxon_name == "Macrocystis pyrifera", resp == "Bio",
-                  CA_MPA_Name_Short == mpa_name)
+    dplyr::filter(
+      taxon_name %in% c("Macrocystis pyrifera", "M. pyrifera", "MACPYRAD"),
+      resp %in% c("Bio", "Biomass", "biomass"),
+      CA_MPA_Name_Short == mpa_name
+    )
+
+  # If no biomass data, try density data
+  if (nrow(d) == 0) {
+    d <- All.Resp.sub %>%
+      dplyr::filter(
+        taxon_name %in% c("Macrocystis pyrifera", "M. pyrifera", "MACPYRAD"),
+        resp %in% c("Den", "Density", "density"),
+        CA_MPA_Name_Short == mpa_name
+      )
+  }
+
+  # Debug: Print data availability
+  cat("    Inset", panel_label, mpa_name, "- rows found:", nrow(d), "\n")
 
   if (nrow(d) == 0) {
-    return(ggplot() + annotate("text", x = 0.5, y = 0.5,
-           label = paste(panel_label, gsub(" SM.*", "", mpa_name)), size = 2.5) +
-           theme_void() + theme(panel.background = element_rect(fill = "white", color = "grey70")))
+    # Return informative placeholder with MPA name
+    short_name <- gsub(" SMCA| SMR", "", mpa_name)
+    return(ggplot() +
+           annotate("text", x = 0.5, y = 0.6,
+                    label = paste0(panel_label, " ", short_name),
+                    size = 3, fontface = "bold") +
+           annotate("text", x = 0.5, y = 0.4,
+                    label = "No kelp data",
+                    size = 2.5, color = "grey50") +
+           theme_void() +
+           theme(panel.background = element_rect(fill = "grey95", color = "grey60", linewidth = 0.4)))
   }
 
   short_name <- gsub(" SMCA| SMR", "", mpa_name)
   short_code <- label_lookup[mpa_name]
+  if (is.na(short_code)) short_code <- ""
 
+  # Improved inset plot with better typography
   ggplot(d, aes(x = year, y = value, color = status)) +
-    geom_vline(xintercept = mpa_start, linetype = "dashed", color = "grey50", linewidth = 0.3) +
-    geom_line(aes(group = interaction(status, source)), linewidth = 0.4, alpha = 0.7) +
-    geom_point(size = 1.2, alpha = 0.85) +
+    geom_vline(xintercept = mpa_start, linetype = "dashed", color = "grey40", linewidth = 0.4) +
+    geom_line(aes(group = interaction(status, source)), linewidth = 0.5, alpha = 0.8) +
+    geom_point(size = 1.5, alpha = 0.9) +
     scale_color_manual(values = ts_colors, guide = "none") +
-    labs(title = paste0(panel_label, " ", short_name, " (", short_code, ")"),
-         x = "Years", y = expression('Biomass (g '~m^{-2}~')')) +
-    theme_minimal(base_size = 7) +
+    labs(title = paste0(panel_label, " ", short_name),
+         x = NULL, y = expression('Biomass (g '~m^{-2}~')')) +
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 4)) +
+    theme_mpa(base_size = 8) +
     theme(
-      plot.title = element_text(size = 7, face = "bold", hjust = 0, margin = margin(0,0,2,0)),
-      axis.title = element_text(size = 6), axis.title.y = element_text(margin = margin(0,2,0,0)),
-      axis.text = element_text(size = 5), panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(linewidth = 0.2),
-      panel.background = element_rect(fill = "white", color = "grey60", linewidth = 0.3),
-      plot.margin = margin(2, 4, 2, 2)
+      plot.title = element_text(size = 8, face = "bold", hjust = 0, margin = margin(0,0,3,0)),
+      axis.title = element_text(size = 7),
+      axis.title.y = element_text(margin = margin(0,3,0,0)),
+      axis.text = element_text(size = 6),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(linewidth = 0.15, color = "grey85"),
+      panel.background = element_rect(fill = "white", color = "grey50", linewidth = 0.4),
+      plot.margin = margin(3, 5, 3, 3)
     )
 }
 
@@ -259,10 +309,12 @@ fig1_composite <- ggdraw() +
   draw_plot(insets[[5]], x = 0.30, y = 0.15, width = 0.25, height = 0.22) +
   draw_plot(insets[[6]], x = 0.58, y = 0.15, width = 0.25, height = 0.22)
 
+# Conservation Letters: max 170mm double-column width
+# Reduced from 240mm to 170mm for journal compliance
 ggsave(here::here("plots", "fig_01_mpa_map_composite.pdf"), fig1_composite,
-       width = 24, height = 20, units = "cm")
+       width = 17, height = 14, units = "cm")
 ggsave(here::here("plots", "fig_01_mpa_map_composite.png"), fig1_composite,
-       width = 24, height = 20, units = "cm", dpi = 300)
+       width = 17, height = 14, units = "cm", dpi = 300)
 
 # Also save map-only version
 ggsave(here::here("plots", "fig_01_map_only.pdf"), map_with_scale,
@@ -401,10 +453,12 @@ fig2 <- ggpubr::ggarrange(
   legend = "bottom"
 )
 
+# Conservation Letters: max 170mm double-column width
+# Reduced from 280mm to 170mm and adjusted height proportionally
 ggsave(here::here("plots", "fig_02_data_processing.pdf"), fig2,
-       width = 28, height = 8, units = "cm", device = "pdf")
+       width = 17, height = 5, units = "cm", device = "pdf")
 ggsave(here::here("plots", "fig_02_data_processing.png"), fig2,
-       width = 28, height = 8, units = "cm", dpi = 300)
+       width = 17, height = 5, units = "cm", dpi = 300)
 cat("  Saved: fig_02_data_processing.pdf / .png\n")
 
 # =============================================================================
@@ -429,35 +483,62 @@ fig_s1_data <- SumStats.Final %>%
     Source = factor(Source, levels = source_levels),
     Resp = factor(Resp, levels = c("Den", "Bio")),
     Mean = as.numeric(Mean),
-    CI = as.numeric(CI)
+    CI = as.numeric(CI),
+    # Ensure MPA is character for proper labeling (not numeric factor)
+    MPA = as.character(MPA)
   )
 
+# Debug: Check MPA values
+cat("  Figure S1 - Unique MPAs:", paste(head(unique(fig_s1_data$MPA), 5), collapse = ", "), "...\n")
+cat("  Figure S1 - Total rows:", nrow(fig_s1_data), "\n")
+
+# Create shortened MPA names for better readability
+fig_s1_data <- fig_s1_data %>%
+  dplyr::mutate(
+    MPA_short = gsub(" SMCA| SMR| SC", "", MPA),
+    MPA_short = gsub("Anacapa Island", "Anacapa Is.", MPA_short),
+    MPA_short = gsub("Santa Barbara Island", "Santa Barbara Is.", MPA_short),
+    MPA_short = gsub("San Miguel Island", "San Miguel Is.", MPA_short)
+  )
+
+# Order MPAs by mean effect size within each taxa for better visual hierarchy
+fig_s1_data <- fig_s1_data %>%
+  dplyr::group_by(Taxa) %>%
+  dplyr::mutate(MPA_order = reorder(MPA_short, Mean, FUN = mean, na.rm = TRUE)) %>%
+  dplyr::ungroup()
+
 fig_s1 <- ggplot(fig_s1_data,
-               aes(x = MPA, y = Mean, ymin = Mean - CI, ymax = Mean + CI,
+               aes(x = MPA_order, y = Mean, ymin = Mean - CI, ymax = Mean + CI,
                    color = Resp, shape = Source)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60",
-             linewidth = 0.3) +
-  geom_pointrange(size = 0.4, linewidth = 0.4,
-                  position = position_dodge(width = 0.5)) +
-  geom_point(size = 3, position = position_dodge(width = 0.5)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50",
+             linewidth = 0.4) +
+  geom_pointrange(size = 0.5, linewidth = 0.5,
+                  position = position_dodge(width = 0.6)) +
+  geom_point(size = 3.5, position = position_dodge(width = 0.6)) +
   facet_wrap(~ Taxa, ncol = 2, scales = "free_y") +
   scale_color_response(name = "Response",
                        labels = c("Den" = "Density", "Bio" = "Biomass")) +
   scale_shape_source(name = "Source") +
   coord_flip() +
-  labs(x = "Marine Protected Area", y = "Effect Size (lnRR)") +
-  theme_mpa(base_size = 9) +
+  labs(x = NULL, y = "Effect Size (lnRR)") +
+  theme_mpa(base_size = 10) +
   theme(
-    strip.text = element_text(face = "italic", size = 9),
-    axis.text.y = element_text(size = 7),
+    strip.text = element_text(face = "italic", size = 10, margin = margin(4, 0, 4, 0)),
+    strip.background = element_rect(fill = "grey95", color = "grey70"),
+    axis.text.y = element_text(size = 8),
+    axis.text.x = element_text(size = 9),
     legend.position = "bottom",
-    legend.box = "horizontal"
+    legend.box = "horizontal",
+    legend.spacing.x = unit(0.8, "cm"),
+    panel.spacing = unit(0.8, "lines")
   )
 
+# Conservation Letters: Supplemental figures can be larger but still reasonable
+# Reduced from 280mm to 180mm width for better proportions
 ggsave(here::here("plots", "fig_s01_forest_plot.pdf"), fig_s1,
-       width = 28, height = 30, units = "cm", device = "pdf")
+       width = 18, height = 22, units = "cm", device = "pdf")
 ggsave(here::here("plots", "fig_s01_forest_plot.png"), fig_s1,
-       width = 28, height = 30, units = "cm", dpi = 300)
+       width = 18, height = 22, units = "cm", dpi = 300)
 cat("  Saved: fig_s01_forest_plot.pdf / .png\n")
 
 # =============================================================================
@@ -493,37 +574,52 @@ col_response_fig3 <- c("Density" = unname(col_response["Den"]),
                         "Biomass" = unname(col_response["Bio"]))
 
 fig3 <- ggplot() +
+  # Reference line at zero (no effect)
+  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50",
+             linewidth = 0.5) +
   # Individual effect sizes as semi-transparent background points
   geom_point(
     data = fig3_individual,
     aes(x = Taxa, y = Mean, color = Response),
-    position = position_dodge(width = 0.5),
-    size = 1.5, alpha = 0.3, shape = 16
+    position = position_dodge(width = 0.6),
+    size = 2, alpha = 0.25, shape = 16
   ) +
-  # Meta-analysis means as large squares with error bars
+  # Meta-analysis means as large diamonds with error bars
   geom_errorbar(
     data = fig3_meta,
     aes(x = Taxa, ymin = CI_lower, ymax = CI_upper, color = Response),
-    position = position_dodge(width = 0.5),
-    width = 0.15, linewidth = 0.5
+    position = position_dodge(width = 0.6),
+    width = 0.2, linewidth = 0.7
   ) +
   geom_point(
     data = fig3_meta,
     aes(x = Taxa, y = Estimate, color = Response),
-    position = position_dodge(width = 0.5),
-    size = 4, shape = 15
+    position = position_dodge(width = 0.6),
+    size = 5, shape = 18  # Diamond shape for meta-analysis means
   ) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey60",
-             linewidth = 0.3) +
-  scale_color_manual(name = "Response", values = col_response_fig3) +
+  scale_color_manual(
+    name = "Response",
+    values = col_response_fig3,
+    labels = c("Density" = "Density", "Biomass" = "Biomass")
+  ) +
+  scale_y_continuous(
+    breaks = seq(-1.5, 1.5, by = 0.5),
+    limits = c(-1.5, 1.5)
+  ) +
   labs(
     x = NULL,
     y = "Effect Size (lnRR)"
   ) +
-  theme_mpa(base_size = 10) +
+  theme_mpa(base_size = 11) +
   theme(
-    axis.text.x = element_text(face = "italic", size = 9),
-    legend.position = "bottom"
+    axis.text.x = element_text(face = "italic", size = 10, margin = margin(t = 5)),
+    axis.text.y = element_text(size = 10),
+    axis.title.y = element_text(size = 11, margin = margin(r = 8)),
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold", size = 10),
+    legend.text = element_text(size = 10),
+    legend.key.size = unit(0.5, "cm"),
+    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.3)
   )
 
 ggsave(here::here("plots", "fig_03_mean_effects.pdf"), fig3,
@@ -544,16 +640,16 @@ cat("Building Figure 4: Urchin vs Kelp scatterplot...\n")
 # Need to join urchin (S. purpuratus) and kelp (M. pyrifera) lnRR by MPA and year
 fig4_urchin <- All.RR.sub.trans %>%
   dplyr::filter(
-    y %in% c("Strongylocentrotus purpuratus", "S. purpuratus"),
-    resp == "Den"
+    y %in% c("Strongylocentrotus purpuratus", "S. purpuratus", "STRPURAD"),
+    resp %in% c("Den", "Density")
   ) %>%
   dplyr::select(CA_MPA_Name_Short, year, source, lnDiff) %>%
   dplyr::rename(lnRR_urchin = lnDiff)
 
 fig4_kelp <- All.RR.sub.trans %>%
   dplyr::filter(
-    y %in% c("Macrocystis pyrifera", "M. pyrifera"),
-    resp == "Den"
+    y %in% c("Macrocystis pyrifera", "M. pyrifera", "MACPYRAD"),
+    resp %in% c("Den", "Density")
   ) %>%
   dplyr::select(CA_MPA_Name_Short, year, source, lnDiff) %>%
   dplyr::rename(lnRR_kelp = lnDiff)
@@ -563,26 +659,58 @@ fig4_data <- dplyr::inner_join(
   by = c("CA_MPA_Name_Short", "year", "source")
 )
 
-fig4 <- ggplot(fig4_data, aes(x = lnRR_urchin, y = lnRR_kelp)) +
-  geom_hline(yintercept = 0, linetype = "dotted", color = "grey70", linewidth = 0.3) +
-  geom_vline(xintercept = 0, linetype = "dotted", color = "grey70", linewidth = 0.3) +
-  geom_point(size = 2, alpha = 0.6, color = "black") +
-  geom_smooth(method = "lm", se = TRUE, color = "black", fill = "grey80",
-              linewidth = 0.8, alpha = 0.3) +
-  labs(
-    x = expression("Effect Size (lnRR " * italic("S. purpuratus") * ")"),
-    y = expression("Effect Size (lnRR " * italic("M. pyrifera") * ")")
-  ) +
-  theme_mpa(base_size = 10) +
-  theme(
-    panel.grid.minor = element_blank()
-  )
+# Debug output
+cat("  Figure 4 - Urchin rows:", nrow(fig4_urchin), ", Kelp rows:", nrow(fig4_kelp), "\n")
+cat("  Figure 4 - Joined data rows:", nrow(fig4_data), "\n")
 
-ggsave(here::here("plots", "fig_04_urchin_kelp_scatter.pdf"), fig4,
-       width = 12, height = 10, units = "cm", device = "pdf")
-ggsave(here::here("plots", "fig_04_urchin_kelp_scatter.png"), fig4,
-       width = 12, height = 10, units = "cm", dpi = 300)
-cat("  Saved: fig_04_urchin_kelp_scatter.pdf / .png\n")
+# Only create figure if we have data
+if (nrow(fig4_data) > 0) {
+  # Calculate correlation for annotation
+  cor_test <- cor.test(fig4_data$lnRR_urchin, fig4_data$lnRR_kelp, method = "pearson")
+  cor_label <- sprintf("r = %.2f, p %s",
+                       cor_test$estimate,
+                       ifelse(cor_test$p.value < 0.001, "< 0.001",
+                              sprintf("= %.3f", cor_test$p.value)))
+
+  fig4 <- ggplot(fig4_data, aes(x = lnRR_urchin, y = lnRR_kelp)) +
+    # Reference lines at zero
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
+    # Data points with slight jitter for overlapping points
+    geom_point(size = 2.5, alpha = 0.5, color = "grey30",
+               position = position_jitter(width = 0.02, height = 0.02, seed = 42)) +
+    # Linear regression line with confidence band
+    geom_smooth(method = "lm", se = TRUE, color = "#2E6E7E", fill = "#2E6E7E",
+                linewidth = 1, alpha = 0.2) +
+    # Correlation annotation
+    annotate("text", x = Inf, y = Inf, label = cor_label,
+             hjust = 1.1, vjust = 1.5, size = 3.5, fontface = "italic") +
+    labs(
+      x = expression("Effect Size (lnRR " * italic("S. purpuratus") * " density)"),
+      y = expression("Effect Size (lnRR " * italic("M. pyrifera") * " density)")
+    ) +
+    coord_fixed(ratio = 1) +  # Equal aspect ratio for scatterplot
+    theme_mpa(base_size = 11) +
+    theme(
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(color = "grey90", linewidth = 0.3),
+      axis.title = element_text(size = 10)
+    )
+
+  # Save with error handling
+  tryCatch({
+    ggsave(here::here("plots", "fig_04_urchin_kelp_scatter.pdf"), fig4,
+           width = 12, height = 10, units = "cm", device = "pdf")
+    ggsave(here::here("plots", "fig_04_urchin_kelp_scatter.png"), fig4,
+           width = 12, height = 10, units = "cm", dpi = 300)
+    cat("  Saved: fig_04_urchin_kelp_scatter.pdf / .png\n")
+  }, error = function(e) {
+    cat("  ERROR saving Figure 4:", e$message, "\n")
+  })
+} else {
+  cat("  WARNING: No data available for Figure 4 (urchin-kelp relationship)\n")
+  cat("  Check that All.RR.sub.trans contains both S. purpuratus and M. pyrifera density data\n")
+}
 
 # =============================================================================
 # Figure S2 (Supplemental): All taxa log response ratios at example MPAs
@@ -682,10 +810,11 @@ fig_s2 <- ggpubr::ggarrange(
   legend = "right"
 )
 
+# Conservation Letters: Supplemental - reasonable size for multi-panel
 ggsave(here::here("plots", "fig_s02_all_taxa_timeseries.pdf"), fig_s2,
-       width = 20, height = 30, units = "cm", device = "pdf")
+       width = 17, height = 24, units = "cm", device = "pdf")
 ggsave(here::here("plots", "fig_s02_all_taxa_timeseries.png"), fig_s2,
-       width = 20, height = 30, units = "cm", dpi = 300)
+       width = 17, height = 24, units = "cm", dpi = 300)
 cat("  Saved: fig_s02_all_taxa_timeseries.pdf / .png\n")
 
 # =============================================================================
