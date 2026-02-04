@@ -158,18 +158,19 @@ kfm.site <- subset(kfm.site, taxon_name != "Macrocystis pyrifera" | proj_taxon_i
 
 # Sum across different Macro names (considering all together)
 kfm.sum <- kfm.site %>%
-  group_by(site_id, taxon_name, status, CA_MPA_Name_Short, area, ChannelIsland, replicate_id, MPA_Start, time, year) %>%
-  summarise_at(c("count"), sum) %>%
-  ungroup()
+  dplyr::group_by(site_id, taxon_name, status, CA_MPA_Name_Short, area, ChannelIsland, replicate_id, MPA_Start, time, year) %>%
+  dplyr::summarise_at(c("count"), sum) %>%
+  dplyr::ungroup()
 
 # Transform to density since there are different survey methods
-kfm.sum$den <- kfm.sum$count / kfm.sum$area
+# Use safe_divide to handle any zero area values
+kfm.sum$den <- safe_divide(kfm.sum$count, kfm.sum$area, context = "KFM density calculation")
 
 # Average across sites and replicates
 kfm.ave <- kfm.sum %>%
-  group_by(site_id, taxon_name, status, CA_MPA_Name_Short, area, ChannelIsland, MPA_Start, time, year) %>%
-  summarise_at(c("den"), mean) %>%
-  ungroup()
+  dplyr::group_by(site_id, taxon_name, status, CA_MPA_Name_Short, area, ChannelIsland, MPA_Start, time, year) %>%
+  dplyr::summarise_at(c("den"), mean) %>%
+  dplyr::ungroup()
 
 ###########################################################################################
 ## 6. Calculate urchin biomass via bootstrap resampling
@@ -177,20 +178,12 @@ kfm.ave <- kfm.sum %>%
 
 URCHINS <- subset(kfm.site, taxon_name == "Strongylocentrotus purpuratus" |
                     taxon_name == "Mesocentrotus franciscanus")
-URCHINS <- mutate(URCHINS, taxon_name = case_when(
+URCHINS <- dplyr::mutate(URCHINS, taxon_name = dplyr::case_when(
   taxon_name == "Strongylocentrotus purpuratus" ~ "STRPURAD",
   taxon_name == "Mesocentrotus franciscanus" ~ "MESFRAAD",
   TRUE ~ taxon_name))
 
 u <- unique(URCHINS[, c("year", "site_id", "CA_MPA_Name_Short", "status", "area", "taxon_name")])
-
-# Initialize result dataframes
-Urchin.site <- data.frame(site = NA, CA_MPA_Name_Short = NA, site_status = NA,
-                           year = NA, transect = NA, count = NA, biomass = NA,
-                           y = NA, area = NA)
-Urchin.SF <- data.frame(site = NA, CA_MPA_Name_Short = NA, site_status = NA,
-                          year = NA, transect = NA, count = NA, biomass = NA,
-                          y = NA, area = NA)
 
 # Reset size frequency data to original (before PISCO 25mm filter)
 SizeFreq.Urch <- SizeFreq.Urch.OG
@@ -199,9 +192,19 @@ SizeFreq.Urch <- SizeFreq.Urch.OG
 .cache_kfm_urch <- here::here("data", "cache", "kfm_urchin_bootstrap.rds")
 if (file.exists(.cache_kfm_urch) && !exists("FORCE_BOOTSTRAP")) {
   cat("    Loading cached KFM urchin bootstrap results...\n")
-  Urchin.site <- readRDS(.cache_kfm_urch)
-} else {
-  for (i in 1:nrow(u)) {
+  Urchin.site <- safe_read_rds(.cache_kfm_urch)
+  if (is.null(Urchin.site)) {
+    cat("    Cache invalid, will recompute...\n")
+  }
+}
+
+if (!exists("Urchin.site") || is.null(Urchin.site)) {
+  # Pre-allocate list for results (PERFORMANCE: avoids O(n²) rbind copies)
+  results_list <- vector("list", nrow(u))
+
+  # Set random seed for reproducibility of bootstrap resampling
+  set.seed(12347)
+  for (i in seq_len(nrow(u))) {
     t <- which(URCHINS$site_id == u$site_id[i] &
                  URCHINS$CA_MPA_Name_Short == u$CA_MPA_Name_Short[i] &
                  URCHINS$year == u$year[i] &
@@ -215,25 +218,36 @@ if (file.exists(.cache_kfm_urch) && !exists("FORCE_BOOTSTRAP")) {
     # Select biomass function based on species
     bio_fun <- if (u$taxon_name[i] == "MESFRAAD") bio_redurch else bio_purpurch
 
-    # Use bootstrap_biomass from 01_utils.R
-    result <- bootstrap_biomass(
-      count = n,
-      size_freq_indices = t2,
-      size_freq_table = SizeFreq.Urch,
-      biomass_fun = bio_fun
+    # Wrap bootstrap in tryCatch for robustness
+    result <- tryCatch(
+      bootstrap_biomass(
+        count = n,
+        size_freq_indices = t2,
+        size_freq_table = SizeFreq.Urch,
+        biomass_fun = bio_fun
+      ),
+      error = function(e) {
+        warning("Bootstrap failed for site ", u$site_id[i], " year ", u$year[i],
+                " species ", u$taxon_name[i], ": ", e$message)
+        list(biomass = NA, se = NA, count = n)
+      }
     )
 
-    Urchin.SF$site <- u$site_id[i]
-    Urchin.SF$CA_MPA_Name_Short <- u$CA_MPA_Name_Short[i]
-    Urchin.SF$site_status <- u$status[i]
-    Urchin.SF$year <- u$year[i]
-    Urchin.SF$area <- u$area[i]
-    Urchin.SF$transect <- length(t)
-    Urchin.SF$count <- result$count
-    Urchin.SF$biomass <- result$biomass
-    Urchin.SF$y <- u$taxon_name[i]
-    Urchin.site <- rbind(Urchin.site, Urchin.SF)
+    results_list[[i]] <- data.frame(
+      site = u$site_id[i],
+      CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+      site_status = u$status[i],
+      year = u$year[i],
+      area = u$area[i],
+      transect = length(t),
+      count = result$count,
+      biomass = result$biomass,
+      y = u$taxon_name[i]
+    )
   }
+
+  # Combine all results at once (efficient)
+  Urchin.site <- do.call(rbind, results_list)
 
   # Save cache
   dir.create(dirname(.cache_kfm_urch), recursive = TRUE, showWarnings = FALSE)
@@ -279,7 +293,7 @@ KFM.Urchin.site.all$Density <- KFM.Urchin.site.all$count.ave / 2
 KFM.Urchin.site.all$bio.m2 <- KFM.Urchin.site.all$biomass.ave / 2
 
 # Restore full species names
-KFM.Urchin.site.all <- mutate(KFM.Urchin.site.all, y = case_when(
+KFM.Urchin.site.all <- dplyr::mutate(KFM.Urchin.site.all, y = dplyr::case_when(
   y == "STRPURAD" ~ "Strongylocentrotus purpuratus",
   y == "MESFRAAD" ~ "Mesocentrotus franciscanus",
   TRUE ~ y))
@@ -297,7 +311,7 @@ kfm.stipe$site_id <- ifelse(kfm.stipe$SiteNumber > 9,
                               paste0("a-k-0", kfm.stipe$SiteNumber))
 kfm.stipe.site <- merge(kfm.stipe, Sites2, by = c("site_id"))
 kfm.stipe.site <- kfm.stipe.site %>%
-  mutate(date = as.Date(SurveyDate, format = "%m/%d/%Y"))
+  dplyr::mutate(date = as.Date(SurveyDate, format = "%m/%d/%Y"))
 kfm.stipe.site$year <- year(kfm.stipe.site$date)
 
 # Remove excluded KFM sites
@@ -305,13 +319,13 @@ kfm.stipe.site <- kfm.stipe.site[!(kfm.stipe.site$site_id %in% EXCLUDED_KFM_SITE
 
 # Calculate average number of stipes per site
 kfm.stipe.mean <- kfm.stipe.site %>%
-  group_by(site_id, status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
-  summarise_at(c("Stipe_Count"), mean)
+  dplyr::group_by(site_id, status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
+  dplyr::summarise_at(c("Stipe_Count"), mean)
 
 # Calculate average number of stipes per MPA/Reference
 kfm.stipe.max <- kfm.stipe.mean %>%
-  group_by(status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
-  summarise_at(c("Stipe_Count"), mean)
+  dplyr::group_by(status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
+  dplyr::summarise_at(c("Stipe_Count"), mean)
 
 kfm.stipe.ave <- subset(kfm.stipe.max, CA_MPA_Name_Short != "")
 
@@ -329,91 +343,90 @@ MACRO <- subset(MACRO, CA_MPA_Name_Short != "Anacapa Island SMCA" &
 
 u <- unique(MACRO[, c("year", "site_id", "CA_MPA_Name_Short", "status", "area", "taxon_name")])
 
-# Initialize result dataframes
-Macro.site <- data.frame(site = NA, CA_MPA_Name_Short = NA, year = NA,
-                           transect = NA, biomass = NA, count = NA,
-                           y = NA, area = NA, ind = NA)
-Meta <- data.frame(site = NA, CA_MPA_Name_Short = NA, year = NA,
-                     transect = NA, biomass = NA, count = NA,
-                     y = NA, area = NA, ind = NA)
-
 kfm.stipe.OG <- kfm.stipe.site
 
-for (i in 1:nrow(u)) {
-  t <- which(MACRO$site_id == u$site_id[i] &
-               MACRO$year == u$year[i] &
-               MACRO$area == u$area[i] &
-               MACRO$taxon_name == u$taxon_name[i])
-  n <- sum(MACRO$count[t])
-  t2 <- which(kfm.stipe.site$site_id == u$site_id[i] &
-                kfm.stipe.site$SurveyYear == u$year[i] &
-                kfm.stipe.site$ScientificName == u$taxon_name[i])
-
-  if (n != 0 & length(t2) != 0) {
-    # Kelp found on transect and in stipe data
-    a <- kfm.stipe.site[t2, ]
-    s <- data.frame(matrix(NA, nrow = 1000, ncol = n))
-    for (k in 1:1000) {
-      s[k, ] <- sample(a$Stipe_Count, n, replace = TRUE)
-    }
-    s_bio <- s %>%
-      mutate(across(starts_with("X"), ~ bio_macro(.)))
-    s_bio <- s_bio %>%
-      mutate(sum = rowSums(.))
-    s <- s %>%
-      mutate(sum = rowSums(.))
-    aveB <- mean(s_bio$sum)
-    aveD <- mean(s$sum)
-
-    Meta$site <- u$site_id[i]
-    Meta$CA_MPA_Name_Short <- u$CA_MPA_Name_Short[i]
-    Meta$year <- u$year[i]
-    Meta$transect <- length(t)
-    Meta$area <- u$area[i]
-    Meta$y <- u$taxon_name[i]
-    Meta$count <- aveD
-    Meta$biomass <- aveB
-    Meta$ind <- n
-    Macro.site <- rbind(Macro.site, Meta)
-
-  } else if (n == 0 & length(t2) == 0) {
-    # No kelp on transect or in stipe data
-    Meta$site <- u$site_id[i]
-    Meta$CA_MPA_Name_Short <- u$CA_MPA_Name_Short[i]
-    Meta$year <- u$year[i]
-    Meta$transect <- length(t)
-    Meta$area <- u$area[i]
-    Meta$y <- u$taxon_name[i]
-    Meta$count <- 0
-    Meta$biomass <- 0
-    Meta$ind <- 0
-    Macro.site <- rbind(Macro.site, Meta)
-
-  } else if (n != 0 & length(t2) == 0) {
-    # Kelp on transect but no stipe data - mark as NA
-    Meta$site <- u$site_id[i]
-    Meta$CA_MPA_Name_Short <- u$CA_MPA_Name_Short[i]
-    Meta$year <- u$year[i]
-    Meta$transect <- length(t)
-    Meta$area <- u$area[i]
-    Meta$y <- u$taxon_name[i]
-    Meta$count <- NA
-    Meta$biomass <- NA
-    Meta$ind <- n
-    Macro.site <- rbind(Macro.site, Meta)
-
-  } else {
-    Meta$site <- u$site_id[i]
-    Meta$CA_MPA_Name_Short <- u$CA_MPA_Name_Short[i]
-    Meta$year <- u$year[i]
-    Meta$transect <- length(t)
-    Meta$area <- u$area[i]
-    Meta$y <- u$taxon_name[i]
-    Meta$count <- 0
-    Meta$biomass <- 0
-    Meta$ind <- n
-    Macro.site <- rbind(Macro.site, Meta)
+# Cache bootstrap results to avoid re-running the slow loop
+.cache_kfm_macro <- here::here("data", "cache", "kfm_macro_bootstrap.rds")
+if (file.exists(.cache_kfm_macro) && !exists("FORCE_BOOTSTRAP")) {
+  cat("    Loading cached KFM Macrocystis bootstrap results...\n")
+  Macro.site <- safe_read_rds(.cache_kfm_macro)
+  if (is.null(Macro.site)) {
+    cat("    Cache invalid, will recompute...\n")
   }
+}
+
+if (!exists("Macro.site") || is.null(Macro.site)) {
+  # Pre-allocate list for results (PERFORMANCE: avoids O(n²) rbind copies)
+  results_list <- vector("list", nrow(u))
+
+  # Set random seed for reproducibility of bootstrap resampling
+  set.seed(12348)
+  for (i in seq_len(nrow(u))) {
+    t <- which(MACRO$site_id == u$site_id[i] &
+                 MACRO$year == u$year[i] &
+                 MACRO$area == u$area[i] &
+                 MACRO$taxon_name == u$taxon_name[i])
+    n <- sum(MACRO$count[t])
+    t2 <- which(kfm.stipe.site$site_id == u$site_id[i] &
+                  kfm.stipe.site$SurveyYear == u$year[i] &
+                  kfm.stipe.site$ScientificName == u$taxon_name[i])
+
+    # Wrap bootstrap in tryCatch for robustness
+    result_row <- tryCatch({
+      if (n != 0 & length(t2) != 0) {
+        # Kelp found on transect and in stipe data
+        a <- kfm.stipe.site[t2, ]
+        s <- data.frame(matrix(NA, nrow = 1000, ncol = n))
+        for (k in 1:1000) {
+          s[k, ] <- sample(a$Stipe_Count, n, replace = TRUE)
+        }
+        s_bio <- s %>%
+          dplyr::mutate(dplyr::across(starts_with("X"), ~ bio_macro(.)))
+        s_bio <- s_bio %>%
+          dplyr::mutate(sum = rowSums(.))
+        s <- s %>%
+          dplyr::mutate(sum = rowSums(.))
+        aveB <- mean(s_bio$sum)
+        aveD <- mean(s$sum)
+
+        data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                   year = u$year[i], transect = length(t), area = u$area[i],
+                   y = u$taxon_name[i], count = aveD, biomass = aveB, ind = n)
+
+      } else if (n == 0 & length(t2) == 0) {
+        # No kelp on transect or in stipe data
+        data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                   year = u$year[i], transect = length(t), area = u$area[i],
+                   y = u$taxon_name[i], count = 0, biomass = 0, ind = 0)
+
+      } else if (n != 0 & length(t2) == 0) {
+        # Kelp on transect but no stipe data - mark as NA
+        data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                   year = u$year[i], transect = length(t), area = u$area[i],
+                   y = u$taxon_name[i], count = NA, biomass = NA, ind = n)
+
+      } else {
+        data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                   year = u$year[i], transect = length(t), area = u$area[i],
+                   y = u$taxon_name[i], count = 0, biomass = 0, ind = n)
+      }
+    }, error = function(e) {
+      warning("KFM Macro bootstrap failed for site ", u$site_id[i], " year ", u$year[i], ": ", e$message)
+      data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                 year = u$year[i], transect = NA, area = u$area[i],
+                 y = u$taxon_name[i], count = NA, biomass = NA, ind = NA)
+    })
+
+    results_list[[i]] <- result_row
+  }
+
+  # Combine all results at once (efficient)
+  Macro.site <- do.call(rbind, results_list)
+
+  # Save cache
+  dir.create(dirname(.cache_kfm_macro), recursive = TRUE, showWarnings = FALSE)
+  saveRDS(Macro.site, .cache_kfm_macro)
+  cat("    Cached KFM Macrocystis bootstrap results.\n")
 }
 
 # Merge macro with site table
@@ -422,9 +435,11 @@ KFM.Macro.site.merge <- merge(Macro.site, sites.short, by.x = c("site"), by.y = 
 KFM.Macro.site.merge <- KFM.Macro.site.merge[, colnames(KFM.Macro.site.merge)[c(2, 1, 3, 12, 17, 18, 4:9)]]
 
 # Convert to per m2 by dividing by transects and area
-KFM.Macro.site.merge$biomassCorr <- KFM.Macro.site.merge$biomass / KFM.Macro.site.merge$area / KFM.Macro.site.merge$transect
-KFM.Macro.site.merge$densityCorr <- KFM.Macro.site.merge$count / KFM.Macro.site.merge$area / KFM.Macro.site.merge$transect
-KFM.Macro.site.merge$densityIndCorr <- KFM.Macro.site.merge$ind / KFM.Macro.site.merge$area / KFM.Macro.site.merge$transect
+# Use safe_divide to handle any zero area/transect values
+area_transect <- KFM.Macro.site.merge$area * KFM.Macro.site.merge$transect
+KFM.Macro.site.merge$biomassCorr <- safe_divide(KFM.Macro.site.merge$biomass, area_transect, context = "KFM macro biomass/m2")
+KFM.Macro.site.merge$densityCorr <- safe_divide(KFM.Macro.site.merge$count, area_transect, context = "KFM macro density/m2")
+KFM.Macro.site.merge$densityIndCorr <- safe_divide(KFM.Macro.site.merge$ind, area_transect, context = "KFM macro ind density/m2")
 
 ###########################################################################################
 ## 9. Combine urchin and macro data, calculate density per m2
@@ -467,8 +482,8 @@ Swath.KFM.Corr$den <- ifelse(Swath.KFM.Corr$y == "Macrocystis pyrifera",
 
 # Calculate the mean across sites
 kfm.ave.ave <- Swath.KFM.Corr %>%
-  group_by(y, status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, time, year, area) %>%
-  summarise_at(c("den", "biomass"), mean)
+  dplyr::group_by(y, status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, time, year, area) %>%
+  dplyr::summarise_at(c("den", "biomass"), mean)
 
 # Remove MPAs that don't meet criteria for inclusion
 kfm.ave.ave <- subset(kfm.ave.ave,
@@ -606,16 +621,16 @@ mbon.spul.site$den <- mbon.spul.site$count / mbon.spul.site$area
 
 # Calculate sheephead density per MPA/Reference - averaging hierarchy
 mbon.spul.sum <- mbon.spul.site %>%
-  group_by(site_id, sample_method, transect_id, status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
-  summarise_at(c("den"), mean)
+  dplyr::group_by(site_id, sample_method, transect_id, status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
+  dplyr::summarise_at(c("den"), mean)
 
 mbon.spul.ave <- mbon.spul.sum %>%
-  group_by(site_id, sample_method, status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
-  summarise_at(c("den"), mean)
+  dplyr::group_by(site_id, sample_method, status, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
+  dplyr::summarise_at(c("den"), mean)
 
 mbon.spul.max <- mbon.spul.ave %>%
-  group_by(status, sample_method, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
-  summarise_at(c("den"), mean)
+  dplyr::group_by(status, sample_method, CA_MPA_Name_Short, ChannelIsland, MPA_Start, year) %>%
+  dplyr::summarise_at(c("den"), mean)
 
 mbon.spul.max <- subset(mbon.spul.max, CA_MPA_Name_Short != "Anacapa Island SMR 1978")
 colnames(mbon.spul.max)[colnames(mbon.spul.max) == "den"] <- "count"
@@ -637,17 +652,10 @@ KFM.fish.den.long <- gather(KFM.fish.den.sub, status, value, 5:6)
 KFM.fish.den.long$resp <- "Den"
 
 # -- Proportions for RDFC method --
-x_fish_mpas <- unique(mbon.spul.max$CA_MPA_Name_Short)
-l_fish <- length(x_fish_mpas)
-
-for (i in 1:l_fish) {
-  idx <- which(x_fish_mpas[i] == mbon.spul.max.rd$CA_MPA_Name_Short)
-  m <- max(mbon.spul.max.rd$count[idx])
-  if (length(idx) > 0 && m > 0) {
-    mbon.spul.max.rd$Prop[idx] <- mbon.spul.max.rd$count[idx] / m
-    mbon.spul.max.rd$PropCorr[idx] <- mbon.spul.max.rd$Prop[idx] + 0.01
-  }
-}
+# Use standardized calculate_proportions() function from 01_utils.R
+# Add 'y' column required by the function (taxon_name already set to "SPUL")
+mbon.spul.max.rd$y <- mbon.spul.max.rd$taxon_name
+mbon.spul.max.rd <- calculate_proportions(mbon.spul.max.rd, "count", correction_method = "fixed")
 
 All.den.spul.kfm.sub.rd <- mbon.spul.max.rd[, colnames(mbon.spul.max.rd)[c(3, 2, 6, 10, 1, 9)]]
 Short.den.spul.kfm.sub.rd <- All.den.spul.kfm.sub.rd %>%
@@ -659,14 +667,9 @@ colnames(Short.den.spul.kfm.sub.rd.diff)[4] <- "y"
 Short.den.spul.kfm.sub.rd.diff$resp <- "RD"
 
 # -- Proportions for visual fish method --
-for (i in 1:l_fish) {
-  idx <- which(x_fish_mpas[i] == mbon.spul.max.vf$CA_MPA_Name_Short)
-  m <- max(mbon.spul.max.vf$count[idx])
-  if (length(idx) > 0 && m > 0) {
-    mbon.spul.max.vf$Prop[idx] <- mbon.spul.max.vf$count[idx] / m
-    mbon.spul.max.vf$PropCorr[idx] <- mbon.spul.max.vf$Prop[idx] + 0.01
-  }
-}
+# Use standardized calculate_proportions() function from 01_utils.R
+mbon.spul.max.vf$y <- mbon.spul.max.vf$taxon_name
+mbon.spul.max.vf <- calculate_proportions(mbon.spul.max.vf, "count", correction_method = "fixed")
 
 All.den.spul.kfm.sub.vf <- mbon.spul.max.vf[, colnames(mbon.spul.max.vf)[c(3, 2, 6, 10, 1, 9)]]
 Short.den.spul.kfm.sub.vf <- All.den.spul.kfm.sub.vf %>%

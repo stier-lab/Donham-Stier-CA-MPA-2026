@@ -79,17 +79,31 @@ if (!file.exists(landsat_data_path)) {
   # The minus signs mean "don't gather these columns" (keep them as-is).
 
   bio.summarize.long <- gather(fn, Year, Biomass, -MPA, -status, -rep, -lat, -lon)
-  bio.summarize.long$year <- rep(1984:2021, each = 60)  # 60 MPA x status combinations
-  bio.summarize.long <- bio.summarize.long %>% arrange(MPA)  # Sort by MPA name
+
+  # Dynamically extract years from column names and calculate rows per year group
+  year_cols <- grep("^X[0-9]{4}$", names(fn), value = TRUE)
+  years <- as.numeric(gsub("X", "", year_cols))
+  n_rows_per_year <- nrow(fn)  # Each row in fn represents one MPA x status x rep combination
+
+  # Validate dimensions before assignment
+  expected_total_rows <- length(years) * n_rows_per_year
+  if (nrow(bio.summarize.long) != expected_total_rows) {
+    warning("Landsat data dimension mismatch: expected ", expected_total_rows,
+            " rows but got ", nrow(bio.summarize.long))
+  }
+
+  # Assign years dynamically based on actual data structure
+  bio.summarize.long$year <- rep(years, each = n_rows_per_year)
+  bio.summarize.long <- bio.summarize.long %>% dplyr::arrange(MPA)  # Sort by MPA name
 
   ####################################################################################################
   ## 3. Calculate annual mean biomass by MPA and status ##############################################
   ####################################################################################################
 
   bio.ave.mpa <- bio.summarize.long %>%
-    group_by(MPA, status, year) %>%
-    summarise_at(c("Biomass"), mean, na.rm = TRUE) %>%
-    ungroup()
+    dplyr::group_by(MPA, status, year) %>%
+    dplyr::summarise_at(c("Biomass"), mean, na.rm = TRUE) %>%
+    dplyr::ungroup()
 
   # Spread to wide format (one column per status) and remove incomplete cases
   bio.sum.max.short <- bio.ave.mpa %>% spread(status, Biomass)
@@ -101,23 +115,17 @@ if (!file.exists(landsat_data_path)) {
 
   bio.sum.max.long <- gather(bio.sum.max.short, status, meanBio, -MPA, -year)
 
-  # calculate_proportions expects CA_MPA_Name_Short and y columns, and iterates
-  # over MPA x taxa combinations. We add those columns, compute proportions,
-  # then carry the original MPA/year/status through.
+  # Add required columns for calculate_proportions() utility function
   bio.sum.max.long$CA_MPA_Name_Short <- bio.sum.max.long$MPA
   bio.sum.max.long$y <- "Macrocystis pyrifera"
-  bio.sum.max.long$Prop <- 0
-  bio.sum.max.long$PropCorr <- 0
 
-  mpas_ls <- unique(bio.sum.max.long$MPA)
-  for (mpa in mpas_ls) {
-    idx <- which(bio.sum.max.long$MPA == mpa)
-    m <- max(bio.sum.max.long$meanBio[idx], na.rm = TRUE)
-    if (m > 0) {
-      bio.sum.max.long$Prop[idx] <- bio.sum.max.long$meanBio[idx] / m
-      bio.sum.max.long$PropCorr[idx] <- bio.sum.max.long$Prop[idx] + 0.01
-    }
-  }
+  # Use the standardized calculate_proportions function from 01_utils.R
+  # This ensures consistent proportion calculation and zero-correction across all data sources
+  bio.sum.max.long <- calculate_proportions(
+    bio.sum.max.long,
+    value_col = "meanBio",
+    correction_method = "adaptive"  # Use adaptive instead of fixed 0.01 for consistency
+  )
 
   ####################################################################################################
   ## 5. Calculate log response ratios (MPA vs reference) #############################################

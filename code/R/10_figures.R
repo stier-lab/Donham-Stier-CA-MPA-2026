@@ -86,6 +86,58 @@ if (!exists("col_taxa") || !exists("col_response") || !exists("theme_mpa")) {
 cat("  Color palette verified: col_taxa, col_response, col_site loaded\n")
 
 # =============================================================================
+# Input validation: Check required data objects exist and have expected structure
+# =============================================================================
+
+# Required data objects from previous scripts
+required_objects <- c("All.RR.sub.trans", "All.Resp.sub", "SumStats.Final", "Table2", "Site")
+missing_objects <- required_objects[!sapply(required_objects, exists, envir = globalenv())]
+if (length(missing_objects) > 0) {
+  stop("Missing required data objects: ", paste(missing_objects, collapse = ", "),
+       "\nPlease run scripts 00-09 first.")
+}
+
+# Validate Table2 structure (meta-analysis summary)
+if (!is.data.frame(Table2) || nrow(Table2) == 0) {
+  stop("Table2 must be a non-empty dataframe. Check 09_meta_analysis.R output.")
+}
+required_table2_cols <- c("Taxa", "Response", "Estimate", "CI_lower", "CI_upper")
+missing_cols <- required_table2_cols[!required_table2_cols %in% names(Table2)]
+if (length(missing_cols) > 0) {
+  stop("Table2 missing required columns: ", paste(missing_cols, collapse = ", "))
+}
+
+# Validate SumStats.Final structure
+if (!is.data.frame(SumStats.Final) || nrow(SumStats.Final) == 0) {
+  stop("SumStats.Final must be a non-empty dataframe. Check 08_effect_sizes.R output.")
+}
+required_sumstats_cols <- c("Taxa", "MPA", "Mean", "SE", "CI", "Source", "Resp")
+missing_cols <- required_sumstats_cols[!required_sumstats_cols %in% names(SumStats.Final)]
+if (length(missing_cols) > 0) {
+  stop("SumStats.Final missing required columns: ", paste(missing_cols, collapse = ", "))
+}
+
+# Validate All.RR.sub.trans structure
+if (!is.data.frame(All.RR.sub.trans) || nrow(All.RR.sub.trans) == 0) {
+  stop("All.RR.sub.trans must be a non-empty dataframe. Check 07_combine_data.R output.")
+}
+
+# Validate All.Resp.sub structure
+if (!is.data.frame(All.Resp.sub) || nrow(All.Resp.sub) == 0) {
+  stop("All.Resp.sub must be a non-empty dataframe. Check 07_combine_data.R output.")
+}
+
+cat("  Input data validation passed\n")
+
+# =============================================================================
+# Simple save function - PDF and PNG
+save_fig <- function(plot, name, w, h) {
+  ggsave(here::here("plots", paste0(name, ".pdf")), plot, width = w, height = h, units = "cm")
+  ggsave(here::here("plots", paste0(name, ".png")), plot, width = w, height = h, units = "cm", dpi = 300)
+  cat("  Saved:", name, "\n")
+}
+
+# =============================================================================
 # Figure 1: Map of MPAs with Channel Islands + Inset Time Series
 # =============================================================================
 
@@ -216,7 +268,21 @@ map_with_scale <- base_map +
 inset_mpas <- c("Campus Point SMCA", "Point Vicente SMCA", "Harris Point SMR",
                 "South Point SMR", "Gull Island SMR", "Santa Barbara Island SMR")
 panel_labels <- c("(a)", "(b)", "(c)", "(d)", "(e)", "(f)")
-ts_colors <- c("Inside" = "#D4A84B", "Outside" = "#CC6633")
+# Status color mapping - map various status labels to Inside/Outside
+ts_colors <- c("Inside" = "#D4A84B", "Outside" = "#5A5A78")
+
+# Helper function to standardize status values
+standardize_status <- function(status) {
+  status <- as.character(status)
+  result <- dplyr::case_when(
+    is.na(status) ~ NA_character_,
+    tolower(status) %in% c("inside", "mpa", "impact", "i") ~ "Inside",
+    tolower(status) %in% c("outside", "reference", "control", "ref", "o", "r") ~ "Outside",
+    TRUE ~ NA_character_  # Convert unrecognized to NA rather than keeping original
+
+  )
+  return(result)
+}
 
 create_ts_inset <- function(mpa_name, panel_label) {
   # Get MPA start year from Site table first, then fall back to sites_map
@@ -234,11 +300,22 @@ create_ts_inset <- function(mpa_name, panel_label) {
     mpa_start <- mpa_start[1]
   }
 
-  # Try multiple species name variants for kelp biomass
+  # Debug: Show available taxon names and resp values for this MPA
+  mpa_data <- All.Resp.sub %>% dplyr::filter(CA_MPA_Name_Short == mpa_name)
+  cat("    Inset", panel_label, mpa_name, "- available taxon_names:",
+      paste(unique(mpa_data$taxon_name), collapse = ", "), "\n")
+  cat("      Available resp types:", paste(unique(mpa_data$resp), collapse = ", "), "\n")
+
+  # Try multiple species name variants for kelp biomass (case-insensitive matching)
+  kelp_names <- c("Macrocystis pyrifera", "M. pyrifera", "MACPYRAD",
+                  "macrocystis pyrifera", "Giant Kelp", "giant kelp")
+  bio_types <- c("Bio", "Biomass", "biomass", "bio")
+  den_types <- c("Den", "Density", "density", "den")
+
   d <- All.Resp.sub %>%
     dplyr::filter(
-      taxon_name %in% c("Macrocystis pyrifera", "M. pyrifera", "MACPYRAD"),
-      resp %in% c("Bio", "Biomass", "biomass"),
+      tolower(taxon_name) %in% tolower(kelp_names),
+      tolower(resp) %in% tolower(bio_types),
       CA_MPA_Name_Short == mpa_name
     )
 
@@ -246,14 +323,28 @@ create_ts_inset <- function(mpa_name, panel_label) {
   if (nrow(d) == 0) {
     d <- All.Resp.sub %>%
       dplyr::filter(
-        taxon_name %in% c("Macrocystis pyrifera", "M. pyrifera", "MACPYRAD"),
-        resp %in% c("Den", "Density", "density"),
+        tolower(taxon_name) %in% tolower(kelp_names),
+        tolower(resp) %in% tolower(den_types),
         CA_MPA_Name_Short == mpa_name
       )
   }
 
-  # Debug: Print data availability
-  cat("    Inset", panel_label, mpa_name, "- rows found:", nrow(d), "\n")
+  # Print data availability and status values
+  cat("      Kelp data rows found:", nrow(d), "\n")
+  if (nrow(d) > 0) {
+    cat("      Raw status values:", paste(unique(d$status), collapse = ", "), "\n")
+  }
+
+  # Standardize status values to Inside/Outside
+  if (nrow(d) > 0) {
+    d$status <- standardize_status(d$status)
+    cat("      Standardized status values:", paste(unique(d$status), collapse = ", "), "\n")
+    # Remove rows with NA status (unrecognized values)
+    d <- d[!is.na(d$status), ]
+    if (nrow(d) > 0) {
+      d$status <- factor(d$status, levels = c("Inside", "Outside"))
+    }
+  }
 
   if (nrow(d) == 0) {
     # Return informative placeholder with MPA name
@@ -274,24 +365,25 @@ create_ts_inset <- function(mpa_name, panel_label) {
   if (is.na(short_code)) short_code <- ""
 
   # Improved inset plot with better typography
+  # Use na.value for any remaining NA values
   ggplot(d, aes(x = year, y = value, color = status)) +
     geom_vline(xintercept = mpa_start, linetype = "dashed", color = "grey40", linewidth = 0.4) +
-    geom_line(aes(group = interaction(status, source)), linewidth = 0.5, alpha = 0.8) +
-    geom_point(size = 1.5, alpha = 0.9) +
-    scale_color_manual(values = ts_colors, guide = "none") +
+    geom_line(aes(group = interaction(status, source)), linewidth = 0.6, alpha = 0.9) +
+    geom_point(size = 1.8, alpha = 0.95) +
+    scale_color_manual(values = ts_colors, na.value = "grey50", drop = FALSE, guide = "none") +
     labs(title = paste0(panel_label, " ", short_name),
          x = NULL, y = expression('Biomass (g '~m^{-2}~')')) +
-    scale_x_continuous(breaks = scales::pretty_breaks(n = 4)) +
+    scale_x_continuous(breaks = scales::pretty_breaks(n = 3)) +
     theme_mpa(base_size = 8) +
     theme(
-      plot.title = element_text(size = 8, face = "bold", hjust = 0, margin = margin(0,0,3,0)),
+      plot.title = element_text(size = 9, face = "bold", hjust = 0, margin = margin(0,0,3,0)),
       axis.title = element_text(size = 7),
-      axis.title.y = element_text(margin = margin(0,3,0,0)),
+      axis.title.y = element_text(margin = margin(0,4,0,0)),
       axis.text = element_text(size = 6),
       panel.grid.minor = element_blank(),
       panel.grid.major = element_line(linewidth = 0.15, color = "grey85"),
       panel.background = element_rect(fill = "white", color = "grey50", linewidth = 0.4),
-      plot.margin = margin(3, 5, 3, 3)
+      plot.margin = margin(4, 6, 4, 4)
     )
 }
 
@@ -299,31 +391,42 @@ insets <- lapply(seq_along(inset_mpas), function(i) {
   create_ts_inset(inset_mpas[i], panel_labels[i])
 })
 
-# --- 1.6 Compose final figure ---
+# --- 1.6 Create inset legend for Inside/Outside ---
+inset_legend_data <- data.frame(
+  x = c(1, 2), y = c(1, 1),
+  status = factor(c("Inside", "Outside"), levels = c("Inside", "Outside"))
+)
+inset_legend_plot <- ggplot(inset_legend_data, aes(x = x, y = y, color = status)) +
+  geom_point(size = 3) +
+  geom_line(linewidth = 0.8) +
+  scale_color_manual(values = ts_colors, name = "Site Status") +
+  theme_void() +
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(face = "bold", size = 9),
+    legend.text = element_text(size = 9),
+    legend.key.width = unit(1.0, "cm"),
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(0, 0, 0, 0)
+  )
+inset_legend <- cowplot::get_legend(inset_legend_plot)
+
+# --- 1.7 Compose final figure ---
 fig1_composite <- ggdraw() +
-  draw_plot(map_with_scale, x = 0, y = 0, width = 1, height = 1) +
-  draw_plot(insets[[1]], x = 0.42, y = 0.72, width = 0.25, height = 0.22) +
-  draw_plot(insets[[2]], x = 0.72, y = 0.58, width = 0.25, height = 0.22) +
-  draw_plot(insets[[3]], x = 0.02, y = 0.45, width = 0.25, height = 0.22) +
-  draw_plot(insets[[4]], x = 0.02, y = 0.15, width = 0.25, height = 0.22) +
-  draw_plot(insets[[5]], x = 0.30, y = 0.15, width = 0.25, height = 0.22) +
-  draw_plot(insets[[6]], x = 0.58, y = 0.15, width = 0.25, height = 0.22)
+  draw_plot(map_with_scale, x = 0, y = 0.05, width = 1, height = 0.95) +
+  draw_plot(insets[[1]], x = 0.42, y = 0.75, width = 0.26, height = 0.22) +
+  draw_plot(insets[[2]], x = 0.72, y = 0.60, width = 0.26, height = 0.22) +
+  draw_plot(insets[[3]], x = 0.02, y = 0.48, width = 0.26, height = 0.22) +
+  draw_plot(insets[[4]], x = 0.02, y = 0.18, width = 0.26, height = 0.22) +
+  draw_plot(insets[[5]], x = 0.30, y = 0.18, width = 0.26, height = 0.22) +
+  draw_plot(insets[[6]], x = 0.58, y = 0.18, width = 0.26, height = 0.22) +
+  draw_plot(inset_legend, x = 0.60, y = 0.01, width = 0.40, height = 0.06)
 
 # Conservation Letters: max 170mm double-column width
-# Reduced from 240mm to 170mm for journal compliance
-ggsave(here::here("plots", "fig_01_mpa_map_composite.pdf"), fig1_composite,
-       width = 17, height = 14, units = "cm")
-ggsave(here::here("plots", "fig_01_mpa_map_composite.png"), fig1_composite,
-       width = 17, height = 14, units = "cm", dpi = 300)
+save_fig(fig1_composite, "fig_01_mpa_map_composite", 17, 14)
 
 # Also save map-only version
-ggsave(here::here("plots", "fig_01_map_only.pdf"), map_with_scale,
-       width = 20, height = 16, units = "cm")
-ggsave(here::here("plots", "fig_01_map_only.png"), map_with_scale,
-       width = 20, height = 16, units = "cm", dpi = 300)
-
-cat("  Saved: fig_01_mpa_map_composite.pdf / .png\n")
-cat("  Saved: fig_01_map_only.pdf / .png\n")
+save_fig(map_with_scale, "fig_01_map_only", 20, 16)
 
 # =============================================================================
 # Figure 2: Data processing example (KFM, S. purpuratus, Scorpion SMR)
@@ -349,35 +452,59 @@ fig2a_data <- All.Resp.sub %>%
     taxon_name %in% c("Strongylocentrotus purpuratus", "S. purpuratus"),
     resp == "Den"
   ) %>%
+  dplyr::mutate(year = as.numeric(as.character(year))) %>%  # Ensure year is numeric
   dplyr::group_by(year, status) %>%
   dplyr::summarise(value = mean(value, na.rm = TRUE), .groups = "drop") %>%
-  dplyr::mutate(status = factor(status, levels = c("Inside", "Outside")))
+  dplyr::mutate(
+    status = standardize_status(status),
+    status = factor(status, levels = c("Inside", "Outside"))
+  )
+
+# Debug: Check status values
+cat("  Figure 2 - Status values in fig2a_data:", paste(unique(fig2a_data$status), collapse = ", "), "\n")
+cat("  Figure 2 - Year range:", min(fig2a_data$year, na.rm = TRUE), "-", max(fig2a_data$year, na.rm = TRUE), "\n")
 
 p2a <- ggplot(fig2a_data, aes(x = year, y = value, color = status)) +
   geom_vline(xintercept = scorpion_start, linetype = "dashed",
              color = "grey50", linewidth = 0.4) +
-  geom_line(linewidth = 0.5) +
-  geom_point(size = 2) +
+  geom_line(linewidth = 0.6) +
+  geom_point(size = 2.5) +
   scale_color_site(name = "Status") +
-  labs(x = "Year", y = expression('Density (ind '~m^{-2}~')')) +
-  theme_mpa() +
-  theme(legend.position = "none")
+  labs(title = "(a) Raw density",
+       x = NULL, y = expression('Density (ind '~m^{-2}~')')) +
+  scale_x_continuous(breaks = seq(2000, 2025, by = 10), limits = c(1995, 2025)) +
+  theme_mpa(base_size = 9) +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 9, face = "bold", hjust = 0.5),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        axis.text.x = element_text(angle = 0, hjust = 0.5))
 
 # Panel (b): Proportion of maximum
 fig2b_data <- fig2a_data %>%
   dplyr::group_by(status) %>%
-  dplyr::mutate(prop = value / max(value, na.rm = TRUE)) %>%
+  dplyr::mutate(
+    prop = value / max(value, na.rm = TRUE),
+    prop = ifelse(is.na(prop) | is.infinite(prop), 0, prop)
+  ) %>%
   dplyr::ungroup()
 
 p2b <- ggplot(fig2b_data, aes(x = year, y = prop, color = status)) +
   geom_vline(xintercept = scorpion_start, linetype = "dashed",
              color = "grey50", linewidth = 0.4) +
-  geom_line(linewidth = 0.5) +
-  geom_point(size = 2) +
+  geom_line(linewidth = 0.6) +
+  geom_point(size = 2.5) +
   scale_color_site(name = "Status") +
-  labs(x = "Year", y = "Proportion of maximum") +
-  theme_mpa() +
-  theme(legend.position = "none")
+  labs(title = "(b) Standardized",
+       x = NULL, y = "Proportion of max") +
+  scale_x_continuous(breaks = seq(2000, 2025, by = 10), limits = c(1995, 2025)) +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.5), labels = scales::number_format(accuracy = 0.1)) +
+  theme_mpa(base_size = 9) +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 9, face = "bold", hjust = 0.5),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        axis.text.x = element_text(angle = 0, hjust = 0.5))
 
 # Panel (c) and (d): Log response ratio from All.RR.sub.trans
 fig2cd_data <- All.RR.sub.trans %>%
@@ -404,15 +531,21 @@ p2c <- ggplot(fig2cd_data, aes(x = year, y = lnDiff, shape = BA)) +
   geom_vline(xintercept = scorpion_start, linetype = "dashed",
              color = "grey50", linewidth = 0.4) +
   geom_hline(yintercept = 0, linetype = "dotted", color = "grey70",
-             linewidth = 0.3) +
-  geom_point(size = 2, color = col_taxa["S. purpuratus"]) +
+             linewidth = 0.4) +
+  geom_point(size = 2.5, color = col_taxa["S. purpuratus"]) +
   scale_shape_manual(
     name = "Period",
     values = c("Before" = 1, "After" = 16)
   ) +
-  labs(x = "Year", y = "Log response ratio") +
-  theme_mpa() +
-  theme(legend.position = "none")
+  labs(title = "(c) Log response ratio",
+       x = NULL, y = "ln(MPA / Reference)") +
+  scale_x_continuous(breaks = seq(2000, 2025, by = 10), limits = c(1995, 2025)) +
+  theme_mpa(base_size = 9) +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 9, face = "bold", hjust = 0.5),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        axis.text.x = element_text(angle = 0, hjust = 0.5))
 
 # Panel (d): Same with linear trend in After period
 fig2d_after <- dplyr::filter(fig2cd_data, BA == "After")
@@ -421,8 +554,8 @@ p2d <- ggplot(fig2cd_data, aes(x = year, y = lnDiff, shape = BA)) +
   geom_vline(xintercept = scorpion_start, linetype = "dashed",
              color = "grey50", linewidth = 0.4) +
   geom_hline(yintercept = 0, linetype = "dotted", color = "grey70",
-             linewidth = 0.3) +
-  geom_point(size = 2, color = col_taxa["S. purpuratus"]) +
+             linewidth = 0.4) +
+  geom_point(size = 2.5, color = col_taxa["S. purpuratus"]) +
   {
     if (nrow(fig2d_after) >= 3) {
       geom_smooth(
@@ -431,7 +564,7 @@ p2d <- ggplot(fig2cd_data, aes(x = year, y = lnDiff, shape = BA)) +
         method = "lm", se = TRUE,
         color = col_taxa["S. purpuratus"],
         fill = col_taxa["S. purpuratus"],
-        alpha = 0.2, linewidth = 0.6,
+        alpha = 0.2, linewidth = 0.8,
         inherit.aes = FALSE
       )
     }
@@ -440,26 +573,69 @@ p2d <- ggplot(fig2cd_data, aes(x = year, y = lnDiff, shape = BA)) +
     name = "Period",
     values = c("Before" = 1, "After" = 16)
   ) +
-  labs(x = "Year", y = "Log response ratio") +
-  theme_mpa() +
-  theme(legend.position = "none")
+  labs(title = "(d) Effect size",
+       x = NULL, y = "ln(MPA / Reference)") +
+  scale_x_continuous(breaks = seq(2000, 2025, by = 10), limits = c(1995, 2025)) +
+  theme_mpa(base_size = 9) +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 9, face = "bold", hjust = 0.5),
+        axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        axis.text.x = element_text(angle = 0, hjust = 0.5))
 
-fig2 <- ggpubr::ggarrange(
+# Create a shared legend for Inside/Outside status (panels a & b)
+# and Before/After period (panels c & d)
+legend_status <- ggplot(fig2a_data, aes(x = year, y = value, color = status)) +
+  geom_point(size = 3) +
+  scale_color_site(name = "Site") +
+  theme_mpa() +
+  theme(legend.position = "bottom",
+        legend.title = element_text(face = "bold", size = 9),
+        legend.text = element_text(size = 9))
+
+legend_period <- ggplot(fig2cd_data, aes(x = year, y = lnDiff, shape = BA)) +
+  geom_point(size = 3, color = "grey30") +
+  scale_shape_manual(name = "Period", values = c("Before" = 1, "After" = 16)) +
+  theme_mpa() +
+  theme(legend.position = "bottom",
+        legend.title = element_text(face = "bold", size = 9),
+        legend.text = element_text(size = 9))
+
+# Combine legends
+combined_legend <- cowplot::plot_grid(
+  cowplot::get_legend(legend_status),
+  cowplot::get_legend(legend_period),
+  nrow = 1
+)
+
+# Arrange panels without duplicate labels (already in titles)
+fig2_panels <- ggpubr::ggarrange(
   p2a, p2b, p2c, p2d,
   ncol = 4, nrow = 1,
-  labels = c("(a)", "(b)", "(c)", "(d)"),
-  font.label = list(size = 10, face = "bold"),
-  common.legend = TRUE,
-  legend = "bottom"
+  align = "hv"
+)
+
+# Add shared x-axis label and combine with legend
+fig2_with_xlab <- cowplot::ggdraw(fig2_panels) +
+  cowplot::draw_label("Year", x = 0.5, y = 0.02, hjust = 0.5, vjust = 0,
+                      fontface = "plain", size = 10)
+
+# Add overall title and legend
+fig2_titled <- cowplot::plot_grid(
+  cowplot::ggdraw() +
+    cowplot::draw_label(
+      expression(italic("S. purpuratus") * " density at Scorpion SMR"),
+      x = 0.5, y = 0.5, hjust = 0.5, vjust = 0.5,
+      fontface = "bold", size = 11
+    ),
+  fig2_with_xlab,
+  combined_legend,
+  ncol = 1,
+  rel_heights = c(0.08, 0.82, 0.10)
 )
 
 # Conservation Letters: max 170mm double-column width
-# Reduced from 280mm to 170mm and adjusted height proportionally
-ggsave(here::here("plots", "fig_02_data_processing.pdf"), fig2,
-       width = 17, height = 5, units = "cm", device = "pdf")
-ggsave(here::here("plots", "fig_02_data_processing.png"), fig2,
-       width = 17, height = 5, units = "cm", dpi = 300)
-cat("  Saved: fig_02_data_processing.pdf / .png\n")
+save_fig(fig2_titled, "fig_02_data_processing", 18, 7)
 
 # =============================================================================
 # Figure S1 (Supplemental): Forest plot of effect sizes by MPA and taxa
@@ -473,9 +649,14 @@ excluded_mpas <- c("Painted Cave SMCA", "San Miguel Island SC",
                    "Arrow Point to Lion Head Point SMCA",
                    "Judith Rk SMR", "Point Conception SMR")
 
+# Debug: Check input data structure
+cat("  Figure S1 - Input SumStats.Final MPA column class:", class(SumStats.Final$MPA), "\n")
+cat("  Figure S1 - Input MPA levels (if factor):",
+    if(is.factor(SumStats.Final$MPA)) paste(head(levels(SumStats.Final$MPA), 5), collapse = ", ") else "N/A", "\n")
+
 fig_s1_data <- SumStats.Final %>%
   dplyr::filter(
-    Type.x %in% c("pBACIPS", "CI"),
+    AnalysisType %in% c("pBACIPS", "CI"),
     !(MPA %in% excluded_mpas)
   ) %>%
   dplyr::mutate(
@@ -483,63 +664,95 @@ fig_s1_data <- SumStats.Final %>%
     Source = factor(Source, levels = source_levels),
     Resp = factor(Resp, levels = c("Den", "Bio")),
     Mean = as.numeric(Mean),
-    CI = as.numeric(CI),
-    # Ensure MPA is character for proper labeling (not numeric factor)
-    MPA = as.character(MPA)
+    CI = as.numeric(CI)
   )
 
-# Debug: Check MPA values
-cat("  Figure S1 - Unique MPAs:", paste(head(unique(fig_s1_data$MPA), 5), collapse = ", "), "...\n")
+# CRITICAL FIX: Convert MPA to character properly, handling factor levels
+# If MPA is a factor, as.character() will return the level labels (not codes)
+# But if MPA was coerced to factor from numeric, we need the original values
+if (is.factor(fig_s1_data$MPA)) {
+  fig_s1_data$MPA <- levels(fig_s1_data$MPA)[fig_s1_data$MPA]
+}
+fig_s1_data$MPA <- as.character(fig_s1_data$MPA)
+
+# Debug: Check MPA values after conversion
+cat("  Figure S1 - Unique MPAs after conversion:",
+    paste(head(unique(fig_s1_data$MPA), 8), collapse = ", "), "\n")
 cat("  Figure S1 - Total rows:", nrow(fig_s1_data), "\n")
 
 # Create shortened MPA names for better readability
 fig_s1_data <- fig_s1_data %>%
   dplyr::mutate(
-    MPA_short = gsub(" SMCA| SMR| SC", "", MPA),
+    MPA_short = gsub(" SMCA| SMR| SC| 2003", "", MPA),
     MPA_short = gsub("Anacapa Island", "Anacapa Is.", MPA_short),
     MPA_short = gsub("Santa Barbara Island", "Santa Barbara Is.", MPA_short),
-    MPA_short = gsub("San Miguel Island", "San Miguel Is.", MPA_short)
+    MPA_short = gsub("San Miguel Island", "San Miguel Is.", MPA_short),
+    MPA_short = gsub("Campus Point", "Campus Pt.", MPA_short),
+    MPA_short = gsub("Point Vicente", "Pt. Vicente", MPA_short),
+    MPA_short = gsub("Harris Point", "Harris Pt.", MPA_short),
+    MPA_short = gsub("South Point", "South Pt.", MPA_short),
+    MPA_short = gsub("Carrington Pt", "Carrington Pt.", MPA_short)
   )
 
+# Debug: Check MPA_short values
+cat("  Figure S1 - MPA_short values:", paste(head(unique(fig_s1_data$MPA_short), 8), collapse = ", "), "\n")
+
 # Order MPAs by mean effect size within each taxa for better visual hierarchy
+# Use forcats::fct_reorder to ensure proper factor handling
 fig_s1_data <- fig_s1_data %>%
   dplyr::group_by(Taxa) %>%
-  dplyr::mutate(MPA_order = reorder(MPA_short, Mean, FUN = mean, na.rm = TRUE)) %>%
+  dplyr::mutate(
+    MPA_order = forcats::fct_reorder(MPA_short, Mean, .fun = mean, na.rm = TRUE)
+  ) %>%
   dplyr::ungroup()
 
 fig_s1 <- ggplot(fig_s1_data,
                aes(x = MPA_order, y = Mean, ymin = Mean - CI, ymax = Mean + CI,
                    color = Resp, shape = Source)) +
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50",
-             linewidth = 0.4) +
-  geom_pointrange(size = 0.5, linewidth = 0.5,
-                  position = position_dodge(width = 0.6)) +
-  geom_point(size = 3.5, position = position_dodge(width = 0.6)) +
+  # Subtle vertical gridlines at major breaks
+  geom_hline(yintercept = seq(-1.5, 1.5, by = 0.5),
+             color = "grey92", linewidth = 0.2) +
+  # Reference line at zero (no effect) - more prominent
+  geom_hline(yintercept = 0, linetype = "solid", color = "grey40",
+             linewidth = 0.6) +
+  # Confidence intervals as error bars
+  geom_errorbarh(aes(xmin = MPA_order, xmax = MPA_order),
+                 height = 0, linewidth = 0.6,
+                 position = position_dodge(width = 0.7)) +
+  geom_pointrange(aes(ymin = Mean - CI, ymax = Mean + CI),
+                  size = 0.5, linewidth = 0.6,
+                  position = position_dodge(width = 0.7)) +
+  geom_point(size = 3.5, position = position_dodge(width = 0.7)) +
   facet_wrap(~ Taxa, ncol = 2, scales = "free_y") +
   scale_color_response(name = "Response",
                        labels = c("Den" = "Density", "Bio" = "Biomass")) +
   scale_shape_source(name = "Source") +
   coord_flip() +
-  labs(x = NULL, y = "Effect Size (lnRR)") +
+  labs(x = "Marine Protected Area", y = "Effect Size (lnRR)",
+       caption = "Error bars = 95% confidence intervals") +
   theme_mpa(base_size = 10) +
   theme(
-    strip.text = element_text(face = "italic", size = 10, margin = margin(4, 0, 4, 0)),
-    strip.background = element_rect(fill = "grey95", color = "grey70"),
-    axis.text.y = element_text(size = 8),
+    strip.text = element_text(face = "italic", size = 10, margin = margin(5, 0, 5, 0)),
+    strip.background = element_rect(fill = "grey95", color = "grey60", linewidth = 0.4),
+    axis.text.y = element_text(size = 8, color = "grey20"),
     axis.text.x = element_text(size = 9),
+    axis.title.y = element_text(size = 10, margin = margin(r = 10)),
+    axis.title.x = element_text(size = 10, margin = margin(t = 8)),
     legend.position = "bottom",
-    legend.box = "horizontal",
-    legend.spacing.x = unit(0.8, "cm"),
-    panel.spacing = unit(0.8, "lines")
+    legend.box = "vertical",  # Stack legends vertically to prevent cutoff
+    legend.spacing.y = unit(0.3, "cm"),
+    legend.title = element_text(face = "bold", size = 9),
+    legend.text = element_text(size = 9),
+    legend.margin = margin(t = 5, b = 5),
+    panel.spacing = unit(1, "lines"),
+    panel.grid.major = element_blank(),
+    plot.caption = element_text(size = 8, color = "grey50", hjust = 1,
+                                 margin = margin(t = 10)),
+    plot.margin = margin(10, 15, 10, 10)  # Add right margin for legend
   )
 
-# Conservation Letters: Supplemental figures can be larger but still reasonable
-# Reduced from 280mm to 180mm width for better proportions
-ggsave(here::here("plots", "fig_s01_forest_plot.pdf"), fig_s1,
-       width = 18, height = 22, units = "cm", device = "pdf")
-ggsave(here::here("plots", "fig_s01_forest_plot.png"), fig_s1,
-       width = 18, height = 22, units = "cm", dpi = 300)
-cat("  Saved: fig_s01_forest_plot.pdf / .png\n")
+# Conservation Letters: Supplemental figures
+save_fig(fig_s1, "fig_s01_forest_plot", 20, 24)
 
 # =============================================================================
 # Figure 3: Mean effect sizes by taxa from meta-analysis
@@ -573,60 +786,31 @@ fig3_individual <- SumStats.Final %>%
 col_response_fig3 <- c("Density" = unname(col_response["Den"]),
                         "Biomass" = unname(col_response["Bio"]))
 
-fig3 <- ggplot() +
-  # Reference line at zero (no effect)
-  geom_hline(yintercept = 0, linetype = "dashed", color = "grey50",
-             linewidth = 0.5) +
-  # Individual effect sizes as semi-transparent background points
-  geom_point(
-    data = fig3_individual,
-    aes(x = Taxa, y = Mean, color = Response),
-    position = position_dodge(width = 0.6),
-    size = 2, alpha = 0.25, shape = 16
-  ) +
-  # Meta-analysis means as large diamonds with error bars
-  geom_errorbar(
-    data = fig3_meta,
-    aes(x = Taxa, ymin = CI_lower, ymax = CI_upper, color = Response),
-    position = position_dodge(width = 0.6),
-    width = 0.2, linewidth = 0.7
-  ) +
-  geom_point(
-    data = fig3_meta,
-    aes(x = Taxa, y = Estimate, color = Response),
-    position = position_dodge(width = 0.6),
-    size = 5, shape = 18  # Diamond shape for meta-analysis means
-  ) +
-  scale_color_manual(
-    name = "Response",
-    values = col_response_fig3,
-    labels = c("Density" = "Density", "Biomass" = "Biomass")
-  ) +
-  scale_y_continuous(
-    breaks = seq(-1.5, 1.5, by = 0.5),
-    limits = c(-1.5, 1.5)
-  ) +
-  labs(
-    x = NULL,
-    y = "Effect Size (lnRR)"
-  ) +
-  theme_mpa(base_size = 11) +
-  theme(
-    axis.text.x = element_text(face = "italic", size = 10, margin = margin(t = 5)),
-    axis.text.y = element_text(size = 10),
-    axis.title.y = element_text(size = 11, margin = margin(r = 8)),
-    legend.position = "bottom",
-    legend.title = element_text(face = "bold", size = 10),
-    legend.text = element_text(size = 10),
-    legend.key.size = unit(0.5, "cm"),
-    panel.grid.major.y = element_line(color = "grey90", linewidth = 0.3)
-  )
+# Calculate sample sizes for annotation
+fig3_n <- fig3_individual %>%
+  dplyr::group_by(Taxa, Response) %>%
+  dplyr::summarise(n = dplyr::n(), .groups = "drop")
 
-ggsave(here::here("plots", "fig_03_mean_effects.pdf"), fig3,
-       width = 15, height = 10, units = "cm", device = "pdf")
-ggsave(here::here("plots", "fig_03_mean_effects.png"), fig3,
-       width = 15, height = 10, units = "cm", dpi = 300)
-cat("  Saved: fig_03_mean_effects.pdf / .png\n")
+fig3 <- ggplot() +
+  geom_hline(yintercept = 0, color = "grey40", linewidth = 0.6) +
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -0.2, ymax = 0.2),
+            fill = "grey93", alpha = 0.5) +
+  geom_point(data = fig3_individual, aes(x = Taxa, y = Mean, color = Response),
+             position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.7, seed = 42),
+             size = 2.5, alpha = 0.5) +
+  geom_errorbar(data = fig3_meta, aes(x = Taxa, ymin = CI_lower, ymax = CI_upper, color = Response),
+                position = position_dodge(width = 0.7), width = 0.2, linewidth = 1) +
+  geom_point(data = fig3_meta, aes(x = Taxa, y = Estimate, color = Response),
+             position = position_dodge(width = 0.7), size = 5, shape = 18) +
+  scale_color_manual(name = "Response", values = col_response_fig3) +
+  coord_cartesian(ylim = c(-6, 3)) +
+  labs(x = NULL, y = "Effect Size (lnRR)",
+       caption = "Diamonds = meta-analytic means; circles = individual MPA estimates") +
+  theme_mpa(base_size = 11) +
+  theme(axis.text.x = element_text(face = "italic", size = 10),
+        legend.position = "bottom")
+
+save_fig(fig3, "fig_03_mean_effects", 16, 11)
 
 # =============================================================================
 # Figure 4: Urchin density vs Kelp biomass scatterplot
@@ -672,44 +856,46 @@ if (nrow(fig4_data) > 0) {
                        ifelse(cor_test$p.value < 0.001, "< 0.001",
                               sprintf("= %.3f", cor_test$p.value)))
 
+  # Calculate sample size for annotation
+  n_points <- nrow(fig4_data)
+
   fig4 <- ggplot(fig4_data, aes(x = lnRR_urchin, y = lnRR_kelp)) +
     # Reference lines at zero
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
-    # Data points with slight jitter for overlapping points
-    geom_point(size = 2.5, alpha = 0.5, color = "grey30",
-               position = position_jitter(width = 0.02, height = 0.02, seed = 42)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
+    # Quadrant labels for interpretation
+    annotate("text", x = -5.5, y = 6, label = "Urchin ↓ Kelp ↑", size = 2.5,
+             color = "grey40", fontface = "italic", hjust = 0) +
+    annotate("text", x = 4, y = 6, label = "Urchin ↑ Kelp ↑", size = 2.5,
+             color = "grey40", fontface = "italic", hjust = 1) +
+    annotate("text", x = -5.5, y = -6, label = "Urchin ↓ Kelp ↓", size = 2.5,
+             color = "grey40", fontface = "italic", hjust = 0) +
+    annotate("text", x = 4, y = -6, label = "Urchin ↑ Kelp ↓", size = 2.5,
+             color = "grey40", fontface = "italic", hjust = 1) +
+    # Data points - smaller size, more transparent for dense areas
+    geom_point(size = 1.8, alpha = 0.35, color = "#2E4E5E",
+               position = position_jitter(width = 0.05, height = 0.05, seed = 42)) +
     # Linear regression line with confidence band
-    geom_smooth(method = "lm", se = TRUE, color = "#2E6E7E", fill = "#2E6E7E",
-                linewidth = 1, alpha = 0.2) +
-    # Correlation annotation
-    annotate("text", x = Inf, y = Inf, label = cor_label,
-             hjust = 1.1, vjust = 1.5, size = 3.5, fontface = "italic") +
+    geom_smooth(method = "lm", se = TRUE, color = "#C45B28", fill = "#C45B28",
+                linewidth = 1.2, alpha = 0.25) +
+    # Correlation and sample size annotation
+    annotate("text", x = Inf, y = Inf,
+             label = paste0(cor_label, "\nn = ", n_points),
+             hjust = 1.1, vjust = 1.3, size = 3.5, fontface = "italic") +
     labs(
       x = expression("Effect Size (lnRR " * italic("S. purpuratus") * " density)"),
       y = expression("Effect Size (lnRR " * italic("M. pyrifera") * " density)")
     ) +
-    coord_fixed(ratio = 1) +  # Equal aspect ratio for scatterplot
+    coord_fixed(ratio = 1, xlim = c(-6, 6), ylim = c(-8, 8)) +
     theme_mpa(base_size = 11) +
     theme(
       panel.grid.minor = element_blank(),
       panel.grid.major = element_line(color = "grey90", linewidth = 0.3),
-      axis.title = element_text(size = 10)
+      axis.title = element_text(size = 10),
+      plot.margin = margin(10, 10, 10, 10)
     )
 
-  # Save with error handling
-  tryCatch({
-    ggsave(here::here("plots", "fig_04_urchin_kelp_scatter.pdf"), fig4,
-           width = 12, height = 10, units = "cm", device = "pdf")
-    ggsave(here::here("plots", "fig_04_urchin_kelp_scatter.png"), fig4,
-           width = 12, height = 10, units = "cm", dpi = 300)
-    cat("  Saved: fig_04_urchin_kelp_scatter.pdf / .png\n")
-  }, error = function(e) {
-    cat("  ERROR saving Figure 4:", e$message, "\n")
-  })
-} else {
-  cat("  WARNING: No data available for Figure 4 (urchin-kelp relationship)\n")
-  cat("  Check that All.RR.sub.trans contains both S. purpuratus and M. pyrifera density data\n")
+  save_fig(fig4, "fig_04_urchin_kelp_scatter", 14, 12)
 }
 
 # =============================================================================
@@ -780,24 +966,46 @@ fig_s2_panels <- lapply(fig_s2_mpas, function(mpa_name) {
   d <- dplyr::filter(fig_s2_data, CA_MPA_Name_Short == mpa_name)
   mpa_start_yr <- fig_s2_starts[mpa_name]
 
+  # Clean MPA name for display
+  mpa_display <- gsub(" SMCA| SMR| 2003", "", mpa_name)
+
   ggplot(d, aes(x = year, y = lnDiff,
                 color = species_short, shape = source)) +
+    # Subtle horizontal gridlines
+    geom_hline(yintercept = seq(-1.5, 1.5, by = 0.5),
+               color = "grey92", linewidth = 0.2) +
+    # Reference line at zero
+    geom_hline(yintercept = 0, linetype = "solid", color = "grey50",
+               linewidth = 0.5) +
+    # MPA implementation vertical line
     geom_vline(xintercept = mpa_start_yr, linetype = "dashed",
-               color = "grey50", linewidth = 0.4) +
-    geom_hline(yintercept = 0, linetype = "dotted", color = "grey70",
-               linewidth = 0.3) +
-    geom_point(size = 2, alpha = 0.8) +
+               color = "grey40", linewidth = 0.5) +
+    # Add MPA label
+    annotate("text", x = mpa_start_yr + 0.5, y = max(d$lnDiff, na.rm = TRUE) * 0.9,
+             label = "MPA\nStart", hjust = 0, size = 2.5, color = "grey40") +
+    # LOESS smoothers for each species (after MPA only)
+    geom_smooth(data = dplyr::filter(d, year >= mpa_start_yr),
+                aes(group = species_short),
+                method = "loess", se = FALSE, span = 0.75,
+                linewidth = 0.8, alpha = 0.6) +
+    # Data points
+    geom_point(size = 2.5, alpha = 0.75) +
     scale_color_taxa(name = "Species") +
     scale_shape_source(name = "Source") +
+    scale_x_continuous(breaks = seq(2000, 2020, by = 5)) +
     labs(
-      title = mpa_name,
+      title = mpa_display,
       x = "Year",
       y = "Log response ratio (lnRR)"
     ) +
-    theme_mpa() +
+    theme_mpa(base_size = 9) +
     theme(
-      plot.title = element_text(size = 9, face = "bold", hjust = 0),
-      legend.text = element_text(face = "italic")
+      plot.title = element_text(size = 10, face = "bold", hjust = 0),
+      legend.text = element_text(face = "italic", size = 8),
+      legend.title = element_text(face = "bold", size = 9),
+      axis.title = element_text(size = 9),
+      axis.text = element_text(size = 8),
+      panel.grid.major = element_blank()
     )
 })
 
@@ -810,15 +1018,6 @@ fig_s2 <- ggpubr::ggarrange(
   legend = "right"
 )
 
-# Conservation Letters: Supplemental - reasonable size for multi-panel
-ggsave(here::here("plots", "fig_s02_all_taxa_timeseries.pdf"), fig_s2,
-       width = 17, height = 24, units = "cm", device = "pdf")
-ggsave(here::here("plots", "fig_s02_all_taxa_timeseries.png"), fig_s2,
-       width = 17, height = 24, units = "cm", dpi = 300)
-cat("  Saved: fig_s02_all_taxa_timeseries.pdf / .png\n")
-
-# =============================================================================
-# Done
-# =============================================================================
+save_fig(fig_s2, "fig_s02_all_taxa_timeseries", 17, 24)
 
 cat("=== All figures saved to:", here::here("plots"), "===\n")

@@ -56,7 +56,14 @@
 
 # Ensure consistent column structure before binding
 # Different sources may have columns in different orders; we standardize them here
-# colnames()[c(...)] selects specific columns by position number
+#
+# TECHNICAL DEBT: Column indices are fragile - if upstream processing changes column
+# order, these selections may break silently. Future improvement: convert to named
+# column selection using dplyr::select(). The target columns for rbind are:
+#   CA_MPA_Name_Short, year, y, lnDiff, mpa, reference, Diff, resp, time, type,
+#   Location, Hectares, source, BA
+#
+# Current indices drop column 4 from each dataframe (typically a duplicate or unused column)
 Swath.join.sub <- Swath.join.sub[, colnames(Swath.join.sub)[c(1:3, 5:15)]]
 kfm.fish <- kfm.fish[, colnames(kfm.fish)[c(1, 3:15)]]
 KFM.join.ave <- KFM.join.ave[, colnames(KFM.join.ave)[c(1:3, 5:15)]]
@@ -97,6 +104,26 @@ All.spul <- subset(All.RR,
 
 # Add the sheephead-specific rows back to the main dataset
 All.RR.sub <- rbind(All.RR.sub, All.spul)
+
+####################################################################################################
+## Duplicate detection for response ratio data #####################################################
+####################################################################################################
+# Check for duplicates that might arise from overlapping data sources or processing errors.
+# A duplicate is defined as same MPA + year + taxa + response type + source combination.
+
+dup_key_cols <- c("CA_MPA_Name_Short", "year", "y", "resp", "source")
+dup_check <- duplicated(All.RR.sub[, dup_key_cols])
+n_dups <- sum(dup_check)
+
+if (n_dups > 0) {
+  warning("Found ", n_dups, " duplicate rows in All.RR.sub (by MPA/year/taxa/resp/source). ",
+          "Review data processing pipeline for overlapping records.")
+  cat("\nDuplicate rows detected in All.RR.sub:", n_dups, "\n")
+  cat("First 5 duplicates:\n")
+  print(head(All.RR.sub[dup_check, dup_key_cols], 5))
+} else {
+  cat("Duplicate check passed: No duplicate MPA/year/taxa/resp/source combinations in All.RR.sub.\n")
+}
 
 ####################################################################################################
 ## Standardize species and source names ############################################################
@@ -172,6 +199,23 @@ All.Resp.spul <- subset(All.Resp,
 )
 
 All.Resp.sub <- rbind(All.Resp.sub, All.Resp.spul)
+
+####################################################################################################
+## Duplicate detection for raw response data #######################################################
+####################################################################################################
+# Check for duplicates in raw response data.
+
+dup_key_resp <- c("CA_MPA_Name_Short", "year", "taxon_name", "resp", "source", "status")
+dup_check_resp <- duplicated(All.Resp.sub[, dup_key_resp])
+n_dups_resp <- sum(dup_check_resp)
+
+if (n_dups_resp > 0) {
+  warning("Found ", n_dups_resp, " duplicate rows in All.Resp.sub. ",
+          "Review data processing pipeline for overlapping records.")
+  cat("\nDuplicate rows detected in All.Resp.sub:", n_dups_resp, "\n")
+} else {
+  cat("Duplicate check passed: No duplicate rows in All.Resp.sub.\n")
+}
 
 ####################################################################################################
 ## Assign Before/After and time to raw response data ###############################################

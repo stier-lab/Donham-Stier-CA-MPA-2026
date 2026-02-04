@@ -39,36 +39,82 @@ rm(list = ls())
 # Record pipeline start time
 pipeline_start <- Sys.time()
 
+# Ensure here is available for path resolution (needed early for log file path)
+if (!requireNamespace("here", quietly = TRUE)) {
+  stop("Package 'here' is required. Install it with install.packages('here').")
+}
+
+####################################################################################################
+## File-based logging setup ########################################################################
+####################################################################################################
+
+# Create logs directory if it doesn't exist
+log_dir <- here::here("logs")
+if (!dir.exists(log_dir)) {
+  dir.create(log_dir, recursive = TRUE, showWarnings = FALSE)
+}
+
+# Create timestamped log file
+log_filename <- paste0("pipeline_", format(pipeline_start, "%Y%m%d_%H%M%S"), ".log")
+log_filepath <- file.path(log_dir, log_filename)
+
+# Helper function to write to both console and log file
+log_message <- function(..., sep = "", append = TRUE) {
+  msg <- paste(..., sep = sep)
+  cat(msg)
+  cat(msg, file = log_filepath, append = append)
+}
+
+# Initialize log file with header
+log_message("", append = FALSE)  # Create/overwrite file
+log_message("========================================================================\n")
+log_message("  CA MPA Kelp Forest pBACIPS Analysis Pipeline - Log File\n")
+log_message("  Started: ", format(pipeline_start, "%Y-%m-%d %H:%M:%S"), "\n")
+log_message("  Log file: ", log_filepath, "\n")
+log_message("========================================================================\n")
+log_message("\n")
+
+# Log system information
+log_message("System Information:\n")
+log_message("  R version: ", R.version.string, "\n")
+log_message("  Platform:  ", R.version$platform, "\n")
+log_message("  Working dir: ", getwd(), "\n")
+log_message("  Project root: ", here::here(), "\n")
+log_message("\n")
+
 cat("\n")
 cat("========================================================================\n")
 cat("  CA MPA Kelp Forest pBACIPS Analysis Pipeline\n")
 cat("  Started: ", format(pipeline_start, "%Y-%m-%d %H:%M:%S"), "\n")
+cat("  Log file: ", log_filepath, "\n")
 cat("========================================================================\n")
 cat("\n")
-
-# Ensure here is available for path resolution
-if (!requireNamespace("here", quietly = TRUE)) {
-  stop("Package 'here' is required. Install it with install.packages('here').")
-}
 
 ####################################################################################################
 ## Helper: source a module with error handling #####################################################
 ####################################################################################################
 
 source_module <- function(filename, label) {
-  cat("---- [", label, "] Sourcing ", filename, " ...\n", sep = "")
+  start_msg <- paste0("---- [", label, "] Sourcing ", filename, " ...\n")
+  cat(start_msg)
+  log_message(start_msg)
+
   t0 <- Sys.time()
   tryCatch(
     {
       source(here::here("code", "R", filename), local = FALSE)
       elapsed <- round(difftime(Sys.time(), t0, units = "secs"), 1)
-      cat("---- [", label, "] ", filename, " completed successfully (",
-          elapsed, " s)\n\n", sep = "")
+      end_msg <- paste0("---- [", label, "] ", filename, " completed successfully (",
+                        elapsed, " s)\n\n")
+      cat(end_msg)
+      log_message(end_msg)
     },
     error = function(e) {
-      cat("\n****** ERROR in module [", label, "] ", filename, " ******\n", sep = "")
-      cat("Message: ", conditionMessage(e), "\n", sep = "")
-      cat("Pipeline halted.\n")
+      err_msg <- paste0("\n****** ERROR in module [", label, "] ", filename, " ******\n",
+                        "Message: ", conditionMessage(e), "\n",
+                        "Pipeline halted.\n")
+      cat(err_msg)
+      log_message(err_msg)
       stop("Failed at module: ", filename, " -- ", conditionMessage(e), call. = FALSE)
     }
   )
@@ -85,9 +131,12 @@ check_objects <- function(obj_names, module_label) {
       "Checkpoint failed after [", module_label, "]. ",
       "Missing expected objects: ", paste(missing, collapse = ", ")
     )
+    log_message(msg, "\n")
     stop(msg, call. = FALSE)
   }
-  cat("  Checkpoint OK: ", paste(obj_names, collapse = ", "), " found.\n\n")
+  check_msg <- paste0("  Checkpoint OK: ", paste(obj_names, collapse = ", "), " found.\n\n")
+  cat(check_msg)
+  log_message(check_msg)
 }
 
 ####################################################################################################
@@ -99,6 +148,9 @@ source_module("00_libraries.R", "00")
 
 # --- 00b: Color palette and theme ----------------------------------------------------------------
 source_module("00b_color_palette.R", "00b")
+
+# --- 00c: Analysis constants (magic numbers) -----------------------------------------------------
+source_module("00c_analysis_constants.R", "00c")
 
 # --- 01: Utility functions ------------------------------------------------------------------------
 source_module("01_utils.R", "01")
@@ -147,17 +199,23 @@ source_module("10_figures.R", "10")
 pipeline_end <- Sys.time()
 elapsed_total <- difftime(pipeline_end, pipeline_start, units = "mins")
 
-cat("\n")
-cat("========================================================================\n")
-cat("  Pipeline complete\n")
-cat("  Finished: ", format(pipeline_end, "%Y-%m-%d %H:%M:%S"), "\n")
-cat("  Total elapsed time: ", round(as.numeric(elapsed_total), 2), " minutes\n")
-cat("========================================================================\n")
-cat("\n")
+# Pipeline completion message
+completion_msg <- paste0(
+  "\n",
+  "========================================================================\n",
+  "  Pipeline complete\n",
+  "  Finished: ", format(pipeline_end, "%Y-%m-%d %H:%M:%S"), "\n",
+  "  Total elapsed time: ", round(as.numeric(elapsed_total), 2), " minutes\n",
+  "========================================================================\n",
+  "\n"
+)
+cat(completion_msg)
+log_message(completion_msg)
 
 # Print dimensions of key objects
-cat("Summary of key objects:\n")
-cat("-----------------------------------------------------------------------\n")
+summary_header <- "Summary of key objects:\n-----------------------------------------------------------------------\n"
+cat(summary_header)
+log_message(summary_header)
 
 summary_objects <- list(
   "Site"             = "Site",
@@ -176,12 +234,19 @@ for (obj_label in names(summary_objects)) {
   if (exists(obj_name, envir = globalenv())) {
     obj <- get(obj_name, envir = globalenv())
     if (is.data.frame(obj)) {
-      cat(sprintf("  %-20s %d rows x %d cols\n", obj_label, nrow(obj), ncol(obj)))
+      obj_msg <- sprintf("  %-20s %d rows x %d cols\n", obj_label, nrow(obj), ncol(obj))
     } else {
-      cat(sprintf("  %-20s class: %s\n", obj_label, paste(class(obj), collapse = ", ")))
+      obj_msg <- sprintf("  %-20s class: %s\n", obj_label, paste(class(obj), collapse = ", "))
     }
+    cat(obj_msg)
+    log_message(obj_msg)
   }
 }
 
-cat("-----------------------------------------------------------------------\n")
-cat("Done.\n")
+summary_footer <- paste0(
+  "-----------------------------------------------------------------------\n",
+  "Log file saved to: ", log_filepath, "\n",
+  "Done.\n"
+)
+cat(summary_footer)
+log_message(summary_footer)

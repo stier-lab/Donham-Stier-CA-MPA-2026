@@ -49,7 +49,8 @@ cat("Importing raw data files...\n")
 #   - LTER (Santa Barbara Coastal Long-Term Ecological Research)
 
 # Import the combined size frequency file
-SizeFreq <- read.csv(here::here("data", "ALL_sizefreq_2024.csv"))
+# Uses safe_read_csv from 01_utils.R for existence validation
+SizeFreq <- safe_read_csv(here::here("data", "ALL_sizefreq_2024.csv"))
 
 cat("  Loaded size frequency data:", nrow(SizeFreq), "rows\n")
 
@@ -118,7 +119,7 @@ cat("  After site exclusions:", nrow(SizeFreq.south), "rows\n")
 #   MESFRA = Mesocentrotus franciscanus (red urchin)
 #   PANINT = Panulirus interruptus (spiny lobster)
 
-SizeFreq <- mutate(SizeFreq.south, classcode = case_when(
+SizeFreq <- dplyr::mutate(SizeFreq.south, classcode = dplyr::case_when(
   # KFM full names -> PISCO codes
   classcode == "Strongylocentrotus purpuratus"    ~ "STRPUR",
   classcode == "Strongylocentrotus franciscanus"  ~ "MESFRA",
@@ -150,7 +151,7 @@ cat("  Species codes standardized.\n")
 # MPA features (area, type, protection level)
 # -----------------------------------------------------------------------------
 
-Site.size <- read.csv(here::here("data", "MPAfeatures_subset.csv"))
+Site.size <- safe_read_csv(here::here("data", "MPAfeatures_subset.csv"))
 
 cat("  Loaded MPA features:", nrow(Site.size), "MPAs\n")
 
@@ -159,7 +160,7 @@ cat("  Loaded MPA features:", nrow(Site.size), "MPAs\n")
 # -----------------------------------------------------------------------------
 # This file links monitoring sites to their associated MPAs
 
-Site <- read.csv(here::here("data", "Site_List_All.csv"))
+Site <- safe_read_csv(here::here("data", "Site_List_All.csv"))
 
 cat("  Loaded site list:", nrow(Site), "sites\n")
 
@@ -168,6 +169,7 @@ cat("  Loaded site list:", nrow(Site), "sites\n")
 # -----------------------------------------------------------------------------
 # This gives us MPA characteristics (area, type) for each monitoring site
 
+n_site_before <- nrow(Site)
 Site <- merge(Site, Site.size,
   by.x = "Site",        # Column in Site
   by.y = "NAME",        # Column in Site.size
@@ -176,9 +178,13 @@ Site <- merge(Site, Site.size,
 
 # Remove rows that don't have valid location data
 # (these are MPAs without monitoring sites or vice versa)
+n_with_na <- sum(is.na(Site$Lat))
 Site <- Site[!is.na(Site$Lat), ]
 
 cat("  Merged site-MPA data:", nrow(Site), "rows\n")
+if (n_with_na > 0) {
+  cat("    Note:", n_with_na, "rows dropped due to missing location data\n")
+}
 
 # -----------------------------------------------------------------------------
 # Create reduced site table for downstream joins
@@ -199,7 +205,7 @@ sites.short.edit <- subset(Site, select = c(
 # The Marine Biodiversity Observation Network (MBON) synthesis includes
 # harmonized site location data for KFM and LTER monitoring programs
 
-Sites2 <- read.csv(here::here("data", "MBON",
+Sites2 <- safe_read_csv(here::here("data", "MBON",
                                "SBCMBON_kelp_forest_site_geolocation_20210120_KFM_LTER.csv"))
 
 # Convert site_id to factor for consistent handling
@@ -207,6 +213,63 @@ Sites2$site_id <- as.factor(Sites2$site_id)
 
 cat("  Loaded MBON site geolocation:", nrow(Sites2), "sites\n")
 
+
+# =============================================================================
+# SECTION 4: DATA VALIDATION
+# =============================================================================
+# Perform basic validation checks on imported data to catch data quality issues early.
+
+validation_errors <- 0
+
+cat("\nRunning data validation checks...\n")
+
+# Check 1: SizeFreq should have positive sizes
+invalid_sizes <- sum(SizeFreq$size <= 0, na.rm = TRUE)
+if (invalid_sizes > 0) {
+  warning("SizeFreq contains ", invalid_sizes, " records with invalid sizes (<= 0)")
+  validation_errors <- validation_errors + 1
+} else {
+  cat("  [OK] SizeFreq: All sizes are positive\n")
+}
+
+# Check 2: SizeFreq should have expected classcodes
+expected_classcodes <- c("STRPUR", "MESFRA", "PANINT")
+unexpected_classcodes <- unique(SizeFreq$classcode[!SizeFreq$classcode %in% expected_classcodes])
+if (length(unexpected_classcodes) > 0) {
+  warning("SizeFreq contains unexpected classcodes: ", paste(unexpected_classcodes, collapse = ", "))
+  validation_errors <- validation_errors + 1
+} else {
+  cat("  [OK] SizeFreq: All classcodes are expected values\n")
+}
+
+# Check 3: Site table should have valid MPA start years
+invalid_mpa_years <- sum(is.na(Site$MPA_Start) | Site$MPA_Start < 1900 | Site$MPA_Start > 2030, na.rm = FALSE)
+if (invalid_mpa_years > 0) {
+  warning("Site table has ", invalid_mpa_years, " invalid or missing MPA_Start values")
+} else {
+  cat("  [OK] Site: All MPA_Start years are valid\n")
+}
+
+# Check 4: Sites2 should have valid coordinates
+invalid_coords <- sum(is.na(Sites2$latitude) | is.na(Sites2$longitude) |
+                       Sites2$latitude < 30 | Sites2$latitude > 40 |
+                       Sites2$longitude < -125 | Sites2$longitude > -115, na.rm = TRUE)
+if (invalid_coords > 0) {
+  warning("Sites2 has ", invalid_coords, " records with invalid coordinates")
+  validation_errors <- validation_errors + 1
+} else {
+  cat("  [OK] Sites2: All coordinates are within expected bounds\n")
+}
+
+# Check 5: Sites2 should have non-empty CA_MPA_Name_Short for MPA sites
+empty_mpa_names <- sum(Sites2$CA_MPA_Name_Short == "" | is.na(Sites2$CA_MPA_Name_Short))
+cat("  [INFO] Sites2:", empty_mpa_names, "sites without MPA assignment (may include reference sites)\n")
+
+if (validation_errors > 0) {
+  warning("Data validation found ", validation_errors, " issue(s). Review warnings above.")
+} else {
+  cat("  All validation checks passed.\n")
+}
 
 # =============================================================================
 # SUMMARY

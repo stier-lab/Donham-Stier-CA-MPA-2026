@@ -70,7 +70,7 @@ sites <- read.csv(here::here("data", "PISCO", "master_site_table_Emilyedit.csv")
 # %>% is the "pipe" operator - it passes the result of the left side as input to the right
 # filter() keeps rows that meet a condition; !duplicated() keeps only first occurrence
 sites.short <- sites %>%
-  filter(!duplicated(cbind(site, CA_MPA_Name_Short)))
+  dplyr::filter(!duplicated(cbind(site, CA_MPA_Name_Short)))
 
 # Transform Macrocystis: count * size = total stipes (size = stipes per individual)
 # ifelse() is a vectorized if-else: condition, value if TRUE, value if FALSE
@@ -123,26 +123,26 @@ Swath.site.PISCO.sub <- subset(Swath.site.PISCO, month >= 5 & month <= 10)
 # sum aggregates within groups (e.g., sum lobster counts across size classes per transect)
 # ungroup() removes grouping so subsequent operations treat all rows equally
 Swath.site.PISCO.sum.int <- Swath.site.PISCO.sub %>%
-  group_by(year, month, site, zone, transect, y) %>%
-  summarise_at(c("count"), sum) %>%
-  ungroup()
+  dplyr::group_by(year, month, site, zone, transect, y) %>%
+  dplyr::summarise_at(c("count"), sum) %>%
+  dplyr::ungroup()
 
 # Average across months within each year (some years have multiple survey visits)
 # mean() calculates the arithmetic average
 Swath.site.PISCO.sum <- Swath.site.PISCO.sum.int %>%
-  group_by(year, site, zone, transect, y) %>%
-  summarize_at(c("count"), mean)
+  dplyr::group_by(year, site, zone, transect, y) %>%
+  dplyr::summarize_at(c("count"), mean)
 
 # Average transects within zones to get zone-level means
 Swath.ave.zone <- Swath.site.PISCO.sum %>%
-  group_by(year, site, y, zone) %>%
-  summarise_at(c("count"), mean)
+  dplyr::group_by(year, site, y, zone) %>%
+  dplyr::summarise_at(c("count"), mean)
 
 # Average zones within sites to get site-level annual means
 # This is our final aggregation level for analysis
 Swath.ave <- Swath.ave.zone %>%
-  group_by(year, site, y) %>%
-  summarise_at(c("count"), mean)
+  dplyr::group_by(year, site, y) %>%
+  dplyr::summarise_at(c("count"), mean)
 
 ####################################################################################################
 ## 4. Merge with site table, filter Southern CA, subset target taxa
@@ -159,7 +159,9 @@ Swath.ave.site <- merge(Swath.ave, sites.short, by.x = c("site"), by.y = c("site
 Swath.ave.site <- Swath.ave.site[complete.cases(Swath.ave.site$CA_MPA_Name_Short), ]
 
 # Keep only needed columns using column indices
-# colnames() returns column names; [c(1:4, 6, ...)] selects specific columns by position
+# Columns selected: site, year, y, count, CA_MPA_Name_Short, site_designation, site_status, BaselineRegion
+# NOTE: Column indices are fragile - if merge order changes, indices may be wrong.
+# TODO: Convert to dplyr::select(site, year, y, count, CA_MPA_Name_Short, site_designation, site_status, BaselineRegion)
 Swath.ave.site.sub <- Swath.ave.site[, colnames(Swath.ave.site)[c(1:4, 6, 11:13, 16)]]
 
 # Only Southern California (our study region)
@@ -229,19 +231,19 @@ for (i in seq_len(nrow(PANINT.UCSB.null))) {
 
 # Aggregate: sum within transect, average across months, average across zones
 PANINT.All.sub.zone.sum <- PANINT.UCSB.sub.sub %>%
-  group_by(year, month, site, CA_MPA_Name_Short, site_designation, site_status,
+  dplyr::group_by(year, month, site, CA_MPA_Name_Short, site_designation, site_status,
            BaselineRegion, zone, transect, y) %>%
-  summarise_at(c("count", "biomass"), sum)
+  dplyr::summarise_at(c("count", "biomass"), sum)
 
 PANINT.All.sub.zone.mean <- PANINT.All.sub.zone.sum %>%
-  group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
+  dplyr::group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
            BaselineRegion, zone, y) %>%
-  summarise_at(c("count", "biomass"), mean)
+  dplyr::summarise_at(c("count", "biomass"), mean)
 
 PANINT.All.sub.mean <- PANINT.All.sub.zone.mean %>%
-  group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
+  dplyr::group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
            BaselineRegion, y) %>%
-  summarise_at(c("count", "biomass"), mean)
+  dplyr::summarise_at(c("count", "biomass"), mean)
 
 PANINT.All.sub.mean$Density <- PANINT.All.sub.mean$count / 60
 PANINT.All.sub.mean$y <- "PANINT"
@@ -279,16 +281,23 @@ SizeFreq.PANINT.VRG <- subset(SizeFreq.PANINT.VRG, classcode == "PANINT")
 .cache_vrg_lob <- here::here("data", "cache", "vrg_panint_bootstrap.rds")
 if (file.exists(.cache_vrg_lob) && !exists("FORCE_BOOTSTRAP")) {
   cat("    Loading cached VRG lobster bootstrap results...\n")
-  VRG.PANINT.site <- readRDS(.cache_vrg_lob)
-} else {
+  VRG.PANINT.site <- safe_read_rds(.cache_vrg_lob)
+  if (is.null(VRG.PANINT.site)) {
+    cat("    Cache invalid, will recompute...\n")
+  }
+}
+
+if (!exists("VRG.PANINT.site") || is.null(VRG.PANINT.site)) {
   # Get unique zone-level records to iterate over
   # Each row = one site-year-zone combination that needs bootstrap estimation
   u <- unique(PANINT.VRG[, c("year", "site", "CA_MPA_Name_Short", "site_designation",
                               "site_status", "BaselineRegion", "zone")])
 
-  VRG.PANINT.site <- data.frame(site = NA, year = NA, zone = NA,
-                                 transect = NA, biomass = NA, count = NA)
+  # Pre-allocate list for results (PERFORMANCE: avoids O(n²) rbind copies)
+  results_list <- vector("list", nrow(u))
 
+  # Set random seed for reproducibility of bootstrap resampling
+  set.seed(12345)
   for (i in seq_len(nrow(u))) {
     t <- which(PANINT.VRG$site == u$site[i] &
                PANINT.VRG$year == u$year[i] &
@@ -298,22 +307,28 @@ if (file.exists(.cache_vrg_lob) && !exists("FORCE_BOOTSTRAP")) {
                 SizeFreq.PANINT.VRG$year == u$year[i] &
                 SizeFreq.PANINT.VRG$site_status == u$site_status[i])
 
-    result <- bootstrap_biomass(count = n,
-                                size_freq_indices = t2,
-                                size_freq_table = SizeFreq.PANINT.VRG,
-                                biomass_fun = bio_lobster)
+    # Wrap bootstrap in tryCatch for robustness
+    result <- tryCatch(
+      bootstrap_biomass(count = n,
+                        size_freq_indices = t2,
+                        size_freq_table = SizeFreq.PANINT.VRG,
+                        biomass_fun = bio_lobster),
+      error = function(e) {
+        warning("Bootstrap failed for site ", u$site[i], " year ", u$year[i], ": ", e$message)
+        list(biomass = NA, se = NA, count = n)
+      }
+    )
 
-    VRG.PANINT.site <- rbind(VRG.PANINT.site,
-                              data.frame(site = u$site[i],
-                                         year = u$year[i],
-                                         zone = u$zone[i],
-                                         transect = length(t),
-                                         biomass = result$biomass,
-                                         count = result$count))
+    results_list[[i]] <- data.frame(site = u$site[i],
+                                     year = u$year[i],
+                                     zone = u$zone[i],
+                                     transect = length(t),
+                                     biomass = result$biomass,
+                                     count = result$count)
   }
 
-  # Remove initial NA row
-  VRG.PANINT.site <- VRG.PANINT.site[!is.na(VRG.PANINT.site$site), ]
+  # Combine all results at once (efficient)
+  VRG.PANINT.site <- do.call(rbind, results_list)
 
   # Save cache
   dir.create(dirname(.cache_vrg_lob), recursive = TRUE, showWarnings = FALSE)
@@ -341,9 +356,9 @@ for (i in seq_len(nrow(PANINT.VRG.null))) {
 
 # Sum across transects, normalize by number of transects
 VRG.PANINT.site.all.TransectSum <- VRG.PANINT.site.merge.sub %>%
-  group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
+  dplyr::group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
            BaselineRegion, zone, transect) %>%
-  summarise_at(c("count", "biomass"), sum, na.rm = TRUE)
+  dplyr::summarise_at(c("count", "biomass"), sum, na.rm = TRUE)
 
 VRG.PANINT.site.all.TransectSum$count <- VRG.PANINT.site.all.TransectSum$count /
   VRG.PANINT.site.all.TransectSum$transect
@@ -352,8 +367,8 @@ VRG.PANINT.site.all.TransectSum$biomass <- VRG.PANINT.site.all.TransectSum$bioma
 
 # Average across zones
 VRG.PANINT.site.all <- VRG.PANINT.site.all.TransectSum %>%
-  group_by(year, site, CA_MPA_Name_Short, site_designation, site_status, BaselineRegion) %>%
-  summarise_at(c("count", "biomass"), mean)
+  dplyr::group_by(year, site, CA_MPA_Name_Short, site_designation, site_status, BaselineRegion) %>%
+  dplyr::summarise_at(c("count", "biomass"), mean)
 
 VRG.PANINT.site.all$Density <- VRG.PANINT.site.all$count / 60
 VRG.PANINT.site.all$y <- "PANINT"
@@ -384,7 +399,7 @@ URCHINS <- merge(Swath.Urchin.Bio, sites.short, by.x = c("site"), by.y = c("site
 
 # Prepare urchin size frequency data
 SizeFreq.Urch <- subset(SizeFreq, classcode == "MESFRA" | classcode == "STRPUR")
-SizeFreq.Urch <- mutate(SizeFreq.Urch, classcode = case_when(
+SizeFreq.Urch <- dplyr::mutate(SizeFreq.Urch, classcode = dplyr::case_when(
   classcode == "STRPUR"  ~ "STRPURAD",
   classcode == "MESFRA"  ~ "MESFRAAD",
   TRUE ~ classcode))
@@ -394,26 +409,43 @@ SizeFreq.Urch <- merge(SizeFreq.Urch, sites.short,
                         by.y = c("site", "site_new", "campus"),
                         all.x = TRUE)
 
-# Only urchins >= 25mm (PISCO minimum size threshold)
+# SIZE FILTER: Only urchins >= 25mm (PISCO minimum size threshold)
+#
+# RATIONALE: PISCO field protocols only record urchins >= 25mm test diameter.
+# Smaller urchins are difficult to see and identify in the field, and their
+# counts would be inconsistent across observers. This 25mm threshold is a
+# PISCO-specific methodological standard.
+#
+# IMPORTANT: KFM and LTER use different protocols and may include smaller
+# urchins. Therefore, we preserve the original unfiltered size frequency data
+# (SizeFreq.Urch.OG) for use in those scripts. The filter applied here only
+# affects PISCO urchin biomass estimation.
 SizeFreq.Urch <- subset(SizeFreq.Urch, size >= 25)
 
-# Preserve unfiltered size frequency data for KFM and LTER (see D7)
+# Preserve unfiltered size frequency data for KFM and LTER
+# These programs have different minimum size thresholds
 SizeFreq.Urch.OG <- SizeFreq.Urch
 
 # Cache bootstrap results to avoid re-running the slow loop
 .cache_urchin <- here::here("data", "cache", "pisco_urchin_bootstrap.rds")
 if (file.exists(.cache_urchin) && !exists("FORCE_BOOTSTRAP")) {
   cat("    Loading cached urchin bootstrap results...\n")
-  Urchin.site <- readRDS(.cache_urchin)
-} else {
+  Urchin.site <- safe_read_rds(.cache_urchin)
+  if (is.null(Urchin.site)) {
+    cat("    Cache invalid, will recompute...\n")
+  }
+}
+
+if (!exists("Urchin.site") || is.null(Urchin.site)) {
   # Unique zone-level records to iterate over
   u <- unique(URCHINS[, c("year", "site", "site_new", "CA_MPA_Name_Short",
                            "site_designation", "site_status", "BaselineRegion", "zone", "y")])
 
-  Urchin.site <- data.frame(site = NA, CA_MPA_Name_Short = NA, site_status = NA,
-                             year = NA, zone = NA, transect = NA, count = NA,
-                             biomass = NA, y = NA, site_new = NA)
+  # Pre-allocate list for results (PERFORMANCE: avoids O(n²) rbind copies)
+  results_list <- vector("list", nrow(u))
 
+  # Set random seed for reproducibility of bootstrap resampling
+  set.seed(12346)
   for (i in seq_len(nrow(u))) {
     t <- which(URCHINS$site == u$site[i] &
                URCHINS$CA_MPA_Name_Short == u$CA_MPA_Name_Short[i] &
@@ -429,13 +461,20 @@ if (file.exists(.cache_urchin) && !exists("FORCE_BOOTSTRAP")) {
     # Choose biomass function based on species
     bio_fun <- if (u$y[i] == "MESFRAAD") bio_redurch else bio_purpurch
 
-    result <- bootstrap_biomass(count = n,
-                                size_freq_indices = t2,
-                                size_freq_table = SizeFreq.Urch,
-                                biomass_fun = bio_fun)
+    # Wrap bootstrap in tryCatch for robustness
+    result <- tryCatch(
+      bootstrap_biomass(count = n,
+                        size_freq_indices = t2,
+                        size_freq_table = SizeFreq.Urch,
+                        biomass_fun = bio_fun),
+      error = function(e) {
+        warning("Bootstrap failed for site ", u$site[i], " year ", u$year[i],
+                " species ", u$y[i], ": ", e$message)
+        list(biomass = NA, se = NA, count = n)
+      }
+    )
 
-    Urchin.site <- rbind(Urchin.site,
-                          data.frame(site = u$site[i],
+    results_list[[i]] <- data.frame(site = u$site[i],
                                      CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
                                      site_status = u$site_status[i],
                                      year = u$year[i],
@@ -444,11 +483,11 @@ if (file.exists(.cache_urchin) && !exists("FORCE_BOOTSTRAP")) {
                                      count = result$count,
                                      biomass = result$biomass,
                                      y = u$y[i],
-                                     site_new = u$site_new[i]))
+                                     site_new = u$site_new[i])
   }
 
-  # Remove initial NA row
-  Urchin.site <- Urchin.site[!is.na(Urchin.site$site), ]
+  # Combine all results at once (efficient)
+  Urchin.site <- do.call(rbind, results_list)
 
   # Save cache
   dir.create(dirname(.cache_urchin), recursive = TRUE, showWarnings = FALSE)
@@ -480,9 +519,9 @@ names(PISCO.Urchin.site.merge.sub)[names(PISCO.Urchin.site.merge.sub) == "site_s
 
 # Sum across transects, normalize, average across zones
 PISCO.Urchin.site.transectSum <- PISCO.Urchin.site.merge.sub %>%
-  group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
+  dplyr::group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
            BaselineRegion, zone, transect, y) %>%
-  summarise_at(c("count", "biomass"), sum, na.rm = TRUE)
+  dplyr::summarise_at(c("count", "biomass"), sum, na.rm = TRUE)
 
 PISCO.Urchin.site.transectSum$count <- PISCO.Urchin.site.transectSum$count /
   PISCO.Urchin.site.transectSum$transect
@@ -490,9 +529,9 @@ PISCO.Urchin.site.transectSum$biomass <- PISCO.Urchin.site.transectSum$biomass /
   PISCO.Urchin.site.transectSum$transect
 
 PISCO.Urchin.site.all <- PISCO.Urchin.site.transectSum %>%
-  group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
+  dplyr::group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
            BaselineRegion, y) %>%
-  summarise_at(c("count", "biomass"), mean)
+  dplyr::summarise_at(c("count", "biomass"), mean)
 
 PISCO.Urchin.site.all$Density <- PISCO.Urchin.site.all$count / 60
 
@@ -561,7 +600,7 @@ for (i in seq_len(nrow(Fish.merged))) {
 }
 
 # Subset to needed columns
-Fish.sub <- select(Fish.merged, classcode, year, month, site, zone, level,
+Fish.sub <- dplyr::select(Fish.merged, classcode, year, month, site, zone, level,
                    transect, count, fish_tl, TrophicGroup, BroadTrophic, Targeted, biomass)
 
 # Join with site table
@@ -575,9 +614,9 @@ Fish.sub.site.NOcanopy <- subset(Fish.sub.site.NOcanopy, BaselineRegion == "SOUT
 
 # Sum biomass/counts across levels within each site-year-zone-transect
 Fish.sum <- Fish.sub.site.NOcanopy %>%
-  group_by(CA_MPA_Name_Short, site, year, zone, transect, classcode,
+  dplyr::group_by(CA_MPA_Name_Short, site, year, zone, transect, classcode,
            site_status, site_designation) %>%
-  summarise_at(c("biomass", "count"), sum)
+  dplyr::summarise_at(c("biomass", "count"), sum)
 
 # Create complete species roster for fish (fill zeros)
 Site.yr.fish <- unique(Fish.sum[, c("site", "year", "zone", "transect",
@@ -597,14 +636,14 @@ PISCO.fish[num_cols][is.na(PISCO.fish[num_cols])] <- 0
 
 # Average: transect -> zone -> site
 Fish.mean <- PISCO.fish %>%
-  group_by(CA_MPA_Name_Short, site, year, zone, classcode, site_status, site_designation) %>%
-  summarise_at(c("biomass", "count"), mean) %>%
-  ungroup()
+  dplyr::group_by(CA_MPA_Name_Short, site, year, zone, classcode, site_status, site_designation) %>%
+  dplyr::summarise_at(c("biomass", "count"), mean) %>%
+  dplyr::ungroup()
 
 Fish.mean.final <- Fish.mean %>%
-  group_by(CA_MPA_Name_Short, site, year, classcode, site_status, site_designation) %>%
-  summarise_at(c("biomass", "count"), mean) %>%
-  ungroup()
+  dplyr::group_by(CA_MPA_Name_Short, site, year, classcode, site_status, site_designation) %>%
+  dplyr::summarise_at(c("biomass", "count"), mean) %>%
+  dplyr::ungroup()
 
 # Subset for sheephead only
 Fish.SPUL.All <- subset(Fish.mean.final, classcode == "SPUL")
@@ -615,6 +654,9 @@ colnames(Fish.SPUL.All)[4] <- "y"
 ## 10. Combine all PISCO data and filter for minimum 5 years
 ####################################################################################################
 
+# Select and reorder columns to match Fish.SPUL.All structure for rbind
+# Column order: CA_MPA_Name_Short, site, year, y, site_status, site_designation, biomass, count
+# NOTE: Column indices depend on merge order - verify if upstream changes occur
 Swath.PISCO.sub <- Swath.PISCO[, colnames(Swath.PISCO)[c(4, 1, 2, 3, 8, 7, 11, 5)]]
 Swath.PISCO.sub$density <- Swath.PISCO.sub$count / 60
 
@@ -622,10 +664,10 @@ All_PISCO <- rbind(Swath.PISCO.sub, Fish.SPUL.All)
 
 # Remove sites with fewer than 5 years of data
 site_years <- All_PISCO %>%
-  distinct(site, year) %>%
-  group_by(site) %>%
-  summarise(n_years = n()) %>%
-  filter(n_years >= 5)
+  dplyr::distinct(site, year) %>%
+  dplyr::group_by(site) %>%
+  dplyr::summarise(n_years = dplyr::n()) %>%
+  dplyr::filter(n_years >= 5)
 
 All_PISCO.short <- All_PISCO[All_PISCO$site %in% site_years$site, ]
 
@@ -667,9 +709,9 @@ All_PISCO.short.sub$biomass <- ifelse(All_PISCO.short.sub$y == "MACPYRAD",
 ####################################################################################################
 
 All_PISCO.mpa <- All_PISCO.short.sub %>%
-  group_by(CA_MPA_Name_Short, year, y, site_status, site_designation) %>%
-  summarise_at(c("biomass", "count", "density"), mean, na.rm = TRUE) %>%
-  ungroup()
+  dplyr::group_by(CA_MPA_Name_Short, year, y, site_status, site_designation) %>%
+  dplyr::summarise_at(c("biomass", "count", "density"), mean, na.rm = TRUE) %>%
+  dplyr::ungroup()
 
 ####################################################################################################
 ## 15. Calculate proportions and log response ratios
@@ -690,7 +732,7 @@ cat("  Calculating response ratios...\n")
 
 ## --- Biomass response ratio ---
 # select() picks specific columns from a dataframe
-All.bio <- select(All_PISCO.mpa, CA_MPA_Name_Short, year, y, site_status, site_designation, biomass)
+All.bio <- dplyr::select(All_PISCO.mpa, CA_MPA_Name_Short, year, y, site_status, site_designation, biomass)
 All.bio <- subset(All.bio, site_status != "")           # Remove empty status
 All.bio <- subset(All.bio, site_designation != "N/A")   # Remove invalid designations
 All.bio <- All.bio[!is.na(All.bio$biomass) & !is.nan(All.bio$biomass), ]  # Remove NA/NaN
@@ -711,7 +753,7 @@ All.bio.diff.final <- Short.bio.diff
 All.bio.diff.final$resp <- "Bio"  # Label this as biomass response
 
 ## --- Density response ratio ---
-All.den <- select(All_PISCO.mpa, CA_MPA_Name_Short, year, y, site_status, site_designation, density)
+All.den <- dplyr::select(All_PISCO.mpa, CA_MPA_Name_Short, year, y, site_status, site_designation, density)
 All.den <- subset(All.den, site_status != "")
 
 # Convert to proportions of time series maximum
@@ -761,7 +803,7 @@ PISCO.resp <- rbind(PISCO.den.long, PISCO.bio.long)
 ####################################################################################################
 
 Swath.join <- rbind(All.bio.diff.final, All.den.diff.final)
-Swath.join.sub <- Swath.join %>% arrange(CA_MPA_Name_Short, year)
+Swath.join.sub <- Swath.join %>% dplyr::arrange(CA_MPA_Name_Short, year)
 Swath.join.sub <- data.frame(Swath.join.sub)
 
 # Assign time since MPA implementation using utility function
@@ -797,6 +839,28 @@ Swath.join.sub$BA <- ifelse(Swath.join.sub$time == 0, "Before", "After")
 ##   PISCO.resp      -- raw density/biomass inside/outside MPAs
 ##   All_PISCO.mpa   -- averaged PISCO data by MPA
 ####################################################################################################
+
+# Clean up intermediate objects to free memory
+# Keep only final outputs: Swath.join.sub, PISCO.resp, All_PISCO.mpa
+rm(list = intersect(ls(), c(
+  # Data import intermediates
+  "Swath", "Swath.edit", "Swath.site.PISCO", "Swath.site.PISCO.sub",
+  # Lobster processing intermediates
+  "PANINT", "PANINT.UCSB", "PANINT.VRG", "PANINT.UCSB.null", "PANINT.VRG.null",
+  "PANINT.UCSB.sub.sub", "VRG.PANINT.site", "VRG.PANINT.site.merge",
+  # Urchin processing intermediates
+  "URCHINS", "Urchin.site", "PISCO.Urchin.site.merge",
+  # Size frequency intermediates (keep SizeFreq.Urch.OG for other scripts)
+  "SizeFreq.PANINT.VRG",
+  # Proportion/RR calculation intermediates
+  "All.bio", "All.den", "All.bio.sub", "All.den.sub",
+  "Short.bio", "Short.den", "Short.bio.diff", "Short.den.diff",
+  # Bootstrap result lists
+  "results_list", "u"
+)))
+
+# Force garbage collection after heavy processing
+gc(verbose = FALSE)
 
 cat("PISCO processing complete.\n")
 cat("  Output objects: Swath.join.sub, PISCO.resp, All_PISCO.mpa\n")

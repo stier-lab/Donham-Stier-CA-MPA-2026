@@ -113,8 +113,15 @@ col_site <- c(
 # Alternative labels used in some scripts
 col_site_alt <- c(
   "MPA"       = unname(col_site["Inside"]),
-  "Reference" = unname(col_site["Outside"])
+  "Reference" = unname(col_site["Outside"]),
+  "mpa"       = unname(col_site["Inside"]),
+  "reference" = unname(col_site["Outside"]),
+  "impact"    = unname(col_site["Inside"]),
+  "control"   = unname(col_site["Outside"])
 )
+
+# Expanded col_site that handles all common status labels
+col_site_all <- c(col_site, col_site_alt)
 
 
 # =============================================================================
@@ -290,13 +297,15 @@ scale_fill_response <- function(...) {
 }
 
 #' @describeIn scale_color_site Discrete color scale for MPA status
+#' Handles multiple status label conventions: Inside/Outside, MPA/Reference, mpa/reference
 scale_color_site <- function(...) {
-  ggplot2::scale_color_manual(values = col_site, ...)
+  ggplot2::scale_color_manual(values = col_site_all, ...)
 }
 
 #' @describeIn scale_fill_site Discrete fill scale for MPA status
+#' Handles multiple status label conventions: Inside/Outside, MPA/Reference, mpa/reference
 scale_fill_site <- function(...) {
-  ggplot2::scale_fill_manual(values = col_site, ...)
+  ggplot2::scale_fill_manual(values = col_site_all, ...)
 }
 
 #' Discrete shape scale for monitoring data sources

@@ -512,7 +512,8 @@ calculate_effect_size_from_contrast <- function(model, time_var, time_before = 0
   em <- emmeans::emmeans(model, as.formula(paste("~", time_var)), at = at_list)
 
   # Use pairs() to compute the contrast with proper covariance handling
-  contrast_result <- emmeans::pairs(em, reverse = TRUE)  # after - before
+  # Note: pairs() works on emmeans objects (method dispatch), can't be called as emmeans::pairs()
+  contrast_result <- pairs(em, reverse = TRUE)  # after - before
   contrast_summary <- summary(contrast_result)
 
   # Extract results
@@ -632,6 +633,158 @@ SHEEPHEAD_ONLY_MPAS <- c(
   "Point Dume SMCA",
   "Santa Barbara Island SMR"
 )
+
+
+# =============================================================================
+# SECTION 8: FILE I/O UTILITIES
+# =============================================================================
+# Helper functions for safe file operations with validation
+
+#' Read CSV with existence validation
+#'
+#' Wraps read.csv with file existence check and informative error messages.
+#' Particularly useful for data files that may be symlinked from external storage.
+#'
+#' @param file_path Path to CSV file (use here::here() for path construction)
+#' @param ... Additional arguments passed to read.csv
+#' @return Data frame from read.csv
+#' @examples
+#' df <- safe_read_csv(here::here("data", "my_file.csv"))
+safe_read_csv <- function(file_path, ...) {
+  if (!file.exists(file_path)) {
+    stop("Required data file not found: ", file_path,
+         "\nIf using symlinked data, ensure Google Drive is synced and symlinks are configured.",
+         "\nSee README.md for data setup instructions.")
+  }
+  read.csv(file_path, ...)
+}
+
+
+#' Read RDS with error handling
+#'
+#' Wraps readRDS with tryCatch to handle corrupted cache files gracefully.
+#'
+#' @param file_path Path to RDS file
+#' @param default Value to return if read fails (default NULL)
+#' @return Object from readRDS, or default if read fails
+safe_read_rds <- function(file_path, default = NULL) {
+  if (!file.exists(file_path)) {
+    return(default)
+  }
+  tryCatch(
+    readRDS(file_path),
+    error = function(e) {
+      warning("Failed to read cache file ", file_path, ": ", e$message,
+              "\nWill recompute instead.")
+      default
+    }
+  )
+}
+
+
+#' Run cached bootstrap computation
+#'
+#' Generic wrapper for bootstrap computations with caching support.
+#' Checks for existing cache, runs computation if needed, and saves results.
+#'
+#' @param cache_name Base name for cache file (will be stored in data/cache/)
+#' @param seed Random seed for reproducibility
+#' @param compute_fn Function that performs the bootstrap computation (no arguments)
+#' @param force Logical, force recomputation even if cache exists
+#' @return Result of compute_fn (either loaded from cache or freshly computed)
+#'
+#' @examples
+#' result <- run_cached_bootstrap(
+#'   cache_name = "pisco_urchin_bootstrap",
+#'   seed = 12345,
+#'   compute_fn = function() {
+#'     # ... bootstrap loop code ...
+#'     result_df
+#'   }
+#' )
+run_cached_bootstrap <- function(cache_name, seed, compute_fn, force = FALSE) {
+  cache_path <- here::here("data", "cache", paste0(cache_name, ".rds"))
+
+  # Check for existing cache
+  force_global <- exists("FORCE_BOOTSTRAP", envir = .GlobalEnv) &&
+                  get("FORCE_BOOTSTRAP", envir = .GlobalEnv)
+
+  if (!force && !force_global && file.exists(cache_path)) {
+    cat("    Loading cached", cache_name, "results...\n")
+    result <- safe_read_rds(cache_path)
+    if (!is.null(result)) {
+      return(result)
+    }
+    cat("    Cache invalid, recomputing...\n")
+  }
+
+  # Run computation with seed
+  cat("    Computing", cache_name, "(this may take a while)...\n")
+  set.seed(seed)
+  result <- compute_fn()
+
+  # Save to cache
+  cache_dir <- dirname(cache_path)
+  if (!dir.exists(cache_dir)) {
+    dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+  saveRDS(result, cache_path)
+  cat("    Cached", cache_name, "results to", cache_path, "\n")
+
+  result
+}
+
+
+#' Validate merge operation
+#'
+#' Performs a merge and validates the result, warning about potential data loss.
+#'
+#' @param x First data frame
+#' @param y Second data frame
+#' @param by Columns to merge by (passed to merge)
+#' @param all.x Keep all rows from x (default TRUE)
+#' @param all.y Keep all rows from y (default FALSE)
+#' @param warn_threshold Minimum row loss to trigger warning (default 0)
+#' @param ... Additional arguments passed to merge
+#' @return Merged data frame
+validated_merge <- function(x, y, by, all.x = TRUE, all.y = FALSE,
+                            warn_threshold = 0, ...) {
+  n_before <- nrow(x)
+  result <- merge(x, y, by = by, all.x = all.x, all.y = all.y, ...)
+  n_after <- nrow(result)
+
+  if (n_after < n_before && (n_before - n_after) > warn_threshold) {
+    warning("Merge dropped ", n_before - n_after, " rows from ",
+            deparse(substitute(x)), " (",
+            round(100 * (n_before - n_after) / n_before, 1), "%)")
+  }
+
+  result
+}
+
+
+#' Check for division by zero before operation
+#'
+#' Validates divisor vector and optionally replaces zeros with NA.
+#'
+#' @param numerator Numeric vector (numerator)
+#' @param divisor Numeric vector (divisor)
+#' @param replace_zero Logical, replace zeros with NA (default TRUE)
+#' @param context Character, context message for warning
+#' @return Result of numerator / divisor (zeros replaced if replace_zero=TRUE)
+safe_divide <- function(numerator, divisor, replace_zero = TRUE, context = "") {
+
+  n_zero <- sum(divisor == 0, na.rm = TRUE)
+  if (n_zero > 0) {
+    msg <- paste0("Division by zero: ", n_zero, " zero values in divisor")
+    if (nchar(context) > 0) msg <- paste0(msg, " (", context, ")")
+    warning(msg)
+    if (replace_zero) {
+      divisor[divisor == 0] <- NA
+    }
+  }
+  numerator / divisor
+}
 
 
 # =============================================================================

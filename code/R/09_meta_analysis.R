@@ -89,6 +89,25 @@ SumStats.Final$vi <- as.numeric(SumStats.Final$SE)^2
 SumStats.Final$Mean <- as.numeric(SumStats.Final$Mean)
 SumStats.Final$vi   <- as.numeric(SumStats.Final$vi)
 
+# --- OUTPUT VALIDATION: Check variance calculation ---
+n_invalid_se <- sum(SumStats.Final$SE <= 0, na.rm = TRUE)
+n_invalid_vi <- sum(!is.finite(SumStats.Final$vi))
+if (n_invalid_se > 0) {
+  warning("Found ", n_invalid_se, " effect sizes with SE <= 0")
+}
+if (n_invalid_vi > 0) {
+  warning("Found ", n_invalid_vi, " invalid variance values (NA/NaN/Inf)")
+  cat("  Removing", n_invalid_vi, "rows with invalid variance\n")
+  SumStats.Final <- SumStats.Final[is.finite(SumStats.Final$vi), ]
+}
+stopifnot("No valid effect sizes remaining" = nrow(SumStats.Final) > 0)
+
+# --- OUTPUT VALIDATION: Check effect size range ---
+extreme_es <- sum(abs(SumStats.Final$Mean) > 5, na.rm = TRUE)
+if (extreme_es > 0) {
+  warning("Found ", extreme_es, " effect sizes with |Mean| > 5 (may be outliers)")
+}
+
 # Ensure Taxa is a factor for the moderator specification
 SumStats.Final$Taxa <- factor(SumStats.Final$Taxa)
 
@@ -98,6 +117,10 @@ SumStats.Final$Source <- factor(SumStats.Final$Source)
 # Split into biomass and density subsets (non-independent, so modeled separately)
 biomass_data <- subset(SumStats.Final, Resp == "Bio")
 density_data <- subset(SumStats.Final, Resp == "Den")
+
+# --- OUTPUT VALIDATION: Ensure both subsets have sufficient data ---
+stopifnot("No biomass data for meta-analysis" = nrow(biomass_data) > 0)
+stopifnot("No density data for meta-analysis" = nrow(density_data) > 0)
 
 cat("Biomass observations:", nrow(biomass_data), "\n")
 cat("Density observations:", nrow(density_data), "\n")
@@ -114,15 +137,27 @@ cat("Density observations:", nrow(density_data), "\n")
 # - random = ~ 1 | MPA: random intercept for MPA to account for non-independence
 #   of effect sizes within the same MPA
 # - method = "REML": restricted maximum-likelihood estimation
-meta_biomass_full <- rma.mv(
-  yi     = Mean,
-  V      = vi,
-  mods   = ~ Taxa - 1,
-  random = list(~ 1 | MPA, ~ 1 | Source),
-  data   = biomass_data,
-  method = "REML",
-  test   = "t"
+meta_biomass_full <- tryCatch(
+  rma.mv(
+    yi     = Mean,
+    V      = vi,
+    mods   = ~ Taxa - 1,
+    random = list(~ 1 | MPA, ~ 1 | Source),
+    data   = biomass_data,
+    method = "REML",
+    test   = "t"
+  ),
+  error = function(e) {
+    stop("Biomass meta-analysis model failed to converge: ", e$message)
+  }
 )
+
+# --- OUTPUT VALIDATION: Check model convergence ---
+if (!is.null(meta_biomass_full$not.converged) && meta_biomass_full$not.converged) {
+  warning("Biomass meta-analysis model did not converge")
+}
+stopifnot("Model coefficients contain NA" = !any(is.na(coef(meta_biomass_full))))
+stopifnot("Model coefficients not finite" = all(is.finite(coef(meta_biomass_full))))
 
 cat("\n--- Biomass model (full data) ---\n")
 print(summary(meta_biomass_full))
@@ -149,19 +184,33 @@ if (length(outliers_bio) > 0) {
 
 # Step 3: Remove outliers and refit
 if (length(outliers_bio) > 0) {
+  # --- OUTPUT VALIDATION: Check outlier removal is not excessive ---
+  pct_removed <- 100 * length(outliers_bio) / n_bio
+  cat("Removing", length(outliers_bio), "outliers (", round(pct_removed, 1), "% of data)\n")
+  if (pct_removed > 20) {
+    warning("Removing >20% of biomass data as outliers - consider reviewing threshold")
+  }
   biomass_clean <- biomass_data[-outliers_bio, ]
 } else {
   biomass_clean <- biomass_data
 }
 
-meta_biomass <- rma.mv(
-  yi     = Mean,
-  V      = vi,
-  mods   = ~ Taxa - 1,
-  random = list(~ 1 | MPA, ~ 1 | Source),
-  data   = biomass_clean,
-  method = "REML",
-  test   = "t"
+# --- OUTPUT VALIDATION: Ensure sufficient data remains ---
+stopifnot("Insufficient biomass data after outlier removal" = nrow(biomass_clean) >= 10)
+
+meta_biomass <- tryCatch(
+  rma.mv(
+    yi     = Mean,
+    V      = vi,
+    mods   = ~ Taxa - 1,
+    random = list(~ 1 | MPA, ~ 1 | Source),
+    data   = biomass_clean,
+    method = "REML",
+    test   = "t"
+  ),
+  error = function(e) {
+    stop("Biomass meta-analysis (clean) failed: ", e$message)
+  }
 )
 
 cat("\n--- Biomass model (outliers removed) ---\n")
@@ -255,17 +304,26 @@ cat("Interpretation: ",
 #' Extract a tidy summary table from an rma.mv model
 #'
 #' Returns a dataframe with one row per taxon containing the estimate, SE,
-#' t-value, p-value, and 95% confidence interval bounds.
+#' t-value, p-value, 95% confidence interval bounds, and sample size (k).
 #'
 #' @param model An rma.mv model object fit with mods = ~ Taxa - 1
+#' @param data The data used to fit the model (for calculating sample sizes)
 #' @param response Character label for the response type ("Biomass" or "Density")
-#' @return A dataframe with columns: Taxa, Estimate, SE, tval, pval, CI_lower, CI_upper, Response
-extract_meta_table <- function(model, response) {
+#' @return A dataframe with columns: Taxa, k, Estimate, SE, tval, pval, CI_lower, CI_upper, Response
+extract_meta_table <- function(model, data, response) {
   coef_table <- coef(summary(model))
   # Column name is "zval" in rma.mv (not "tval" unless test="t" is used)
   stat_col <- if ("tval" %in% colnames(coef_table)) "tval" else "zval"
+
+  # Calculate sample size (k = number of effect sizes) per taxon
+  taxa_names <- gsub("^Taxa", "", rownames(coef_table))
+  k_per_taxa <- vapply(taxa_names, function(taxon) {
+    sum(data$Taxa == taxon, na.rm = TRUE)
+  }, integer(1))
+
   data.frame(
-    Taxa      = gsub("^Taxa", "", rownames(coef_table)),
+    Taxa      = taxa_names,
+    k         = k_per_taxa,  # Number of effect sizes
     Estimate  = round(coef_table[, "estimate"], 4),
     SE        = round(coef_table[, "se"], 4),
     tval      = round(coef_table[, stat_col], 4),
@@ -279,9 +337,24 @@ extract_meta_table <- function(model, response) {
 }
 
 # Build Table 2 from both models
-Table2_biomass <- extract_meta_table(meta_biomass, "Biomass")
-Table2_density <- extract_meta_table(meta_density, "Density")
+Table2_biomass <- extract_meta_table(meta_biomass, biomass_clean, "Biomass")
+Table2_density <- extract_meta_table(meta_density, density_clean, "Density")
 Table2 <- rbind(Table2_biomass, Table2_density)
+
+# Report sample size summary
+cat("\n--- Sample Size Summary ---\n")
+cat("Total biomass effect sizes (after outlier removal):", nrow(biomass_clean), "\n")
+cat("  - Number of unique MPAs:", length(unique(biomass_clean$MPA)), "\n")
+cat("  - Number of unique data sources:", length(unique(biomass_clean$Source)), "\n")
+if ("N" %in% names(biomass_clean)) {
+  cat("  - Total underlying observations (N):", sum(as.numeric(biomass_clean$N), na.rm = TRUE), "\n")
+}
+cat("Total density effect sizes (after outlier removal):", nrow(density_clean), "\n")
+cat("  - Number of unique MPAs:", length(unique(density_clean$MPA)), "\n")
+cat("  - Number of unique data sources:", length(unique(density_clean$Source)), "\n")
+if ("N" %in% names(density_clean)) {
+  cat("  - Total underlying observations (N):", sum(as.numeric(density_clean$N), na.rm = TRUE), "\n")
+}
 
 # Order taxa to match manuscript Table 2 presentation
 taxa_order <- c("S. purpuratus", "M. franciscanus", "M. pyrifera",

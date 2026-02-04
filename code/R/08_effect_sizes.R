@@ -64,13 +64,199 @@ names(MPA_implement)[names(MPA_implement) == "Site"] <- "Site_ID"
 names(MPA_implement)[names(MPA_implement) == "CA_MPA_Name_Short"] <- "Site"
 
 ####################################################################################################
+## DHARMa Model Diagnostics Setup ##################################################################
+####################################################################################################
+
+# Check if DHARMa is available
+DHARMA_AVAILABLE <- requireNamespace("DHARMa", quietly = TRUE)
+if (DHARMA_AVAILABLE) {
+  library(DHARMa)
+}
+
+# Initialize diagnostic tracking dataframe
+ModelDiagnostics <- data.frame(
+ Taxa = character(),
+  MPA = character(),
+  Source = character(),
+  Model_Type = character(),
+  N_Obs = integer(),
+  Uniformity_p = numeric(),
+  Dispersion_p = numeric(),
+  Outlier_p = numeric(),
+  Shapiro_p = numeric(),
+  Hetero_Cor = numeric(),
+  R_Squared = numeric(),
+  Pass_All = logical(),
+  Notes = character(),
+  stringsAsFactors = FALSE
+)
+
+#' Run DHARMa diagnostics on a linear model
+#'
+#' @param model Fitted lm object
+#' @param taxa Character taxa name
+#' @param mpa Character MPA name
+#' @param source Character data source
+#' @param model_type Character model type (Step, Linear, etc.)
+#' @return One-row dataframe with diagnostic results
+run_dharma_diagnostics <- function(model, taxa, mpa, source, model_type) {
+  if (!DHARMA_AVAILABLE || is.null(model)) {
+    return(data.frame(
+      Taxa = taxa, MPA = mpa, Source = source, Model_Type = model_type,
+      N_Obs = NA, Uniformity_p = NA, Dispersion_p = NA, Outlier_p = NA,
+      Shapiro_p = NA, Hetero_Cor = NA, R_Squared = NA, Pass_All = NA,
+      Notes = ifelse(DHARMA_AVAILABLE, "NULL model", "DHARMa not installed"),
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  tryCatch({
+    # Get basic model info
+    n_obs <- length(residuals(model))
+    r_sq <- summary(model)$r.squared
+
+    # Shapiro-Wilk test on residuals
+    resid <- residuals(model)
+    shapiro_p <- if (n_obs >= 3 && n_obs <= 5000) {
+      shapiro.test(resid)$p.value
+    } else {
+      NA
+    }
+
+    # Heteroscedasticity check
+    hetero_cor <- cor(abs(resid), fitted(model), use = "complete.obs")
+
+    # DHARMa simulation-based tests
+    sim_resid <- simulateResiduals(model, n = 250, plot = FALSE)
+    uniformity <- testUniformity(sim_resid, plot = FALSE)
+    dispersion <- testDispersion(sim_resid, plot = FALSE)
+    outliers <- testOutliers(sim_resid, plot = FALSE)
+
+    # Determine pass/fail
+    pass_all <- (uniformity$p.value > 0.05) &&
+                (dispersion$p.value > 0.05) &&
+                (outliers$p.value > 0.05) &&
+                (is.na(shapiro_p) || shapiro_p > 0.05) &&
+                (abs(hetero_cor) < 0.5)
+
+    notes <- c()
+    if (uniformity$p.value <= 0.05) notes <- c(notes, "non-uniform")
+    if (dispersion$p.value <= 0.05) notes <- c(notes, "overdispersion")
+    if (outliers$p.value <= 0.05) notes <- c(notes, "outliers")
+    if (!is.na(shapiro_p) && shapiro_p <= 0.05) notes <- c(notes, "non-normal")
+    if (abs(hetero_cor) >= 0.5) notes <- c(notes, "heteroscedastic")
+
+    data.frame(
+      Taxa = taxa, MPA = mpa, Source = source, Model_Type = model_type,
+      N_Obs = n_obs,
+      Uniformity_p = round(uniformity$p.value, 4),
+      Dispersion_p = round(dispersion$p.value, 4),
+      Outlier_p = round(outliers$p.value, 4),
+      Shapiro_p = round(shapiro_p, 4),
+      Hetero_Cor = round(hetero_cor, 3),
+      R_Squared = round(r_sq, 3),
+      Pass_All = pass_all,
+      Notes = if (length(notes) > 0) paste(notes, collapse = "; ") else "OK",
+      stringsAsFactors = FALSE
+    )
+  }, error = function(e) {
+    data.frame(
+      Taxa = taxa, MPA = mpa, Source = source, Model_Type = model_type,
+      N_Obs = NA, Uniformity_p = NA, Dispersion_p = NA, Outlier_p = NA,
+      Shapiro_p = NA, Hetero_Cor = NA, R_Squared = NA, Pass_All = NA,
+      Notes = paste("Error:", e$message),
+      stringsAsFactors = FALSE
+    )
+  })
+}
+
+#' Run diagnostics on NLS (nonlinear) models
+#'
+#' DHARMa doesn't work directly with NLS, so use custom diagnostics
+#'
+#' @param model Fitted nls or similar object
+#' @param taxa Character taxa name
+#' @param mpa Character MPA name
+#' @param source Character data source
+#' @param model_type Character model type
+#' @return One-row dataframe with diagnostic results
+run_nls_diagnostics <- function(model, taxa, mpa, source, model_type) {
+  if (is.null(model)) {
+    return(data.frame(
+      Taxa = taxa, MPA = mpa, Source = source, Model_Type = model_type,
+      N_Obs = NA, Uniformity_p = NA, Dispersion_p = NA, Outlier_p = NA,
+      Shapiro_p = NA, Hetero_Cor = NA, R_Squared = NA, Pass_All = NA,
+      Notes = "NULL model",
+      stringsAsFactors = FALSE
+    ))
+  }
+
+  tryCatch({
+    resid <- residuals(model)
+    fitted_vals <- fitted(model)
+    n_obs <- length(resid)
+
+    # Shapiro-Wilk test
+    shapiro_p <- if (n_obs >= 3 && n_obs <= 5000) {
+      shapiro.test(resid)$p.value
+    } else {
+      NA
+    }
+
+    # Heteroscedasticity
+    hetero_cor <- cor(abs(resid), fitted_vals, use = "complete.obs")
+
+    # R-squared approximation
+    ss_res <- sum(resid^2)
+    ss_tot <- sum((fitted_vals + resid - mean(fitted_vals + resid))^2)
+    r_sq <- 1 - ss_res / ss_tot
+
+    # Outlier count
+    sigma <- tryCatch(summary(model)$sigma, error = function(e) sd(resid))
+    n_outliers <- sum(abs(resid) > 3 * sigma)
+
+    # Pass criteria for NLS
+    pass_all <- (is.na(shapiro_p) || shapiro_p > 0.01) &&  # More lenient for NLS
+                (abs(hetero_cor) < 0.6) &&
+                (n_outliers <= 1)
+
+    notes <- c()
+    if (!is.na(shapiro_p) && shapiro_p <= 0.01) notes <- c(notes, "non-normal")
+    if (abs(hetero_cor) >= 0.6) notes <- c(notes, "heteroscedastic")
+    if (n_outliers > 1) notes <- c(notes, paste0(n_outliers, " outliers"))
+
+    data.frame(
+      Taxa = taxa, MPA = mpa, Source = source, Model_Type = model_type,
+      N_Obs = n_obs,
+      Uniformity_p = NA,  # Not applicable for NLS
+      Dispersion_p = NA,
+      Outlier_p = NA,
+      Shapiro_p = round(shapiro_p, 4),
+      Hetero_Cor = round(hetero_cor, 3),
+      R_Squared = round(r_sq, 3),
+      Pass_All = pass_all,
+      Notes = if (length(notes) > 0) paste(notes, collapse = "; ") else "OK",
+      stringsAsFactors = FALSE
+    )
+  }, error = function(e) {
+    data.frame(
+      Taxa = taxa, MPA = mpa, Source = source, Model_Type = model_type,
+      N_Obs = NA, Uniformity_p = NA, Dispersion_p = NA, Outlier_p = NA,
+      Shapiro_p = NA, Hetero_Cor = NA, R_Squared = NA, Pass_All = NA,
+      Notes = paste("Error:", e$message),
+      stringsAsFactors = FALSE
+    )
+  })
+}
+
+####################################################################################################
 ## Initialize SumStats dataframe ###################################################################
 ####################################################################################################
 
 SumStats <- data.frame(
   Taxa = NA, MPA = NA, Mean = NA, SE = NA, SD = NA, CI = NA,
   Model = NA, Source = NA, Resp = NA, BA = NA, Primary = NA,
-  Type = NA, LinearBefore = NA
+  Type = NA, LinearBefore = NA, N = NA
 )
 
 ####################################################################################################
@@ -129,15 +315,41 @@ add_time_columns <- function(dat) {
 test_linear_before <- function(dat) {
   mpas <- unique(dat$CA_MPA_Name_Short)
   LinearBefore <- data.frame(pInt = NA, pSlope = NA)
+  valid_mpas <- c()
+
   for (j in mpas) {
-    temp <- subset(dat, CA_MPA_Name_Short == j &  BA == "Before",
+    temp <- subset(dat, CA_MPA_Name_Short == j & BA == "Before",
                    select = c(CA_MPA_Name_Short, mpa, reference, lnDiff, time.true, time.model, BA))
-    lmBefore <- lm(lnDiff ~ time.true, data = temp)
-    pl <- summary(lmBefore)$coefficients[, 4]
-    LinearBefore <- rbind(LinearBefore, pl)
+
+    # Skip if insufficient before data
+    if (nrow(temp) < 3) {
+      warning("test_linear_before: skipping ", j, " (insufficient Before data: n=", nrow(temp), ")")
+      next
+    }
+
+    result <- tryCatch({
+      lmBefore <- lm(lnDiff ~ time.true, data = temp)
+      coef_summary <- summary(lmBefore)$coefficients
+      if (nrow(coef_summary) < 2) {
+        warning("test_linear_before: no slope for ", j)
+        return(NULL)
+      }
+      coef_summary[, 4]
+    }, error = function(e) {
+      warning("test_linear_before failed for ", j, ": ", e$message)
+      NULL
+    })
+
+    if (!is.null(result)) {
+      LinearBefore <- rbind(LinearBefore, result)
+      valid_mpas <- c(valid_mpas, j)
+    }
   }
+
   LinearBefore <- na.omit(LinearBefore)
-  LinearBefore$site <- mpas
+  if (nrow(LinearBefore) > 0) {
+    LinearBefore$site <- valid_mpas
+  }
   LinearBefore
 }
 
@@ -150,6 +362,7 @@ run_pbacips_loop <- function(dat) {
   likelihood.poly <- data.frame(matrix(ncol = 4, nrow = 0))
   pvals.poly <- data.frame(matrix(ncol = 9, nrow = 0))
   Norm.poly <- data.frame(matrix(ncol = 9, nrow = 0))
+  valid_mpas <- c()
 
   dat$lnmpa <- log(dat$mpa)
   dat$lnreference <- log(dat$reference)
@@ -157,95 +370,181 @@ run_pbacips_loop <- function(dat) {
   for (j in mpas) {
     temp <- subset(dat, CA_MPA_Name_Short == j,
                    select = c(CA_MPA_Name_Short, lnmpa, lnreference, lnDiff, time.true, time.model))
-    result <- ProgressiveChangeBACIPS(
-      control = temp$lnreference,
-      impact = temp$lnmpa,
-      time.true = temp$time.true,
-      time.model = temp$time.model
-    )
-    ps <- summary(result$step)[[1]][["Pr(>F)"]][1]
-    pl <- summary(result$linear)$coefficients[, 4]
-    psi <- summary(result$sigmoid)$coefficients[, 4]
-    pa <- summary(result$asymptotic)$coefficients[, 4]
-    pval <- c(ps, pl, psi, pa)
+
+    # Skip if insufficient data
+    if (nrow(temp) < 5) {
+      warning("run_pbacips_loop: skipping ", j, " (insufficient data: n=", nrow(temp), ")")
+      next
+    }
+
+    result <- tryCatch({
+      ProgressiveChangeBACIPS(
+        control = temp$lnreference,
+        impact = temp$lnmpa,
+        time.true = temp$time.true,
+        time.model = temp$time.model
+      )
+    }, error = function(e) {
+      warning("run_pbacips_loop: pBACIPS failed for ", j, ": ", e$message)
+      NULL
+    })
+
+    if (is.null(result)) next
+
+    # Safely extract p-values with error handling
+    pvals <- tryCatch({
+      ps <- if (!is.null(result$step)) summary(result$step)[[1]][["Pr(>F)"]][1] else NA
+      pl <- if (!is.null(result$linear)) summary(result$linear)$coefficients[, 4] else c(NA, NA)
+      psi <- if (!is.null(result$sigmoid)) summary(result$sigmoid)$coefficients[, 4] else rep(NA, 4)
+      pa <- if (!is.null(result$asymptotic)) summary(result$asymptotic)$coefficients[, 4] else rep(NA, 3)
+      c(ps, pl, psi, pa)
+    }, error = function(e) {
+      warning("run_pbacips_loop: p-value extraction failed for ", j, ": ", e$message)
+      rep(NA, 9)
+    })
+
     likelihood.poly <- rbind(likelihood.poly, result$weights)
-    pvals.poly <- rbind(pvals.poly, pval)
-    t_test <- shapiro.test(temp$lnDiff)
-    Norm.poly <- rbind(Norm.poly, t_test$p.value)
+    pvals.poly <- rbind(pvals.poly, pvals)
+
+    # Normality test
+    norm_p <- tryCatch({
+      shapiro.test(temp$lnDiff)$p.value
+    }, error = function(e) NA)
+
+    Norm.poly <- rbind(Norm.poly, norm_p)
+    valid_mpas <- c(valid_mpas, j)
   }
 
   colnames(likelihood.poly) <- c("Step", "Linear", "Asymptotic", "Sigmoid")
   colnames(pvals.poly) <- c("Step", "Linear", "Asymptotic M", "Asymptotic B", "Asymptotic L",
                              "Sigmoid M", "Sigmoid B", "Sigmoid L", "Sigmoid K")
-  likelihood.poly <- cbind(likelihood.poly, mpas)
+  if (nrow(likelihood.poly) > 0) {
+    likelihood.poly <- cbind(likelihood.poly, mpas = valid_mpas)
+  }
 
   list(likelihood = likelihood.poly, pvals = pvals.poly, normality = Norm.poly)
 }
 
 #' Run CI analysis: calculate both linear and mean effect sizes
 #'
-#' For each MPA in the data, fits lnDiff ~ time, calculates effect size at time 0 vs 11,
+#' For each MPA in the data, fits lnDiff ~ time, calculates effect size at time 0 vs max(time),
 #' and also calculates the simple mean effect size. Returns two rows per MPA.
+#'
+#' The effect size represents the predicted change in lnRR from time 0 (MPA establishment)
+#' to the most recent observation. Using max observed time rather than a fixed value
+#' ensures consistency across datasets with different time series lengths.
 #'
 #' @param dat Dataframe subset with lnDiff, time columns
 #' @param taxa_name Character, species name for SumStats
 #' @param source_name Character, data source for SumStats
 #' @param resp_name Character, response type ("Den" or "Bio")
 #' @param time_var Character, name of the time variable to use (default "time")
+#' @param time_after Numeric, time point for "after" prediction (default NULL = use max observed)
+#' @param run_diagnostics Logical, whether to run DHARMa diagnostics (default TRUE)
 #' @return Dataframe with two rows per MPA (linear and mean effect sizes)
-run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "time") {
+run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "time",
+                             time_after = NULL, run_diagnostics = TRUE) {
+  # Validate input
+  if (is.null(dat) || nrow(dat) == 0) {
+    warning("run_ci_analysis: empty dataset for ", taxa_name)
+    return(NULL)
+  }
+
   mpas <- unique(dat$CA_MPA_Name_Short)
   rows <- list()
+
   for (i in seq_along(mpas)) {
     idx <- which(dat$CA_MPA_Name_Short == mpas[i])
     sub_dat <- dat[idx, ]
 
-    # Fit linear model
-    formula_str <- as.formula(paste("lnDiff ~", time_var))
-    Lm.Ab <- lm(formula_str, data = sub_dat)
-    p <- summary(Lm.Ab)$coefficients[2, 4]
-
-    # Calculate linear effect size using emmeans at time 0 and 11
-    before <- tidy(emmeans(Lm.Ab, as.formula(paste("~", time_var)),
-                           at = setNames(list(0), time_var)))
-    after <- tidy(emmeans(Lm.Ab, as.formula(paste("~", time_var)),
-                          at = setNames(list(11), time_var)))
-
-    es <- calculate_effect_size(before, after)
-    mean_val <- es$mean
-
-    # Calculate simple mean CI
-    CP.mean <- summarySE(sub_dat, measurevar = "lnDiff")
-
-    # Determine Primary flag based on p-value (linear sig -> linear is primary, else mean is primary)
-    if (p <= 0.05) {
-      rows[[length(rows) + 1]] <- data.frame(
-        Taxa = taxa_name, MPA = mpas[i], Mean = mean_val, SE = es$SE, SD = es$SD, CI = es$CI,
-        Model = "Linear", Source = source_name, Resp = resp_name, BA = "N", Primary = "Y",
-        Type = "CI", LinearBefore = "NA", stringsAsFactors = FALSE
-      )
-    } else {
-      rows[[length(rows) + 1]] <- data.frame(
-        Taxa = taxa_name, MPA = mpas[i], Mean = mean_val, SE = es$SE, SD = es$SD, CI = es$CI,
-        Model = "Linear", Source = source_name, Resp = resp_name, BA = "N", Primary = "N",
-        Type = "CI", LinearBefore = "NA", stringsAsFactors = FALSE
-      )
+    # Skip if insufficient data
+    if (nrow(sub_dat) < 3) {
+      warning("run_ci_analysis: skipping ", mpas[i], " (n=", nrow(sub_dat), ")")
+      next
     }
 
-    if (p <= 0.05) {
-      rows[[length(rows) + 1]] <- data.frame(
+    # Skip if no variance in time
+    if (length(unique(sub_dat[[time_var]])) < 2) {
+      warning("run_ci_analysis: skipping ", mpas[i], " (no time variance)")
+      next
+    }
+
+    # Get sample size before tryCatch
+    n_obs <- nrow(sub_dat)
+
+    # Wrap in tryCatch for robust error handling
+    result <- tryCatch({
+      # Fit linear model
+      formula_str <- as.formula(paste("lnDiff ~", time_var))
+      Lm.Ab <- lm(formula_str, data = sub_dat)
+
+      # Run DHARMa diagnostics and add to global tracking
+      if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
+        diag_result <- run_dharma_diagnostics(Lm.Ab, taxa_name, mpas[i], source_name, "CI_Linear")
+        ModelDiagnostics <<- rbind(ModelDiagnostics, diag_result)
+      }
+
+      # Check model has slope coefficient
+      coef_summary <- summary(Lm.Ab)$coefficients
+      if (nrow(coef_summary) < 2) {
+        warning("run_ci_analysis: no slope for ", mpas[i])
+        return(NULL)
+      }
+
+      p <- coef_summary[2, 4]
+
+      # Calculate linear effect size using contrast (properly handles covariance)
+      # This uses emmeans::pairs() which correctly calculates Var(A-B) = Var(A) + Var(B) - 2*Cov(A,B)
+      # Use max observed time if time_after not specified (consistent with add_linear_effect_size)
+      actual_time_after <- if (is.null(time_after)) max(sub_dat[[time_var]], na.rm = TRUE) else time_after
+      es <- calculate_effect_size_from_contrast(Lm.Ab, time_var, time_before = 0, time_after = actual_time_after)
+      mean_val <- es$mean
+
+      # --- EDGE CASE: Validate effect size is reasonable ---
+      if (!is.finite(mean_val) || !is.finite(es$SE) || es$SE <= 0) {
+        warning("run_ci_analysis: invalid effect size for ", mpas[i], " (mean=", mean_val, ", SE=", es$SE, ")")
+        return(NULL)
+      }
+
+      # Calculate simple mean CI
+      # EDGE CASE: summarySE requires n >= 2 for SD calculation
+      if (n_obs < 2) {
+        warning("run_ci_analysis: single observation for ", mpas[i], ", using linear model SE only")
+        CP.mean <- data.frame(lnDiff = mean(sub_dat$lnDiff), sd = NA, se = NA, ci = NA)
+      } else {
+        CP.mean <- summarySE(sub_dat, measurevar = "lnDiff")
+      }
+
+      # Build result rows
+      # Note: calculate_effect_size_from_contrast returns SE with proper covariance handling
+      # SD is calculated from SE and df for backward compatibility
+      es_sd <- es$SE * sqrt(es$df + 1)  # Approximate SD from SE and df
+      linear_row <- data.frame(
+        Taxa = taxa_name, MPA = mpas[i], Mean = mean_val, SE = es$SE, SD = es_sd, CI = es$CI,
+        Model = "Linear", Source = source_name, Resp = resp_name, BA = "N",
+        Primary = if (p <= 0.05) "Y" else "N",
+        Type = "CI", LinearBefore = "NA", N = n_obs, stringsAsFactors = FALSE
+      )
+
+      mean_row <- data.frame(
         Taxa = taxa_name, MPA = mpas[i], Mean = CP.mean$lnDiff, SE = CP.mean$se,
         SD = CP.mean$sd, CI = CP.mean$ci, Model = "Mean", Source = source_name, Resp = resp_name,
-        BA = "N", Primary = "N", Type = "CI", LinearBefore = "NA", stringsAsFactors = FALSE
+        BA = "N", Primary = if (p <= 0.05) "N" else "Y",
+        Type = "CI", LinearBefore = "NA", N = n_obs, stringsAsFactors = FALSE
       )
-    } else {
-      rows[[length(rows) + 1]] <- data.frame(
-        Taxa = taxa_name, MPA = mpas[i], Mean = CP.mean$lnDiff, SE = CP.mean$se,
-        SD = CP.mean$sd, CI = CP.mean$ci, Model = "Mean", Source = source_name, Resp = resp_name,
-        BA = "N", Primary = "Y", Type = "CI", LinearBefore = "NA", stringsAsFactors = FALSE
-      )
+
+      rbind(linear_row, mean_row)
+    }, error = function(e) {
+      warning("run_ci_analysis failed for ", mpas[i], ": ", e$message)
+      NULL
+    })
+
+    if (!is.null(result)) {
+      rows[[length(rows) + 1]] <- result
     }
   }
+
+  if (length(rows) == 0) return(NULL)
   do.call(rbind, rows)
 }
 
@@ -256,24 +555,66 @@ run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "
 #' @param mpa_name Character MPA name
 #' @param source_name Character data source
 #' @param resp_name Character response type
+#' @param run_diagnostics Logical, whether to run DHARMa diagnostics (default TRUE)
 #' @return One-row dataframe with the same columns as SumStats
-add_step_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_name) {
-  mod1 <- lm(data = dat, lnDiff ~ BA)
-  ba_emmeans <- tidy(emmeans(mod1, ~ BA))
-  ba_emmeans$stdev <- ba_emmeans$std.error * sqrt(ba_emmeans$df + 2)
+add_step_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_name,
+                                  run_diagnostics = TRUE) {
+  # Validate input data
+  if (is.null(dat) || nrow(dat) == 0) {
+    warning("add_step_effect_size: empty dataset for ", mpa_name)
+    return(NULL)
+  }
 
-  pSD <- sqrt((((ba_emmeans$df[1] + 1) * (ba_emmeans$stdev[1]^2)) +
-                 ((ba_emmeans$df[2] + 1) * (ba_emmeans$stdev[2]^2))) /
-                (ba_emmeans$df[1] + 2))
-  pSE <- pSD * sqrt((1 / (ba_emmeans$df[1] + 2)) + (1 / (ba_emmeans$df[2] + 2)))
-  pCI <- pSE * 1.96
-  mean_es <- ba_emmeans$estimate[1] - ba_emmeans$estimate[2]
+  # Check BA levels - need both Before and After with at least 2 obs each
+  ba_counts <- table(dat$BA)
+  n_before <- ifelse("Before" %in% names(ba_counts), ba_counts["Before"], 0)
+  n_after <- ifelse("After" %in% names(ba_counts), ba_counts["After"], 0)
 
-  data.frame(
-    Taxa = taxa_name, MPA = mpa_name, Mean = mean_es, SE = pSE, SD = pSD, CI = pCI,
-    Model = "Step", Source = source_name, Resp = resp_name, BA = "Y", Primary = "Y",
-    Type = "BACI", LinearBefore = "N", stringsAsFactors = FALSE
-  )
+  if (length(ba_counts) < 2 || n_before < 2 || n_after < 2) {
+    warning("add_step_effect_size: insufficient BA levels for ", mpa_name,
+            " (Before=", n_before, ", After=", n_after, ")")
+    return(NULL)
+  }
+
+  # Get sample size
+  n_obs <- nrow(dat)
+
+  # Wrap model fitting in tryCatch
+  tryCatch({
+    mod1 <- lm(data = dat, lnDiff ~ BA)
+
+    # Run DHARMa diagnostics and add to global tracking
+    if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
+      diag_result <- run_dharma_diagnostics(mod1, taxa_name, mpa_name, source_name, "Step")
+      ModelDiagnostics <<- rbind(ModelDiagnostics, diag_result)
+    }
+
+    # Use pairs() for proper covariance-aware contrast estimation
+    # This correctly calculates Var(After - Before) accounting for shared model variance
+    # Note: pairs() works on emmeans objects (method dispatch), but can't be called as emmeans::pairs()
+    em <- emmeans::emmeans(mod1, ~ BA)
+    contrast_result <- pairs(em, reverse = TRUE)  # After - Before
+    contrast_summary <- summary(contrast_result)
+
+    # Extract effect size with proper SE from contrast
+    mean_es <- contrast_summary$estimate[1]
+    pSE <- contrast_summary$SE[1]
+    df_es <- contrast_summary$df[1]
+    pCI <- pSE * qt(0.975, df_es)  # Use t-distribution CI
+
+    # Approximate SD from SE and df for backward compatibility
+    # SD ≈ SE * sqrt(n), where n ≈ df + 1 for simple models
+    pSD <- pSE * sqrt(df_es + 1)
+
+    data.frame(
+      Taxa = taxa_name, MPA = mpa_name, Mean = mean_es, SE = pSE, SD = pSD, CI = pCI,
+      Model = "Step", Source = source_name, Resp = resp_name, BA = "Y", Primary = "Y",
+      Type = "BACI", LinearBefore = "N", N = n_obs, stringsAsFactors = FALSE
+    )
+  }, error = function(e) {
+    warning("add_step_effect_size failed for ", mpa_name, ": ", e$message)
+    NULL
+  })
 }
 
 #' Add a single linear-model (pBACIPS) effect size row
@@ -285,28 +626,58 @@ add_step_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_nam
 #' @param resp_name Character response type
 #' @param time_var Character, time variable name (default "time.model")
 #' @param time_after Numeric, the time point for "after" prediction (default NULL = use max observed)
+#' @param run_diagnostics Logical, whether to run DHARMa diagnostics (default TRUE)
 #' @return One-row dataframe with the same columns as SumStats
 add_linear_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_name,
-                                    time_var = "time.model", time_after = NULL) {
-  # Use the maximum observed time value if not specified
-  if (is.null(time_after)) {
-    time_after <- max(dat[[time_var]], na.rm = TRUE)
+                                    time_var = "time.model", time_after = NULL,
+                                    run_diagnostics = TRUE) {
+  # Validate input data
+  if (is.null(dat) || nrow(dat) < 3) {
+    warning("add_linear_effect_size: insufficient data for ", mpa_name, " (n=", nrow(dat), ")")
+    return(NULL)
   }
-  formula_str <- as.formula(paste("lnDiff ~", time_var))
-  mod1 <- lm(formula_str, data = dat)
 
-  before <- tidy(emmeans(mod1, as.formula(paste("~", time_var)),
-                         at = setNames(list(0), time_var)))
-  after <- tidy(emmeans(mod1, as.formula(paste("~", time_var)),
-                        at = setNames(list(time_after), time_var)))
+  # Check time variable has variance
+  time_values <- dat[[time_var]]
+  if (length(unique(time_values)) < 2) {
+    warning("add_linear_effect_size: no variance in time for ", mpa_name)
+    return(NULL)
+  }
 
-  es <- calculate_effect_size(before, after)
+  # Get sample size
+  n_obs <- nrow(dat)
 
-  data.frame(
-    Taxa = taxa_name, MPA = mpa_name, Mean = es$mean, SE = es$SE, SD = es$SD, CI = es$CI,
-    Model = "Linear", Source = source_name, Resp = resp_name, BA = "Y", Primary = "Y",
-    Type = "pBACIPS", LinearBefore = "N", stringsAsFactors = FALSE
-  )
+  # Wrap model fitting in tryCatch
+  tryCatch({
+    # Use the maximum observed time value if not specified
+    if (is.null(time_after)) {
+      time_after <- max(dat[[time_var]], na.rm = TRUE)
+    }
+    formula_str <- as.formula(paste("lnDiff ~", time_var))
+    mod1 <- lm(formula_str, data = dat)
+
+    # Run DHARMa diagnostics and add to global tracking
+    if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
+      diag_result <- run_dharma_diagnostics(mod1, taxa_name, mpa_name, source_name, "Linear")
+      ModelDiagnostics <<- rbind(ModelDiagnostics, diag_result)
+    }
+
+    # Use covariance-aware effect size calculation
+    # This properly accounts for correlation between predictions at different time points
+    es <- calculate_effect_size_from_contrast(mod1, time_var, time_before = 0, time_after = time_after)
+
+    # Approximate SD from SE and df for backward compatibility
+    es_sd <- es$SE * sqrt(es$df + 1)
+
+    data.frame(
+      Taxa = taxa_name, MPA = mpa_name, Mean = es$mean, SE = es$SE, SD = es_sd, CI = es$CI,
+      Model = "Linear", Source = source_name, Resp = resp_name, BA = "Y", Primary = "Y",
+      Type = "pBACIPS", LinearBefore = "N", N = n_obs, stringsAsFactors = FALSE
+    )
+  }, error = function(e) {
+    warning("add_linear_effect_size failed for ", mpa_name, ": ", e$message)
+    NULL
+  })
 }
 
 #' Add a mean-only effect size row (for cases without enough data for pBACIPS)
@@ -318,12 +689,33 @@ add_linear_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_n
 #' @param resp_name Character response type
 #' @return One-row dataframe with the same columns as SumStats
 add_mean_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_name) {
-  CP.mean <- summarySE(dat, measurevar = "lnDiff")
-  data.frame(
-    Taxa = taxa_name, MPA = mpa_name, Mean = CP.mean$lnDiff, SE = CP.mean$se,
-    SD = CP.mean$sd, CI = CP.mean$ci, Model = "Mean", Source = source_name, Resp = resp_name,
-    BA = "N", Primary = "Y", Type = "CI", LinearBefore = "NA", stringsAsFactors = FALSE
-  )
+  # Validate input data
+  if (is.null(dat) || nrow(dat) < 2) {
+    warning("add_mean_effect_size: insufficient data for ", mpa_name, " (n=", nrow(dat), ")")
+    return(NULL)
+  }
+
+  # Check for valid lnDiff values
+  if (all(is.na(dat$lnDiff))) {
+    warning("add_mean_effect_size: all lnDiff values are NA for ", mpa_name)
+    return(NULL)
+  }
+
+  # Get sample size
+  n_obs <- nrow(dat)
+
+  # Wrap in tryCatch
+  tryCatch({
+    CP.mean <- summarySE(dat, measurevar = "lnDiff")
+    data.frame(
+      Taxa = taxa_name, MPA = mpa_name, Mean = CP.mean$lnDiff, SE = CP.mean$se,
+      SD = CP.mean$sd, CI = CP.mean$ci, Model = "Mean", Source = source_name, Resp = resp_name,
+      BA = "N", Primary = "Y", Type = "CI", LinearBefore = "NA", N = n_obs, stringsAsFactors = FALSE
+    )
+  }, error = function(e) {
+    warning("add_mean_effect_size failed for ", mpa_name, ": ", e$message)
+    NULL
+  })
 }
 
 ####################################################################################################
@@ -354,7 +746,7 @@ LTER.reds.bio <- subset(All.RR.sub.trans, source == "LTER" &
 LTER.reds.bio <- add_time_columns(LTER.reds.bio)
 
 # Naples only since Campus Point was linear in density in the before
-LTER.nap.red <- filter(LTER.reds.bio, CA_MPA_Name_Short == "Naples SMCA" & time > 0)
+LTER.nap.red <- dplyr::filter(LTER.reds.bio, CA_MPA_Name_Short == "Naples SMCA" & time > 0)
 SumStats <- rbind(SumStats, add_mean_effect_size(LTER.nap.red, "M. franciscanus", "Naples SMCA", "LTER", "Bio"))
 
 #----- M. pyrifera Biomass (LTER) -----#
@@ -366,11 +758,11 @@ LinearBefore.macro <- test_linear_before(LTER.macro)
 pbacips.macro <- run_pbacips_loop(LTER.macro)
 
 # Naples
-LTER.nap.macro <- filter(LTER.macro, CA_MPA_Name_Short == "Naples SMCA")
+LTER.nap.macro <- dplyr::filter(LTER.macro, CA_MPA_Name_Short == "Naples SMCA")
 SumStats <- rbind(SumStats, add_linear_effect_size(LTER.nap.macro, "M. pyrifera", "Naples SMCA", "LTER", "Bio"))
 
 # Campus Point
-LTER.cp.macro <- filter(LTER.macro, CA_MPA_Name_Short == "Campus Point SMCA")
+LTER.cp.macro <- dplyr::filter(LTER.macro, CA_MPA_Name_Short == "Campus Point SMCA")
 SumStats <- rbind(SumStats, add_linear_effect_size(LTER.cp.macro, "M. pyrifera", "Campus Point SMCA", "LTER", "Bio"))
 
 #----- S. pulcher Density (LTER) -----#
@@ -381,7 +773,7 @@ LinearBefore.spul.den <- test_linear_before(LTER.SPUL.den)
 pbacips.spul.den <- run_pbacips_loop(LTER.SPUL.den)
 
 # Naples was linear in the before; Campus Point only
-LTER.cp.SPUL.den <- filter(LTER.SPUL.den, CA_MPA_Name_Short == "Campus Point SMCA")
+LTER.cp.SPUL.den <- dplyr::filter(LTER.SPUL.den, CA_MPA_Name_Short == "Campus Point SMCA")
 SumStats <- rbind(SumStats, add_linear_effect_size(LTER.cp.SPUL.den, "S. pulcher", "Campus Point SMCA", "LTER", "Den"))
 
 #----- S. pulcher Biomass (LTER) -----#
@@ -392,7 +784,7 @@ LinearBefore.spul.bio <- test_linear_before(LTER.SPUL.bio)
 pbacips.spul.bio <- run_pbacips_loop(LTER.SPUL.bio)
 
 # Campus Point (Naples biomass was linear in the before)
-LTER.cp.SPUL.bio <- filter(LTER.SPUL.bio, CA_MPA_Name_Short == "Campus Point SMCA")
+LTER.cp.SPUL.bio <- dplyr::filter(LTER.SPUL.bio, CA_MPA_Name_Short == "Campus Point SMCA")
 SumStats <- rbind(SumStats, add_linear_effect_size(LTER.cp.SPUL.bio, "S. pulcher", "Campus Point SMCA", "LTER", "Bio"))
 
 #----- P. interruptus Density (LTER) -- CI data only -----#
@@ -400,11 +792,11 @@ LTER.PANINT.den <- subset(All.RR.sub.trans, source == "LTER" &
                              y == "Panulirus interruptus" & resp == "Den")
 
 # Campus Point
-LTER.cp.LOB <- filter(LTER.PANINT.den, CA_MPA_Name_Short == "Campus Point SMCA")
+LTER.cp.LOB <- dplyr::filter(LTER.PANINT.den, CA_MPA_Name_Short == "Campus Point SMCA")
 SumStats <- rbind(SumStats, add_mean_effect_size(LTER.cp.LOB, "P. interruptus", "Campus Point SMCA", "LTER", "Den"))
 
 # Naples
-LTER.nap.LOB <- filter(LTER.PANINT.den, CA_MPA_Name_Short == "Naples SMCA")
+LTER.nap.LOB <- dplyr::filter(LTER.PANINT.den, CA_MPA_Name_Short == "Naples SMCA")
 SumStats <- rbind(SumStats, add_mean_effect_size(LTER.nap.LOB, "P. interruptus", "Naples SMCA", "LTER", "Den"))
 
 #----- P. interruptus Biomass (LTER) -----#
@@ -412,12 +804,12 @@ LTER.PANINT.bio <- subset(All.RR.sub.trans, source == "LTER" &
                              y == "Panulirus interruptus" & resp == "Bio")
 
 # Campus Point (linear)
-LTER.cp.LOB.bio <- filter(LTER.PANINT.bio, CA_MPA_Name_Short == "Campus Point SMCA")
+LTER.cp.LOB.bio <- dplyr::filter(LTER.PANINT.bio, CA_MPA_Name_Short == "Campus Point SMCA")
 SumStats <- rbind(SumStats, add_linear_effect_size(LTER.cp.LOB.bio, "P. interruptus", "Campus Point SMCA", "LTER", "Bio",
                        time_var = "time"))
 
 # Naples (mean only)
-LTER.nap.LOB.bio <- filter(LTER.PANINT.bio, CA_MPA_Name_Short == "Naples SMCA")
+LTER.nap.LOB.bio <- dplyr::filter(LTER.PANINT.bio, CA_MPA_Name_Short == "Naples SMCA")
 SumStats <- rbind(SumStats, add_mean_effect_size(LTER.nap.LOB.bio, "P. interruptus", "Naples SMCA", "LTER", "Bio"))
 
 
@@ -510,7 +902,7 @@ KFM.purps.CI <- subset(KFM.purps.den, CA_MPA_Name_Short %in% KFM_CI_SITES)
 LinearBefore.kfm.purps <- test_linear_before(KFM.purps.BA)
 
 # Santa Barbara Island SMR is only site not linear in before period
-KFM.SB.purp <- filter(KFM.purps.den, CA_MPA_Name_Short == "Santa Barbara Island SMR")
+KFM.SB.purp <- dplyr::filter(KFM.purps.den, CA_MPA_Name_Short == "Santa Barbara Island SMR")
 SumStats <- rbind(SumStats, add_step_effect_size(KFM.SB.purp, "S. purpuratus", "Santa Barbara Island SMR", "KFM", "Den"))
 
 # CI sites
@@ -537,13 +929,13 @@ LinearBefore.kfm.reds <- test_linear_before(KFM.reds.den.BA)
 
 # Scorpion SMR - step model
 SumStats <- rbind(SumStats, add_step_effect_size(
-  filter(KFM.reds.den, CA_MPA_Name_Short == "Scorpion SMR"),
+  dplyr::filter(KFM.reds.den, CA_MPA_Name_Short == "Scorpion SMR"),
   "M. franciscanus", "Scorpion SMR", "KFM", "Den"
 ))
 
 # Gull Island SMR - step model
 SumStats <- rbind(SumStats, add_step_effect_size(
-  filter(KFM.reds.den, CA_MPA_Name_Short == "Gull Island SMR"),
+  dplyr::filter(KFM.reds.den, CA_MPA_Name_Short == "Gull Island SMR"),
   "M. franciscanus", "Gull Island SMR", "KFM", "Den"
 ))
 
@@ -569,41 +961,54 @@ pbacips.kfm.reds.bio <- run_pbacips_loop(KFM.reds.bio.BA)
 
 # Scorpion SMR - step model
 SumStats <- rbind(SumStats, add_step_effect_size(
-  filter(KFM.reds.bio.BA, CA_MPA_Name_Short == "Scorpion SMR"),
+  dplyr::filter(KFM.reds.bio.BA, CA_MPA_Name_Short == "Scorpion SMR"),
   "M. franciscanus", "Scorpion SMR", "KFM", "Bio"
 ))
 
 # Gull Island SMR - linear model
 SumStats <- rbind(SumStats, add_linear_effect_size(
-  filter(KFM.reds.bio.BA, CA_MPA_Name_Short == "Gull Island SMR"),
+  dplyr::filter(KFM.reds.bio.BA, CA_MPA_Name_Short == "Gull Island SMR"),
   "M. franciscanus", "Gull Island SMR", "KFM", "Bio"
 ))
 
 # Harris Point SMR - sigmoid model
 KFM.mfran.harris <- subset(KFM.reds.bio.BA, CA_MPA_Name_Short == "Harris Point SMR")
-time.model.of.impact <- max(which(KFM.mfran.harris$time.model == 0))
-time.true <- KFM.mfran.harris$time.true
-sigmoid.Model <- mySIGfun_standalone(
-  delta = KFM.mfran.harris$lnDiff,
-  time.model = KFM.mfran.harris$time.model,
-  time.model.of.impact = time.model.of.impact,
-  time.true = time.true
-)
-# Use confidence interval (not prediction interval) for effect sizes
-# Confidence intervals quantify uncertainty in the mean, which is what effect sizes estimate
-# Prediction intervals include residual variance and would overestimate uncertainty
-interval <- data.frame(predFit(sigmoid.Model, newdata = KFM.mfran.harris, interval = "confidence"))
-interval$se <- abs((interval$lwr - interval$fit) / 1.96)
-n_obs <- nrow(interval)
-n_params <- length(coef(sigmoid.Model))
-n_df <- n_obs - n_params
-interval$stdev <- interval$se * sqrt(n_obs)
-pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) + ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
-pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
-pCI <- pSE * 1.96
-mean_es <- interval$fit[n_obs] - interval$fit[1]
-SumStats[nrow(SumStats) + 1, ] <- c("M. franciscanus", "Harris Point SMR", mean_es, pSE, pSD, pCI,
-                                      "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N")
+if (nrow(KFM.mfran.harris) >= 5) {
+  time.model.of.impact <- max(which(KFM.mfran.harris$time.model == 0))
+  time.true <- KFM.mfran.harris$time.true
+  sigmoid.Model <- tryCatch(
+    mySIGfun_standalone(
+      delta = KFM.mfran.harris$lnDiff,
+      time.model = KFM.mfran.harris$time.model,
+      time.model.of.impact = time.model.of.impact,
+      time.true = time.true
+    ),
+    error = function(e) {
+      warning("Harris Point M. franciscanus sigmoid failed: ", e$message)
+      NULL
+    }
+  )
+  if (!is.null(sigmoid.Model)) {
+    # Use confidence interval (not prediction interval) for effect sizes
+    interval <- tryCatch({
+      data.frame(predFit(sigmoid.Model, newdata = KFM.mfran.harris, interval = "confidence"))
+    }, error = function(e) NULL)
+
+    if (!is.null(interval)) {
+      interval$se <- abs((interval$lwr - interval$fit) / 1.96)
+      n_obs <- nrow(interval)
+      n_params <- length(coef(sigmoid.Model))
+      n_df <- n_obs - n_params
+      interval$stdev <- interval$se * sqrt(n_obs)
+      pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) + ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
+      pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
+      pCI <- pSE * 1.96
+      mean_es <- interval$fit[n_obs] - interval$fit[1]
+      SumStats[nrow(SumStats) + 1, ] <- c("M. franciscanus", "Harris Point SMR", mean_es, pSE, pSD, pCI,
+                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N")
+    }
+  }
+}
 
 # CI sites
 SumStats <- rbind(SumStats, run_ci_analysis(KFM.reds.bio.CI, "M. franciscanus", "KFM", "Bio"))
@@ -625,33 +1030,47 @@ pbacips.kfm.macro <- run_pbacips_loop(KFM.macro.BA)
 
 # Gull Island SMR - linear
 SumStats <- rbind(SumStats, add_linear_effect_size(
-  filter(KFM.macro.BA, CA_MPA_Name_Short == "Gull Island SMR"),
+  dplyr::filter(KFM.macro.BA, CA_MPA_Name_Short == "Gull Island SMR"),
   "M. pyrifera", "Gull Island SMR", "KFM", "Bio"
 ))
 
 # Scorpion SMR - sigmoid
-KFM.macro.stipe <- filter(KFM.macro.BA, CA_MPA_Name_Short == "Scorpion SMR")
-time.model.of.impact <- max(which(KFM.macro.stipe$time.model == 0))
-time.true <- KFM.macro.stipe$time.true
-sigmoid.Model <- mySIGfun_standalone(
-  delta = KFM.macro.stipe$lnDiff,
-  time.model = KFM.macro.stipe$time.model,
-  time.model.of.impact = time.model.of.impact,
-  time.true = time.true
-)
-# Use confidence interval for effect size estimation (uncertainty in mean, not prediction)
-interval <- data.frame(predFit(sigmoid.Model, newdata = KFM.macro.stipe, interval = "confidence"))
-interval$se <- abs((interval$lwr - interval$fit) / 1.96)
-n_obs <- nrow(interval)
-n_params <- length(coef(sigmoid.Model))
-n_df <- n_obs - n_params
-interval$stdev <- interval$se * sqrt(n_obs)
-pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) + ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
-pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
-pCI <- pSE * 1.96
-mean_es <- interval$fit[n_obs] - interval$fit[1]
-SumStats[nrow(SumStats) + 1, ] <- c("M. pyrifera", "Scorpion SMR", mean_es, pSE, pSD, pCI,
-                                      "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N")
+KFM.macro.stipe <- dplyr::filter(KFM.macro.BA, CA_MPA_Name_Short == "Scorpion SMR")
+if (nrow(KFM.macro.stipe) >= 5) {
+  time.model.of.impact <- max(which(KFM.macro.stipe$time.model == 0))
+  time.true <- KFM.macro.stipe$time.true
+  sigmoid.Model <- tryCatch(
+    mySIGfun_standalone(
+      delta = KFM.macro.stipe$lnDiff,
+      time.model = KFM.macro.stipe$time.model,
+      time.model.of.impact = time.model.of.impact,
+      time.true = time.true
+    ),
+    error = function(e) {
+      warning("Scorpion M. pyrifera sigmoid failed: ", e$message)
+      NULL
+    }
+  )
+  if (!is.null(sigmoid.Model)) {
+    interval <- tryCatch({
+      data.frame(predFit(sigmoid.Model, newdata = KFM.macro.stipe, interval = "confidence"))
+    }, error = function(e) NULL)
+
+    if (!is.null(interval)) {
+      interval$se <- abs((interval$lwr - interval$fit) / 1.96)
+      n_obs <- nrow(interval)
+      n_params <- length(coef(sigmoid.Model))
+      n_df <- n_obs - n_params
+      interval$stdev <- interval$se * sqrt(n_obs)
+      pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) + ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
+      pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
+      pCI <- pSE * 1.96
+      mean_es <- interval$fit[n_obs] - interval$fit[1]
+      SumStats[nrow(SumStats) + 1, ] <- c("M. pyrifera", "Scorpion SMR", mean_es, pSE, pSD, pCI,
+                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N")
+    }
+  }
+}
 
 # CI sites
 SumStats <- rbind(SumStats, run_ci_analysis(KFM.macro.CI, "M. pyrifera", "KFM", "Bio"))
@@ -675,33 +1094,47 @@ KFM.lob.sub <- subset(KFM.lob.BA, CA_MPA_Name_Short != "Harris Point SMR" &
 pbacips.kfm.lob <- run_pbacips_loop(KFM.lob.sub)
 
 # Gull Island SMR - sigmoid
-KFM.lob.gull <- filter(KFM.lob.sub, CA_MPA_Name_Short == "Gull Island SMR")
-time.model.of.impact <- max(which(KFM.lob.gull$time == 0))
-time.true <- KFM.lob.gull$time
-sigmoid.Model <- mySIGfun_standalone(
-  delta = KFM.lob.gull$lnDiff,
-  time.model = KFM.lob.gull$time.model,
-  time.model.of.impact = time.model.of.impact,
-  time.true = time.true
-)
-# Use confidence interval for effect size estimation (uncertainty in mean, not prediction)
-interval <- data.frame(predFit(sigmoid.Model, newdata = KFM.lob.gull, interval = "confidence"))
-interval$se <- abs((interval$lwr - interval$fit) / 1.96)
-n_obs <- nrow(interval)
-n_params <- length(coef(sigmoid.Model))
-n_df <- n_obs - n_params
-interval$stdev <- interval$se * sqrt(n_obs)
-pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) +
-               ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
-pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
-pCI <- pSE * 1.96
-mean_es <- interval$fit[n_obs] - interval$fit[1]
-SumStats[nrow(SumStats) + 1, ] <- c("P. interruptus", "Gull Island SMR", mean_es, pSE, pSD, pCI,
-                                      "Sigmoid", "KFM", "Den", "Y", "Y", "pBACIPS", "N")
+KFM.lob.gull <- dplyr::filter(KFM.lob.sub, CA_MPA_Name_Short == "Gull Island SMR")
+if (nrow(KFM.lob.gull) >= 5) {
+  time.model.of.impact <- max(which(KFM.lob.gull$time == 0))
+  time.true <- KFM.lob.gull$time
+  sigmoid.Model <- tryCatch(
+    mySIGfun_standalone(
+      delta = KFM.lob.gull$lnDiff,
+      time.model = KFM.lob.gull$time.model,
+      time.model.of.impact = time.model.of.impact,
+      time.true = time.true
+    ),
+    error = function(e) {
+      warning("Gull Island P. interruptus sigmoid failed: ", e$message)
+      NULL
+    }
+  )
+  if (!is.null(sigmoid.Model)) {
+    interval <- tryCatch({
+      data.frame(predFit(sigmoid.Model, newdata = KFM.lob.gull, interval = "confidence"))
+    }, error = function(e) NULL)
+
+    if (!is.null(interval)) {
+      interval$se <- abs((interval$lwr - interval$fit) / 1.96)
+      n_obs <- nrow(interval)
+      n_params <- length(coef(sigmoid.Model))
+      n_df <- n_obs - n_params
+      interval$stdev <- interval$se * sqrt(n_obs)
+      pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) +
+                     ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
+      pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
+      pCI <- pSE * 1.96
+      mean_es <- interval$fit[n_obs] - interval$fit[1]
+      SumStats[nrow(SumStats) + 1, ] <- c("P. interruptus", "Gull Island SMR", mean_es, pSE, pSD, pCI,
+                                            "Sigmoid", "KFM", "Den", "Y", "Y", "pBACIPS", "N")
+    }
+  }
+}
 
 # Scorpion SMR - linear
 SumStats <- rbind(SumStats, add_linear_effect_size(
-  filter(KFM.lob.sub, CA_MPA_Name_Short == "Scorpion SMR"),
+  dplyr::filter(KFM.lob.sub, CA_MPA_Name_Short == "Scorpion SMR"),
   "P. interruptus", "Scorpion SMR", "KFM", "Den"
 ))
 
@@ -724,13 +1157,13 @@ LinearBefore.kfm.sheep <- test_linear_before(KFM.sheep.BA)
 
 # Harris Point SMR - linear
 SumStats <- rbind(SumStats, add_linear_effect_size(
-  filter(KFM.sheep.BA, CA_MPA_Name_Short == "Harris Point SMR"),
+  dplyr::filter(KFM.sheep.BA, CA_MPA_Name_Short == "Harris Point SMR"),
   "S. pulcher", "Harris Point SMR", "KFM", "Den"
 ))
 
 # Scorpion SMR - step
 SumStats <- rbind(SumStats, add_step_effect_size(
-  filter(KFM.sheep.BA, CA_MPA_Name_Short == "Scorpion SMR"),
+  dplyr::filter(KFM.sheep.BA, CA_MPA_Name_Short == "Scorpion SMR"),
   "S. pulcher", "Scorpion SMR", "KFM", "Den"
 ))
 
@@ -748,7 +1181,7 @@ SumStats <- rbind(SumStats, run_ci_analysis(KFM.sheep.CI, "S. pulcher", "KFM", "
 if (exists("Landsat.RR") && nrow(Landsat.RR) > 0) {
   mpas_landsat <- unique(Landsat.RR$CA_MPA_Name_Short)
   for (mpa in mpas_landsat) {
-    mpa_dat <- filter(Landsat.RR, CA_MPA_Name_Short == mpa)
+    mpa_dat <- dplyr::filter(Landsat.RR, CA_MPA_Name_Short == mpa)
     if (nrow(mpa_dat) > 3) {
       SumStats <- rbind(SumStats, add_linear_effect_size(mpa_dat, "M. pyrifera", mpa, "Landsat", "Bio",
                              time_var = "time"))
@@ -783,6 +1216,8 @@ SumStats.sub$Type <- factor(SumStats.sub$Type,
 )
 
 # Merge with site metadata
+# Rename Type column to AnalysisType before merge to avoid collision with Site$type
+names(SumStats.sub)[names(SumStats.sub) == "Type"] <- "AnalysisType"
 SumStats.sub <- merge(SumStats.sub, Site, by.x = "MPA", by.y = "CA_MPA_Name_Short")
 
 ####################################################################################################
@@ -791,7 +1226,7 @@ SumStats.sub <- merge(SumStats.sub, Site, by.x = "MPA", by.y = "CA_MPA_Name_Shor
 
 # Include pBACIPS results, plus CI results where before period was not linear and is primary
 SumStats.Final <- subset(SumStats.sub,
-  Type.x == "pBACIPS" | (Type.x == "CI" & LinearBefore == "NA" & Primary == "Y")
+  AnalysisType == "pBACIPS" | (AnalysisType == "CI" & LinearBefore == "NA" & Primary == "Y")
 )
 
 # Remove problematic MPAs:
@@ -809,3 +1244,137 @@ SumStats.Final <- subset(SumStats.Final,
 cat("Effect size calculation complete.\n")
 cat("SumStats rows:", nrow(SumStats), "\n")
 cat("SumStats.Final rows:", nrow(SumStats.Final), "\n")
+
+####################################################################################################
+## Model Diagnostics Summary #######################################################################
+####################################################################################################
+
+if (exists("ModelDiagnostics") && nrow(ModelDiagnostics) > 0) {
+  cat("\n")
+  cat("============================\n")
+  cat("MODEL DIAGNOSTICS SUMMARY\n")
+  cat("============================\n")
+
+  # Remove any rows with all NA
+  ModelDiagnostics <- ModelDiagnostics[!is.na(ModelDiagnostics$Model_Type), ]
+
+  if (nrow(ModelDiagnostics) > 0) {
+    # Summary statistics
+    n_total <- nrow(ModelDiagnostics)
+    n_pass <- sum(ModelDiagnostics$Pass_All == TRUE, na.rm = TRUE)
+    n_fail <- sum(ModelDiagnostics$Pass_All == FALSE, na.rm = TRUE)
+    n_na <- sum(is.na(ModelDiagnostics$Pass_All))
+
+    cat(sprintf("Total models diagnosed: %d\n", n_total))
+    cat(sprintf("  Pass all tests: %d (%.1f%%)\n", n_pass, 100 * n_pass / n_total))
+    cat(sprintf("  Fail one or more: %d (%.1f%%)\n", n_fail, 100 * n_fail / n_total))
+    if (n_na > 0) cat(sprintf("  Could not diagnose: %d\n", n_na))
+
+    # Breakdown by model type
+    cat("\nBy Model Type:\n")
+    type_summary <- aggregate(Pass_All ~ Model_Type, data = ModelDiagnostics,
+                               FUN = function(x) c(n = length(x), pass = sum(x, na.rm = TRUE)))
+    for (i in seq_len(nrow(type_summary))) {
+      mt <- type_summary$Model_Type[i]
+      n <- type_summary$Pass_All[i, "n"]
+      pass <- type_summary$Pass_All[i, "pass"]
+      cat(sprintf("  %s: %d/%d pass (%.1f%%)\n", mt, pass, n, 100 * pass / n))
+    }
+
+    # List models with issues
+    failed_models <- ModelDiagnostics[ModelDiagnostics$Pass_All == FALSE & !is.na(ModelDiagnostics$Pass_All), ]
+    if (nrow(failed_models) > 0) {
+      cat("\nModels with diagnostic issues:\n")
+      # Show up to 10 failures
+      show_n <- min(10, nrow(failed_models))
+      for (i in seq_len(show_n)) {
+        row <- failed_models[i, ]
+        cat(sprintf("  - %s %s (%s): %s\n", row$Taxa, row$MPA, row$Model_Type, row$Notes))
+      }
+      if (nrow(failed_models) > 10) {
+        cat(sprintf("  ... and %d more\n", nrow(failed_models) - 10))
+      }
+    }
+
+    # Save diagnostics to file
+    diag_file <- here::here("data", "model_diagnostics.csv")
+    write.csv(ModelDiagnostics, diag_file, row.names = FALSE)
+    cat(sprintf("\nDiagnostics saved to: %s\n", diag_file))
+
+    # Create diagnostic plots directory if needed
+    diag_dir <- here::here("plots", "diagnostics")
+    if (!dir.exists(diag_dir)) {
+      dir.create(diag_dir, recursive = TRUE)
+    }
+
+    # Generate summary plot if ggplot2 is available
+    if (requireNamespace("ggplot2", quietly = TRUE) && n_total > 0) {
+      # Summary bar plot
+      diag_summary <- data.frame(
+        Status = c("Pass", "Fail", "NA"),
+        Count = c(n_pass, n_fail, n_na)
+      )
+      diag_summary <- diag_summary[diag_summary$Count > 0, ]
+
+      p <- ggplot2::ggplot(diag_summary, ggplot2::aes(x = Status, y = Count, fill = Status)) +
+        ggplot2::geom_bar(stat = "identity") +
+        ggplot2::scale_fill_manual(values = c("Pass" = "#4CAF50", "Fail" = "#F44336", "NA" = "#9E9E9E")) +
+        ggplot2::labs(title = "Model Diagnostic Results",
+                      subtitle = sprintf("%d models tested with DHARMa", n_total),
+                      x = "", y = "Number of Models") +
+        ggplot2::theme_minimal() +
+        ggplot2::theme(legend.position = "none")
+
+      ggplot2::ggsave(file.path(diag_dir, "diagnostic_summary.pdf"), p, width = 6, height = 4)
+      ggplot2::ggsave(file.path(diag_dir, "diagnostic_summary.png"), p, width = 6, height = 4, dpi = 150)
+      cat(sprintf("Summary plot saved to: %s\n", file.path(diag_dir, "diagnostic_summary.pdf")))
+    }
+  }
+} else {
+  cat("\nNo model diagnostics recorded (DHARMa may not be installed).\n")
+}
+
+####################################################################################################
+## Memory cleanup
+####################################################################################################
+# Remove intermediate analysis objects to free memory
+# Keep only: SumStats.Final, ModelDiagnostics (if needed)
+
+# LTER analysis intermediates
+rm(list = intersect(ls(), c(
+  "LTER.purps", "LTER.reds", "LTER.reds.bio", "LTER.macro", "LTER.SPUL.den", "LTER.SPUL.bio",
+  "LTER.PANINT.den", "LTER.PANINT.bio", "LTER.nap.red", "LTER.cp.macro", "LTER.cp.SPUL.den",
+  "LTER.cp.SPUL.bio", "LTER.cp.LOB", "LTER.nap.LOB", "LTER.cp.LOB.bio", "LTER.nap.LOB.bio",
+  "LTER.redsNap", "LinearBefore.purps", "LinearBefore.reds", "LinearBefore.macro",
+  "LinearBefore.spul.den", "LinearBefore.spul.bio", "pbacips.reds.den", "pbacips.macro",
+  "pbacips.spul.den", "pbacips.spul.bio"
+)))
+
+# PISCO analysis intermediates
+rm(list = intersect(ls(), c(
+  "Mes.den", "Mes.bio", "Str.den", "Str.bio", "Mac", "Pan.den", "Pan.bio",
+  "Sheep.den", "Sheep.bio"
+)))
+
+# KFM analysis intermediates
+rm(list = intersect(ls(), c(
+  "KFM.purps.den", "KFM.purps.BA", "KFM.purps.CI", "KFM.purps.bio", "KFM.purps.bio.CI",
+  "KFM.reds.den", "KFM.reds.den.BA", "KFM.reds.den.CI", "KFM.reds.bio",
+  "KFM.macro", "KFM.macro.BA", "KFM.macro.CI", "KFM.macro.stipe",
+  "KFM.lob", "KFM.lob.BA", "KFM.lob.CI", "KFM.lob.sub", "KFM.lob.gull", "KFM.lobs.sbi",
+  "KFM.mfran.harris", "Sheep.den.kfm", "KFM.sheep.BA", "KFM.sheep.CI",
+  "LinearBefore.kfm.purps", "LinearBefore.kfm.reds", "LinearBefore.kfm.macro",
+  "LinearBefore.kfm.lob", "LinearBefore.kfm.sheep",
+  "pbacips.kfm.reds.bio", "pbacips.kfm.lob", "KFM.SB.purp"
+)))
+
+# Model objects and intermediates
+rm(list = intersect(ls(), c(
+  "sigmoid.Model", "interval", "mpas_landsat", "mpa_dat"
+)))
+
+# Force garbage collection
+gc(verbose = FALSE)
+
+cat("\nEffect size calculation complete.\n")
+cat("  Output: SumStats.Final (", nrow(SumStats.Final), " effect sizes)\n", sep = "")
