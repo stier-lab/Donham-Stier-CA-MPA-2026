@@ -221,8 +221,8 @@ When adding new figures or outputs:
 ## Documentation
 
 - `docs/MPA_Kelp_MS_V5.pdf` - Current manuscript draft
-- `docs/STATISTICAL_REVIEW.md` - Statistical methodology and fixes
-- `docs/methodology_review.md` - Additional methodology notes
+- `outputs/statistical_review_20260206.md` - Comprehensive statistical validation (agent review, Grade: A+)
+- `docs/methodology_review.md` - Historical issue tracking and fixes
 - This file (`CLAUDE.md`) - Project conventions for AI assistants
 
 ## Contact

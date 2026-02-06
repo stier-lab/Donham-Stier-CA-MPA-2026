@@ -319,8 +319,8 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 ## Documentation
 
 - **`CLAUDE.md`** - Project conventions for AI assistants
-- **`docs/STATISTICAL_REVIEW.md`** - Statistical methodology and fixes
-- **`docs/methodology_review.md`** - Additional methodology notes
+- **`outputs/statistical_review_20260206.md`** - Comprehensive statistical validation (Grade: A+)
+- **`docs/methodology_review.md`** - Historical issue tracking and fixes
 - **`docs/MPA_Kelp_MS_V5.pdf`** - Current manuscript draft
 
 ---
