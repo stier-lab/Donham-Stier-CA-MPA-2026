@@ -3,7 +3,7 @@
 ## CA MPA Kelp Forest pBACIPS Analysis
 
 **Document Version:** 2.0
-**Last Updated:** 2026-02-05
+**Last Updated:** 2026-02-06
 **Authors:** Emily Donham & Adrian Stier
 **Target Journal:** Conservation Letters
 

@@ -3,7 +3,7 @@
 **Date:** 2026-02-02
 **Reviewers:** Statistician Agent, Data Engineer Agent
 **Target journal:** Conservation Letters
-**Last updated:** 2026-02-02 (fixes applied)
+**Last updated:** 2026-02-06 (all applicable fixes verified in current codebase)
 
 This document summarizes all issues identified during a systematic review of the
 statistical methodology and data processing pipeline. Each issue includes a severity

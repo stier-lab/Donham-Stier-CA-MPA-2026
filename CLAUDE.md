@@ -40,7 +40,6 @@ Donham-Stier-CA-MPA-2026/
 - Base map: Southern California coastline with Channel Islands
 - Site markers: Shape indicates data source (square=NPS-KFM, circle=LTER, triangle=PISCO)
 - Inset panels (a-f): Kelp biomass time series at Campus Point, Point Vicente, Harris Point, South Point, Gull Island, Santa Barbara Island
-- Also outputs `fig_01_map_only.pdf` (map without insets)
 
 ### Supplemental Figures
 
@@ -71,7 +70,7 @@ Donham-Stier-CA-MPA-2026/
 **Supplemental figures:** `fig_s{NN}_{descriptive_name}.{pdf|png}`
 
 Examples:
-- `fig_01_kelp_timeseries.pdf` (Main text Figure 1)
+- `fig_01_mpa_map.pdf` (Main text Figure 1)
 - `fig_s01_forest_plot.pdf` (Supplemental Figure S1)
 
 Guidelines:

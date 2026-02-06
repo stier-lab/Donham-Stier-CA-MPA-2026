@@ -36,7 +36,7 @@ The analysis examines:
 Donham-Stier-CA-MPA-2026/
 │
 ├── code/
-│   └── R/                          # Analysis scripts (numbered 00-10)
+│   └── R/                          # Analysis scripts (numbered 00-11)
 │       ├── 00_libraries.R          # Package dependencies
 │       ├── 00b_color_palette.R     # Color scheme & ggplot theme
 │       ├── 00c_analysis_constants.R# Named constants & site exclusions
@@ -51,6 +51,7 @@ Donham-Stier-CA-MPA-2026/
 │       ├── 08_effect_sizes.R       # Calculate effect sizes
 │       ├── 09_meta_analysis.R      # Multilevel meta-analysis
 │       ├── 10_figures.R            # Publication figures
+│       ├── 11_results_summary.R    # Generate results summaries
 │       └── run_all.R               # Pipeline orchestration
 │
 ├── data/
@@ -184,17 +185,26 @@ source(here::here("code", "R", "run_all.R"))
 │  03_data_import.R: Site metadata, size frequency data           │
 └─────────────────────────────────┬───────────────────────────────┘
                                   │
-         ┌────────────────────────┼────────────────────────┐
-         ▼                        ▼                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ 04_pisco        │    │ 05_kfm          │    │ 06_lter         │
-│ processing.R    │    │ processing.R    │    │ processing.R    │
-│                 │    │                 │    │                 │
-│ PISCO swath &   │    │ KFM monitoring  │    │ LTER time       │
-│ fish surveys    │    │ data            │    │ series          │
-└────────┬────────┘    └────────┬────────┘    └────────┬────────┘
-         │                      │                      │
-         └──────────────────────┼──────────────────────┘
+         ┌────────────────────────┼────────────────────────┬────────┐
+         ▼                        ▼                        ▼        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐ │
+│ 04_pisco        │    │ 05_kfm          │    │ 06_lter         │ │
+│ processing.R    │    │ processing.R    │    │ processing.R    │ │
+│                 │    │                 │    │                 │ │
+│ PISCO swath &   │    │ KFM monitoring  │    │ LTER time       │ │
+│ fish surveys    │    │ data            │    │ series          │ │
+└────────┬────────┘    └────────┬────────┘    └────────┬────────┘ │
+         │                      │                      │           │
+         │                      │                      │           ▼
+         │                      │                      │  ┌─────────────────┐
+         │                      │                      │  │ 06b_landsat     │
+         │                      │                      │  │ processing.R    │
+         │                      │                      │  │                 │
+         │                      │                      │  │ Satellite kelp  │
+         │                      │                      │  │ canopy data     │
+         │                      │                      │  └────────┬────────┘
+         │                      │                      │           │
+         └──────────────────────┼──────────────────────┴───────────┘
                                 ▼
                   ┌─────────────────────────┐
                   │ 07_combine_data.R       │
@@ -222,6 +232,13 @@ source(here::here("code", "R", "run_all.R"))
                   │                         │
                   │ Publication figures     │
                   │ Main text + supplement  │
+                  └────────────┬────────────┘
+                               ▼
+                  ┌─────────────────────────┐
+                  │ 11_results_summary.R    │
+                  │                         │
+                  │ Auto-generate results   │
+                  │ CSVs and markdown       │
                   └─────────────────────────┘
 ```
 
@@ -233,7 +250,7 @@ source(here::here("code", "R", "run_all.R"))
 
 | Figure | Description | Output File |
 |--------|-------------|-------------|
-| **Figure 1** | Map of MPAs with Channel Islands + kelp time series insets | `plots/fig_01_mpa_map_composite.pdf` |
+| **Figure 1** | Map of MPAs with Channel Islands + kelp time series insets | `plots/fig_01_mpa_map.pdf` |
 | **Figure 2** | Data processing pipeline visualization | `plots/fig_02_data_processing.pdf` |
 | **Figure 3** | Mean effect sizes by taxa (meta-analysis) | `plots/fig_03_mean_effects.pdf` |
 | **Figure 4** | Urchin vs kelp effect size relationship | `plots/fig_04_urchin_kelp_scatter.pdf` |
