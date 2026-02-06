@@ -298,6 +298,211 @@ cat("Interpretation: ",
            ifelse(pseudo_I2_den < 75, "Moderate heterogeneity", "High heterogeneity")), "\n")
 
 ####################################################################################################
+## SENSITIVITY ANALYSIS: Models with/without Source random effect #################################
+####################################################################################################
+# NOTE: The Source random effect accounts for program-level variation (PISCO, KFM, LTER).
+# However, with only 3-4 Source levels (below the recommended 5-6 minimum), variance
+# estimates may be uncertain. This sensitivity analysis compares results with and without
+# the Source random effect to assess its impact on conclusions.
+
+cat("\n")
+cat("====================================\n")
+cat("SENSITIVITY ANALYSIS: Source Effect\n")
+cat("====================================\n")
+
+# Fit alternative models WITHOUT Source random effect
+meta_biomass_no_source <- tryCatch({
+  rma.mv(
+    yi     = Mean,
+    V      = vi,
+    mods   = ~ Taxa - 1,
+    random = list(~ 1 | MPA),  # Only MPA, no Source
+    data   = biomass_clean,
+    method = "REML",
+    test   = "t"
+  )
+}, error = function(e) {
+  warning("Could not fit biomass model without Source: ", e$message)
+  NULL
+})
+
+meta_density_no_source <- tryCatch({
+  rma.mv(
+    yi     = Mean,
+    V      = vi,
+    mods   = ~ Taxa - 1,
+    random = list(~ 1 | MPA),  # Only MPA, no Source
+    data   = density_clean,
+    method = "REML",
+    test   = "t"
+  )
+}, error = function(e) {
+  warning("Could not fit density model without Source: ", e$message)
+  NULL
+})
+
+# Model comparison (AIC/BIC)
+cat("\n--- Model Comparison: With vs Without Source Random Effect ---\n")
+
+if (!is.null(meta_biomass_no_source)) {
+  comparison_biomass <- data.frame(
+    Model = c("With Source", "Without Source"),
+    AIC = c(AIC(meta_biomass), AIC(meta_biomass_no_source)),
+    BIC = c(BIC(meta_biomass), BIC(meta_biomass_no_source)),
+    logLik = c(as.numeric(logLik(meta_biomass)), as.numeric(logLik(meta_biomass_no_source))),
+    tau2_MPA = c(meta_biomass$sigma2[1], meta_biomass_no_source$sigma2[1]),
+    tau2_Source = c(meta_biomass$sigma2[2], NA)
+  )
+  comparison_biomass$deltaAIC <- comparison_biomass$AIC - min(comparison_biomass$AIC)
+  cat("\nBIOMASS Model Comparison:\n")
+  print(comparison_biomass)
+  cat("  -> Preferred model (lower AIC):", comparison_biomass$Model[which.min(comparison_biomass$AIC)], "\n")
+}
+
+if (!is.null(meta_density_no_source)) {
+  comparison_density <- data.frame(
+    Model = c("With Source", "Without Source"),
+    AIC = c(AIC(meta_density), AIC(meta_density_no_source)),
+    BIC = c(BIC(meta_density), BIC(meta_density_no_source)),
+    logLik = c(as.numeric(logLik(meta_density)), as.numeric(logLik(meta_density_no_source))),
+    tau2_MPA = c(meta_density$sigma2[1], meta_density_no_source$sigma2[1]),
+    tau2_Source = c(meta_density$sigma2[2], NA)
+  )
+  comparison_density$deltaAIC <- comparison_density$AIC - min(comparison_density$AIC)
+  cat("\nDENSITY Model Comparison:\n")
+  print(comparison_density)
+  cat("  -> Preferred model (lower AIC):", comparison_density$Model[which.min(comparison_density$AIC)], "\n")
+}
+
+# Compare coefficient estimates
+cat("\n--- Effect of Source on Coefficient Estimates ---\n")
+if (!is.null(meta_biomass_no_source)) {
+  coef_with <- coef(summary(meta_biomass))[, c("estimate", "se", "pval")]
+  coef_without <- coef(summary(meta_biomass_no_source))[, c("estimate", "se", "pval")]
+  coef_diff_bio <- data.frame(
+    Taxa = gsub("^Taxa", "", rownames(coef_with)),
+    Est_with = round(coef_with$estimate, 3),
+    Est_without = round(coef_without$estimate, 3),
+    SE_with = round(coef_with$se, 3),
+    SE_without = round(coef_without$se, 3),
+    pval_with = round(coef_with$pval, 4),
+    pval_without = round(coef_without$pval, 4)
+  )
+  cat("\nBIOMASS - Coefficient comparison:\n")
+  print(coef_diff_bio)
+}
+
+if (!is.null(meta_density_no_source)) {
+  coef_with <- coef(summary(meta_density))[, c("estimate", "se", "pval")]
+  coef_without <- coef(summary(meta_density_no_source))[, c("estimate", "se", "pval")]
+  coef_diff_den <- data.frame(
+    Taxa = gsub("^Taxa", "", rownames(coef_with)),
+    Est_with = round(coef_with$estimate, 3),
+    Est_without = round(coef_without$estimate, 3),
+    SE_with = round(coef_with$se, 3),
+    SE_without = round(coef_without$se, 3),
+    pval_with = round(coef_with$pval, 4),
+    pval_without = round(coef_without$pval, 4)
+  )
+  cat("\nDENSITY - Coefficient comparison:\n")
+  print(coef_diff_den)
+}
+
+####################################################################################################
+## Variance Component Confidence Intervals ########################################################
+####################################################################################################
+# NOTE: With only 3-4 Source levels, variance component estimates have high uncertainty.
+# Reporting confidence intervals provides transparency about this limitation.
+
+cat("\n")
+cat("==========================================\n")
+cat("VARIANCE COMPONENT CONFIDENCE INTERVALS\n")
+cat("==========================================\n")
+cat("(Using profile likelihood method from metafor::confint)\n")
+
+# Extract confidence intervals for variance components
+ci_biomass <- tryCatch({
+  confint(meta_biomass)
+}, error = function(e) {
+  warning("Could not compute variance component CIs for biomass: ", e$message)
+  NULL
+})
+
+ci_density <- tryCatch({
+  confint(meta_density)
+}, error = function(e) {
+  warning("Could not compute variance component CIs for density: ", e$message)
+  NULL
+})
+
+if (!is.null(ci_biomass)) {
+  cat("\n--- BIOMASS Variance Component CIs ---\n")
+  print(ci_biomass)
+}
+
+if (!is.null(ci_density)) {
+  cat("\n--- DENSITY Variance Component CIs ---\n")
+  print(ci_density)
+}
+
+# Create summary table for supplementary materials
+tau2_summary <- data.frame(
+  Response = character(),
+  Component = character(),
+  Estimate = numeric(),
+  CI_Lower = numeric(),
+  CI_Upper = numeric(),
+  stringsAsFactors = FALSE
+)
+
+if (!is.null(ci_biomass)) {
+  # Extract from confint output (structure depends on metafor version)
+  if ("random" %in% names(ci_biomass)) {
+    for (i in seq_along(ci_biomass$random)) {
+      comp_name <- names(ci_biomass$random)[i]
+      tau2_summary <- rbind(tau2_summary, data.frame(
+        Response = "Biomass",
+        Component = comp_name,
+        Estimate = ci_biomass$random[[i]]["estimate"],
+        CI_Lower = ci_biomass$random[[i]]["ci.lb"],
+        CI_Upper = ci_biomass$random[[i]]["ci.ub"],
+        stringsAsFactors = FALSE
+      ))
+    }
+  }
+}
+
+if (!is.null(ci_density)) {
+  if ("random" %in% names(ci_density)) {
+    for (i in seq_along(ci_density$random)) {
+      comp_name <- names(ci_density$random)[i]
+      tau2_summary <- rbind(tau2_summary, data.frame(
+        Response = "Density",
+        Component = comp_name,
+        Estimate = ci_density$random[[i]]["estimate"],
+        CI_Lower = ci_density$random[[i]]["ci.lb"],
+        CI_Upper = ci_density$random[[i]]["ci.ub"],
+        stringsAsFactors = FALSE
+      ))
+    }
+  }
+}
+
+if (nrow(tau2_summary) > 0) {
+  cat("\n--- Summary Table: Variance Components with CIs ---\n")
+  print(tau2_summary)
+
+  # Export to supplementary materials
+  write.csv(tau2_summary, here::here("data", "table_s_variance_components.csv"), row.names = FALSE)
+  cat("\nVariance component summary exported to: data/table_s_variance_components.csv\n")
+}
+
+cat("\n")
+cat("NOTE: The Source random effect has only 3-4 levels (PISCO, KFM, LTER, Landsat),\n")
+cat("which is below the recommended minimum of 5-6 for reliable variance estimation.\n")
+cat("Interpret tau²_Source estimates with caution; wide CIs are expected.\n")
+
+####################################################################################################
 ## Build Table 2: Summary of meta-analysis results ################################################
 ####################################################################################################
 

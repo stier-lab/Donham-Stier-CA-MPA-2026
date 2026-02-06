@@ -39,6 +39,7 @@ Donham-Stier-CA-MPA-2026/
 │   └── R/                          # Analysis scripts (numbered 00-10)
 │       ├── 00_libraries.R          # Package dependencies
 │       ├── 00b_color_palette.R     # Color scheme & ggplot theme
+│       ├── 00c_analysis_constants.R# Named constants & site exclusions
 │       ├── 01_utils.R              # Utility functions
 │       ├── 02_pBACIPS_function.R   # Core pBACIPS methodology
 │       ├── 03_data_import.R        # Import & clean data
@@ -206,7 +207,7 @@ source(here::here("code", "R", "run_all.R"))
                   │ 08_effect_sizes.R       │
                   │                         │
                   │ pBACIPS effect sizes    │
-                  │ Sigmoid & linear models │
+                  │ 4 candidate models      │
                   └────────────┬────────────┘
                                ▼
                   ┌─────────────────────────┐
@@ -249,7 +250,7 @@ source(here::here("code", "R", "run_all.R"))
 | Table | Description | Output File |
 |-------|-------------|-------------|
 | **Table 1** | Average density/biomass by taxa | `data/average_responses.csv` |
-| **Table 2** | Meta-analysis summary statistics | `data/Table2.csv` |
+| **Table 2** | Meta-analysis summary statistics | `data/table_02_meta_analysis.csv` |
 
 ---
 
@@ -261,15 +262,19 @@ We implement the **progressive-change Before-After-Control-Impact-Pairs** approa
 
 1. Pairs each MPA site with a nearby reference site
 2. Calculates the log response ratio (ln RR) between paired sites
-3. Fits models to detect change points at MPA implementation
-4. Allows for gradual (sigmoid) or immediate (linear) responses
+3. Fits 4 candidate models and selects best via AICc:
+   - **Step**: Abrupt shift after MPA implementation
+   - **Linear**: Gradual constant-rate recovery
+   - **Asymptotic**: Fast initial change that saturates
+   - **Sigmoid**: Delayed onset followed by rapid change
 
 ### Meta-Analysis
 
 Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) with:
+- Taxa as fixed effect moderator
 - Random effects for MPA and data source
 - Heterogeneity assessment (I², τ²)
-- Moderator analyses for taxa and region
+- Separate models for biomass and density responses
 
 ### Quality Control
 
@@ -298,6 +303,7 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 
 - **`CLAUDE.md`** - Project conventions for AI assistants
 - **`docs/STATISTICAL_REVIEW.md`** - Statistical methodology and fixes
+- **`docs/methodology_review.md`** - Additional methodology notes
 - **`docs/MPA_Kelp_MS_V5.pdf`** - Current manuscript draft
 
 ---

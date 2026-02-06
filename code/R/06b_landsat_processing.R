@@ -80,20 +80,13 @@ if (!file.exists(landsat_data_path)) {
 
   bio.summarize.long <- gather(fn, Year, Biomass, -MPA, -status, -rep, -lat, -lon)
 
-  # Dynamically extract years from column names and calculate rows per year group
-  year_cols <- grep("^X[0-9]{4}$", names(fn), value = TRUE)
-  years <- as.numeric(gsub("X", "", year_cols))
-  n_rows_per_year <- nrow(fn)  # Each row in fn represents one MPA x status x rep combination
-
-  # Validate dimensions before assignment
-  expected_total_rows <- length(years) * n_rows_per_year
-  if (nrow(bio.summarize.long) != expected_total_rows) {
-    warning("Landsat data dimension mismatch: expected ", expected_total_rows,
-            " rows but got ", nrow(bio.summarize.long))
+  # Derive numeric year directly from gathered column names (e.g., "X1984" -> 1984).
+  # This avoids brittle assumptions about gather() row ordering.
+  bio.summarize.long$year <- suppressWarnings(as.integer(gsub("^X", "", bio.summarize.long$Year)))
+  bad_year <- sum(is.na(bio.summarize.long$year))
+  if (bad_year > 0) {
+    warning("Landsat year parsing: ", bad_year, " rows have non-year 'Year' values.")
   }
-
-  # Assign years dynamically based on actual data structure
-  bio.summarize.long$year <- rep(years, each = n_rows_per_year)
   bio.summarize.long <- bio.summarize.long %>% dplyr::arrange(MPA)  # Sort by MPA name
 
   ####################################################################################################

@@ -1,0 +1,10 @@
+model,response,taxa,n_effects,estimate,std_error,test_statistic,df,p_value,ci_lower,ci_upper,significant,direction,qualitative_effect,tau2_MPA,tau2_Source
+Meta-analysis (REML),Biomass,S. purpuratus,10,-0.5919,0.2603,-2.274,NA,0.026685,-1.1129,-0.0709,TRUE,negative,Significant decrease inside MPA,0.0848,0.1231
+Meta-analysis (REML),Biomass,M. franciscanus,12,0.7289,0.2324,3.1362,NA,0.002687,0.2637,1.1941,TRUE,positive,Significant increase inside MPA,0.0848,0.1231
+Meta-analysis (REML),Biomass,M. pyrifera,16,0.6426,0.2563,2.5075,NA,0.014979,0.1296,1.1555,TRUE,positive,Significant increase inside MPA,0.0848,0.1231
+Meta-analysis (REML),Biomass,P. interruptus,7,0.6961,0.293,2.3754,NA,0.020855,0.1095,1.2827,TRUE,positive,Significant increase inside MPA,0.0848,0.1231
+Meta-analysis (REML),Biomass,S. pulcher,18,1.1951,0.2386,5.0092,NA,5e-6,0.7176,1.6727,TRUE,positive,Significant increase inside MPA,0.0848,0.1231
+Meta-analysis (REML),Density,S. purpuratus,12,-2.0929,0.5886,-3.5559,NA,7.58e-4,-3.2711,-0.9148,TRUE,negative,Significant decrease inside MPA,0.5205,0.8777
+Meta-analysis (REML),Density,M. franciscanus,13,-0.5926,0.5803,-1.0213,NA,0.311346,-1.7542,0.5689,FALSE,negative,No significant effect,0.5205,0.8777
+Meta-analysis (REML),Density,P. interruptus,16,1.0932,0.5793,1.8872,NA,0.064134,-0.0663,2.2527,FALSE,positive,No significant effect,0.5205,0.8777
+Meta-analysis (REML),Density,S. pulcher,21,-0.3008,0.5787,-0.5198,NA,0.605148,-1.4591,0.8575,FALSE,negative,No significant effect,0.5205,0.8777

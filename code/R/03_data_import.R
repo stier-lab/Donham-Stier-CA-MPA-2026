@@ -243,7 +243,7 @@ if (length(unexpected_classcodes) > 0) {
 }
 
 # Check 3: Site table should have valid MPA start years
-invalid_mpa_years <- sum(is.na(Site$MPA_Start) | Site$MPA_Start < 1900 | Site$MPA_Start > 2030, na.rm = FALSE)
+invalid_mpa_years <- sum(is.na(Site$MPA_Start) | Site$MPA_Start < 1900 | Site$MPA_Start > 2030, na.rm = TRUE)
 if (invalid_mpa_years > 0) {
   warning("Site table has ", invalid_mpa_years, " invalid or missing MPA_Start values")
 } else {

@@ -45,9 +45,22 @@
 # These should already be loaded by 00_libraries.R, but we ensure they're
 # available for this specific functionality
 
-require(minpack.lm)    # Levenberg-Marquardt nonlinear least squares
-require(nls2)          # Enhanced NLS with grid search
-require(AICcmodavg)    # AICc calculation
+if (!requireNamespace("minpack.lm", quietly = TRUE)) {
+  stop("Package 'minpack.lm' is required for pBACIPS nonlinear fitting. Install with: install.packages('minpack.lm')",
+       call. = FALSE)
+}
+if (!requireNamespace("nls2", quietly = TRUE)) {
+  stop("Package 'nls2' is required for pBACIPS nonlinear fitting. Install with: install.packages('nls2')",
+       call. = FALSE)
+}
+if (!requireNamespace("AICcmodavg", quietly = TRUE)) {
+  stop("Package 'AICcmodavg' is required for AICc model comparison. Install with: install.packages('AICcmodavg')",
+       call. = FALSE)
+}
+
+library(minpack.lm)   # Levenberg-Marquardt nonlinear least squares
+library(nls2)         # Enhanced NLS with grid search
+library(AICcmodavg)   # AICc calculation
 
 
 # =============================================================================
@@ -760,6 +773,20 @@ run_dharma_diagnostics <- function(model, plot = FALSE) {
 #' # result$best     # Index of best model
 ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
 
+  # Basic input validation
+  if (length(control) != length(impact) || length(control) != length(time.model) || length(control) != length(time.true)) {
+    stop("ProgressiveChangeBACIPS(): control, impact, time.true, and time.model must be the same length.",
+         call. = FALSE)
+  }
+  if (!any(time.model == 0, na.rm = TRUE)) {
+    stop("ProgressiveChangeBACIPS(): time.model must include at least one 0 (Before period).",
+         call. = FALSE)
+  }
+  if (!any(time.model > 0, na.rm = TRUE)) {
+    stop("ProgressiveChangeBACIPS(): time.model must include at least one value > 0 (After period).",
+         call. = FALSE)
+  }
+
   # ---------------------------------------------------------------------------
   # STEP 1: Calculate delta at each sampling date
   # ---------------------------------------------------------------------------
@@ -1184,7 +1211,14 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
 
   # Normalize to get weights (as percentages)
   RL_sum <- sum(AICc.test$RL, na.rm = TRUE)
-  AICc.test$aicWeights <- (AICc.test$RL / RL_sum) * 100
+  if (!is.finite(RL_sum) || RL_sum <= 0) {
+    # Fallback: pick the minimum finite AICc as 100% weight, others 0%.
+    best_idx <- which.min(AICc.test$AIC)
+    AICc.test$aicWeights <- rep(0, nrow(AICc.test))
+    AICc.test$aicWeights[best_idx] <- 100
+  } else {
+    AICc.test$aicWeights <- (AICc.test$RL / RL_sum) * 100
+  }
 
   # Build full weights vector (4 elements, with 0 for missing models)
   w <- c(
@@ -1279,8 +1313,10 @@ myASYfun_standalone <- function(delta, time.model, time.model.of.impact, time.tr
   processed <- preprocess_for_nls(delta, time.model, remove_outliers = TRUE)
 
   # Set starting values with multiple strategies
-  M_start <- mean(delta[time.model.of.impact:length(time.true)], na.rm = TRUE)
-  B_start <- mean(delta[1:time.model.of.impact], na.rm = TRUE)
+  after_idx <- which(time.model > 0)
+  before_idx <- which(time.model == 0)
+  M_start <- mean(delta[after_idx], na.rm = TRUE)
+  B_start <- mean(delta[before_idx], na.rm = TRUE)
   max_time <- max(time.model, na.rm = TRUE)
 
   if (!is.finite(M_start)) M_start <- mean(tail(delta, 3), na.rm = TRUE)
@@ -1417,8 +1453,10 @@ mySIGfun_standalone <- function(delta, time.model, time.model.of.impact, time.tr
   time_proc <- processed$time + 0.01
 
   # Set starting values with safeguards
-  M_start <- mean(delta[time.model.of.impact:length(time.true)], na.rm = TRUE)
-  B_start <- mean(delta[1:time.model.of.impact], na.rm = TRUE)
+  after_idx <- which(time.model > 0)
+  before_idx <- which(time.model == 0)
+  M_start <- mean(delta[after_idx], na.rm = TRUE)
+  B_start <- mean(delta[before_idx], na.rm = TRUE)
   L_start <- median(time.model[time.model > 0], na.rm = TRUE)
   max_time <- max(time.model, na.rm = TRUE)
 

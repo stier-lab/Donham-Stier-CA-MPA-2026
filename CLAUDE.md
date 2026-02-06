@@ -31,7 +31,7 @@ Donham-Stier-CA-MPA-2026/
 
 | MS Figure | Description | Code Output File | Script |
 |-----------|-------------|------------------|--------|
-| Figure 1 | Map of MPAs with Channel Islands + inset kelp time series | `fig_01_mpa_map_composite.pdf` | 10_figures.R |
+| Figure 1 | Map of MPAs with Channel Islands + inset kelp time series | `fig_01_mpa_map.pdf` | 10_figures.R |
 | Figure 2 | Data processing pipeline (raw → proportion → lnRR) | `fig_02_data_processing.pdf` | 10_figures.R |
 | Figure 3 | Mean effect sizes by taxa (meta-analysis) | `fig_03_mean_effects.pdf` | 10_figures.R |
 | Figure 4 | Urchin vs kelp lnRR scatterplot | `fig_04_urchin_kelp_scatter.pdf` | 10_figures.R |
@@ -109,20 +109,22 @@ Pattern: `{NN}_{descriptive_name}.R` or `{NN}{letter}_{descriptive_name}.R`
 
 Pipeline order:
 ```
-00_libraries.R        - Package dependencies
-00b_color_palette.R   - Color scheme and ggplot theme
-01_utils.R            - Utility functions
-02_pBACIPS_function.R - Core statistical function
-03_data_import.R      - Import size frequency data
-04_pisco_processing.R - PISCO data processing
-05_kfm_processing.R   - KFM/NPS data processing
-06_lter_processing.R  - LTER data processing
+00_libraries.R           - Package dependencies
+00b_color_palette.R      - Color scheme and ggplot theme
+00c_analysis_constants.R - Named constants (survey areas, size thresholds, exclusions)
+01_utils.R               - Utility functions
+02_pBACIPS_function.R    - Core statistical function
+03_data_import.R         - Import size frequency data
+04_pisco_processing.R    - PISCO data processing
+05_kfm_processing.R      - KFM/NPS data processing
+06_lter_processing.R     - LTER data processing
 06b_landsat_processing.R - Landsat satellite data
-07_combine_data.R     - Combine all sources
-08_effect_sizes.R     - Calculate effect sizes
-09_meta_analysis.R    - Multilevel meta-analysis
-10_figures.R          - Publication figures (including Fig 1 map)
-run_all.R             - Pipeline orchestration
+07_combine_data.R        - Combine all sources
+08_effect_sizes.R        - Calculate effect sizes
+09_meta_analysis.R       - Multilevel meta-analysis
+10_figures.R             - Publication figures (Figs 1-4, S1-S2)
+11_results_summary.R     - Generate results CSVs and markdown summary
+run_all.R                - Pipeline orchestration
 ```
 
 ## Code Style Guidelines
@@ -172,6 +174,7 @@ ln -s "$GDRIVE/MBON" "$PROJECT/MBON"
 ln -s "$GDRIVE/PISCO" "$PROJECT/PISCO"
 ln -s "$GDRIVE/LTER" "$PROJECT/LTER"
 ln -s "$GDRIVE/LANDSAT" "$PROJECT/LANDSAT"
+ln -s "$GDRIVE/MPA" "$PROJECT/MPA"
 ln -s "$GDRIVE/ALL_sizefreq_2024.csv" "$PROJECT/ALL_sizefreq_2024.csv"
 ```
 
@@ -180,6 +183,7 @@ ln -s "$GDRIVE/ALL_sizefreq_2024.csv" "$PROJECT/ALL_sizefreq_2024.csv"
 - `PISCO/` - PISCO monitoring data (~113 MB)
 - `LTER/` - LTER monitoring data (~27 MB)
 - `LANDSAT/` - Satellite kelp canopy data
+- `MPA/` - California MPA boundary shapefiles (~1.5 MB)
 - `ALL_sizefreq_2024.csv` - Size frequency data (~37 MB)
 
 ## Running the Analysis
@@ -219,6 +223,7 @@ When adding new figures or outputs:
 
 - `docs/MPA_Kelp_MS_V5.pdf` - Current manuscript draft
 - `docs/STATISTICAL_REVIEW.md` - Statistical methodology and fixes
+- `docs/methodology_review.md` - Additional methodology notes
 - This file (`CLAUDE.md`) - Project conventions for AI assistants
 
 ## Contact

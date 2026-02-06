@@ -114,6 +114,25 @@ library(wesanderson)
 # library(yarrr)     # Not currently used - uncomment if needed
 
 # -----------------------------------------------------------------------------
+# Mapping and Spatial
+# -----------------------------------------------------------------------------
+# sf: Simple Features for R - modern spatial data handling
+# ggspatial: Spatial visualization tools (scale bars, north arrows)
+# ggrepel: Smart label placement to avoid overlaps
+
+library(sf)
+if (requireNamespace("ggspatial", quietly = TRUE)) {
+  library(ggspatial)
+} else {
+  message("Note: ggspatial not installed. Install for map annotations: install.packages('ggspatial')")
+}
+if (requireNamespace("ggrepel", quietly = TRUE)) {
+  library(ggrepel)
+} else {
+  message("Note: ggrepel not installed. Install for smart labels: install.packages('ggrepel')")
+}
+
+# -----------------------------------------------------------------------------
 # Tables and Reporting
 # -----------------------------------------------------------------------------
 # broom: Tidy model outputs into data frames

@@ -427,19 +427,22 @@ run_pbacips_loop <- function(dat) {
 
 #' Run CI analysis: calculate both linear and mean effect sizes
 #'
-#' For each MPA in the data, fits lnDiff ~ time, calculates effect size at time 0 vs max(time),
+#' For each MPA in the data, fits lnDiff ~ time, calculates effect size at time 0 vs t=11,
 #' and also calculates the simple mean effect size. Returns two rows per MPA.
 #'
 #' The effect size represents the predicted change in lnRR from time 0 (MPA establishment)
-#' to the most recent observation. Using max observed time rather than a fixed value
-#' ensures consistency across datasets with different time series lengths.
+#' to 11 years post-implementation. We use a STANDARDIZED time point (t=11) rather than
+#' the maximum observed time to ensure effect sizes are comparable across MPAs with
+#' different establishment dates. The value of 11 years corresponds to the age of
+#' our youngest MPA in 2023 (MLPA South Coast MPAs implemented in 2012). This controls
+#' for differences in effect size that would arise from longer protection duration.
 #'
 #' @param dat Dataframe subset with lnDiff, time columns
 #' @param taxa_name Character, species name for SumStats
 #' @param source_name Character, data source for SumStats
 #' @param resp_name Character, response type ("Den" or "Bio")
 #' @param time_var Character, name of the time variable to use (default "time")
-#' @param time_after Numeric, time point for "after" prediction (default NULL = use max observed)
+#' @param time_after Numeric, time point for "after" prediction (default = EFFECT_SIZE_TIME_YEARS = 11)
 #' @param run_diagnostics Logical, whether to run DHARMa diagnostics (default TRUE)
 #' @return Dataframe with two rows per MPA (linear and mean effect sizes)
 run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "time",
@@ -495,8 +498,11 @@ run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "
 
       # Calculate linear effect size using contrast (properly handles covariance)
       # This uses emmeans::pairs() which correctly calculates Var(A-B) = Var(A) + Var(B) - 2*Cov(A,B)
-      # Use max observed time if time_after not specified (consistent with add_linear_effect_size)
-      actual_time_after <- if (is.null(time_after)) max(sub_dat[[time_var]], na.rm = TRUE) else time_after
+      # Use standardized t=11 years to ensure effect sizes are comparable across MPAs
+      # RATIONALE: Using a fixed time point controls for MPA age effects - older MPAs would
+      # naturally show larger effect sizes simply due to longer protection duration.
+      # t=11 corresponds to the youngest MPA age in 2023 (MLPA South Coast, implemented 2012).
+      actual_time_after <- if (is.null(time_after)) EFFECT_SIZE_TIME_YEARS else time_after
       es <- calculate_effect_size_from_contrast(Lm.Ab, time_var, time_before = 0, time_after = actual_time_after)
       mean_val <- es$mean
 
@@ -619,13 +625,18 @@ add_step_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_nam
 
 #' Add a single linear-model (pBACIPS) effect size row
 #'
+#' Calculates effect size as the predicted change from t=0 (before MPA) to t=11 years
+#' post-implementation. We use a STANDARDIZED time point (t=11) rather than the maximum
+#' observed time to ensure effect sizes are comparable across MPAs with different
+#' establishment dates. This controls for the confounding effect of protection duration.
+#'
 #' @param dat Dataframe for a single MPA with lnDiff and time.model columns
 #' @param taxa_name Character species name
 #' @param mpa_name Character MPA name
 #' @param source_name Character data source
 #' @param resp_name Character response type
 #' @param time_var Character, time variable name (default "time.model")
-#' @param time_after Numeric, the time point for "after" prediction (default NULL = use max observed)
+#' @param time_after Numeric, the time point for "after" prediction (default = EFFECT_SIZE_TIME_YEARS = 11)
 #' @param run_diagnostics Logical, whether to run DHARMa diagnostics (default TRUE)
 #' @return One-row dataframe with the same columns as SumStats
 add_linear_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_name,
@@ -649,9 +660,13 @@ add_linear_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_n
 
   # Wrap model fitting in tryCatch
   tryCatch({
-    # Use the maximum observed time value if not specified
+    # Use standardized t=11 years if not specified
+    # RATIONALE: Using a fixed time point ensures effect sizes are comparable across MPAs
+    # with different establishment dates. t=11 corresponds to the youngest MPA age in 2023
+    # (MLPA South Coast MPAs, implemented 2012). This controls for the confounding effect
+    # of protection duration - older MPAs would naturally show larger effect sizes.
     if (is.null(time_after)) {
-      time_after <- max(dat[[time_var]], na.rm = TRUE)
+      time_after <- EFFECT_SIZE_TIME_YEARS
     }
     formula_str <- as.formula(paste("lnDiff ~", time_var))
     mod1 <- lm(formula_str, data = dat)

@@ -213,7 +213,18 @@ PANINT.UCSB <- subset(PANINT, year > 2009 & campus.x == "UCSB")
 PANINT.UCSB$biomass <- bio_lobster(PANINT.UCSB$size * 10) * PANINT.UCSB$count
 
 # Select only the columns we need for further processing
-PANINT.UCSB.sub <- PANINT.UCSB[, colnames(PANINT.UCSB)[c(1:6, 8, 11:12, 24:26, 29, 33)]]
+panint_ucsb_needed <- c(
+  "year", "month", "site", "zone", "transect", "y",
+  "count", "biomass",
+  "CA_MPA_Name_Short", "site_designation", "site_status", "BaselineRegion"
+)
+panint_ucsb_missing <- setdiff(panint_ucsb_needed, names(PANINT.UCSB))
+if (length(panint_ucsb_missing) > 0) {
+  stop("PISCO PANINT.UCSB: missing expected columns: ",
+       paste(panint_ucsb_missing, collapse = ", "),
+       call. = FALSE)
+}
+PANINT.UCSB.sub <- PANINT.UCSB[, panint_ucsb_needed]
 
 # DATA QUALITY CHECK: Find site-years where lobsters were counted but not sized
 # count > 0 means lobsters were seen; biomass == 0 means no size was recorded
@@ -279,7 +290,8 @@ SizeFreq.PANINT.VRG <- subset(SizeFreq.PANINT.VRG, classcode == "PANINT")
 # .rds files store R objects; readRDS() loads them back into memory.
 # If the cache file exists and FORCE_BOOTSTRAP isn't set, use cached results.
 .cache_vrg_lob <- here::here("data", "cache", "vrg_panint_bootstrap.rds")
-if (file.exists(.cache_vrg_lob) && !exists("FORCE_BOOTSTRAP")) {
+force_boot <- exists("FORCE_BOOTSTRAP", envir = .GlobalEnv) && isTRUE(get("FORCE_BOOTSTRAP", envir = .GlobalEnv))
+if (file.exists(.cache_vrg_lob) && !force_boot) {
   cat("    Loading cached VRG lobster bootstrap results...\n")
   VRG.PANINT.site <- safe_read_rds(.cache_vrg_lob)
   if (is.null(VRG.PANINT.site)) {
@@ -341,7 +353,19 @@ VRG.PANINT.site.merge <- merge(VRG.PANINT.site, sites.short,
                                 by.x = c("site"), by.y = c("site"),
                                 all.x = TRUE)
 
-VRG.PANINT.site.merge <- VRG.PANINT.site.merge[, colnames(VRG.PANINT.site.merge)[c(2, 1, 13:15, 18, 3:6)]]
+vrg_panint_needed <- c(
+  "year", "site", "CA_MPA_Name_Short",
+  "site_designation", "site_status", "BaselineRegion",
+  "zone", "transect",
+  "count", "biomass"
+)
+vrg_panint_missing <- setdiff(vrg_panint_needed, names(VRG.PANINT.site.merge))
+if (length(vrg_panint_missing) > 0) {
+  stop("PISCO VRG PANINT merge: missing expected columns: ",
+       paste(vrg_panint_missing, collapse = ", "),
+       call. = FALSE)
+}
+VRG.PANINT.site.merge <- VRG.PANINT.site.merge[, vrg_panint_needed]
 # Zero-fill only numeric columns; preserve NAs in character/factor columns
 num_cols <- sapply(VRG.PANINT.site.merge, is.numeric)
 VRG.PANINT.site.merge[num_cols][is.na(VRG.PANINT.site.merge[num_cols])] <- 0
@@ -428,7 +452,7 @@ SizeFreq.Urch.OG <- SizeFreq.Urch
 
 # Cache bootstrap results to avoid re-running the slow loop
 .cache_urchin <- here::here("data", "cache", "pisco_urchin_bootstrap.rds")
-if (file.exists(.cache_urchin) && !exists("FORCE_BOOTSTRAP")) {
+if (file.exists(.cache_urchin) && !force_boot) {
   cat("    Loading cached urchin bootstrap results...\n")
   Urchin.site <- safe_read_rds(.cache_urchin)
   if (is.null(Urchin.site)) {
@@ -657,7 +681,18 @@ colnames(Fish.SPUL.All)[4] <- "y"
 # Select and reorder columns to match Fish.SPUL.All structure for rbind
 # Column order: CA_MPA_Name_Short, site, year, y, site_status, site_designation, biomass, count
 # NOTE: Column indices depend on merge order - verify if upstream changes occur
-Swath.PISCO.sub <- Swath.PISCO[, colnames(Swath.PISCO)[c(4, 1, 2, 3, 8, 7, 11, 5)]]
+swath_pisco_needed <- c(
+  "CA_MPA_Name_Short", "site", "year", "y",
+  "site_status", "site_designation",
+  "biomass", "count"
+)
+swath_pisco_missing <- setdiff(swath_pisco_needed, names(Swath.PISCO))
+if (length(swath_pisco_missing) > 0) {
+  stop("PISCO Swath.PISCO: missing expected columns: ",
+       paste(swath_pisco_missing, collapse = ", "),
+       call. = FALSE)
+}
+Swath.PISCO.sub <- Swath.PISCO[, swath_pisco_needed]
 Swath.PISCO.sub$density <- Swath.PISCO.sub$count / 60
 
 All_PISCO <- rbind(Swath.PISCO.sub, Fish.SPUL.All)

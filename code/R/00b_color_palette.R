@@ -34,26 +34,25 @@
 # These values ensure adequate grayscale separation.
 
 col_taxa <- c(
-  "S. purpuratus"   = "#7B6A8E",
-    # Muted purple -- echoes the animal's test color. Desaturated enough to
-    # remain distinct from the blue of S. pulcher under deuteranopia.
+  "S. purpuratus"   = "#7B68A6",
+    # Muted violet-purple -- echoes the animal's test color. Blue-shifted
+    # to remain distinct from M. franciscanus under protanopia. L* ~45.
 
-  "M. franciscanus"  = "#B5503E",
-    # Warm brick-red / rust -- reflects the red urchin's spine color.
-    # Shifted toward brown to avoid pure-red which collapses with green
-    # for protanopes.
+  "M. franciscanus"  = "#B85A4C",
+    # Burnt sienna / rust -- reflects the red urchin's spine color.
+    # Shifted toward brown to avoid pure-red collapse with green. L* ~48.
 
-  "M. pyrifera"      = "#5B7744",
-    # Earthy olive-green -- references kelp frond color. Kept dark enough
-    # to separate from the lighter amber of P. interruptus in grayscale.
+  "M. pyrifera"      = "#4A7C59",
+    # Forest/kelp green -- references kelp frond color. Cooler than olive
+    # to harmonize with ocean theme. L* ~48.
 
   "P. interruptus"   = "#D4933B",
-    # Warm amber / golden-orange -- evokes the spiny lobster's carapace.
-    # High luminance provides contrast against the darker taxa colors.
+    # Golden amber -- evokes the spiny lobster's carapace. High luminance
+    # (L* ~62) provides key grayscale anchor for all taxa.
 
-  "S. pulcher"       = "#2E6E7E"
-    # Deep teal-blue -- references sheephead coloration in the marine
-    # environment. Separated from purple by shifting toward cyan.
+  "S. pulcher"       = "#2A7B8E"
+    # Deep teal -- references sheephead's marine environment. More cyan
+    # than purple for clear CVD separation. L* ~48.
 )
 
 # Short-name aliases matching the existing 08_effect_sizes.R convention
@@ -77,13 +76,14 @@ cols <- col_taxa_short
 # or placed side-by-side in a forest plot.
 
 col_response <- c(
-  "Den"     = "#5B8C5A",
-    # Muted sage green -- cooler tone signals count-based measurement.
+  "Den"     = "#4A8C6A",
+    # Sage/moss green -- cool tone signals count-based measurement.
+    # Blue-shifted from taxa greens for distinction. L* ~52.
 
-  "Bio"     = "#D4873B"
-    # Warm amber-orange -- warmer tone signals mass-based measurement.
-    # Distinct from density green even under deuteranopia because the
-    # luminance difference is > 15 L* units.
+  "Bio"     = "#D98B4A"
+    # Warm amber-orange -- warm tone signals mass-based measurement.
+    # ~6 L* units lighter than Density + 120° hue separation ensures
+    # discrimination under all CVD types. L* ~58.
 )
 
 # Longer labels for legends
@@ -101,13 +101,13 @@ col_response_long <- c(
 # luminance contrast.
 
 col_site <- c(
-  "Inside"    = "#D4A03C",
-    # Warm gold -- MPA protected site. High luminance draws the eye to the
-    # treatment of interest.
+  "Inside"    = "#2A7B8E",
+    # Teal -- MPA protected site. Connects visually to marine/ocean theme.
+    # Cool color = "deep ocean" protection association. L* ~48.
 
-  "Outside"   = "#5A5A78"
-    # Cool dark slate with a slight blue undertone -- reference site.
-    # Lower luminance recedes visually, signaling "control."
+  "Outside"   = "#8C7B6A"
+    # Warm taupe/stone -- reference site. Neutral, land-adjacent color.
+    # Lower saturation signals "unprotected/baseline." L* ~52.
 )
 
 # Alternative labels used in some scripts
@@ -122,6 +122,31 @@ col_site_alt <- c(
 
 # Expanded col_site that handles all common status labels
 col_site_all <- c(col_site, col_site_alt)
+
+
+# =============================================================================
+# 3b. MAP COLORS (for Figure 1)
+# =============================================================================
+# Consistent map aesthetics that harmonize with the data palette.
+
+col_map <- c(
+  "land"      = "#F2EBE1",
+    # Warm cream/parchment -- very light, recedes visually. L* ~93.
+
+  "ocean"     = "#D4E5F0",
+    # Pale steel blue -- low saturation prevents competition with data
+    # points. L* ~90.
+
+  "coastline" = "#3D3D3D"
+    # Charcoal -- high contrast against both land and ocean. Crisp edges.
+)
+
+# Data source colors for map markers (harmonize with overall palette)
+col_source_map <- c(
+  "NPS-KFM" = "#4A7C59",  # Forest green (matches M. pyrifera family)
+  "LTER"    = "#B85A4C",  # Rust (matches M. franciscanus family)
+  "PISCO"   = "#7B68A6"   # Purple (matches S. purpuratus family)
+)
 
 
 # =============================================================================

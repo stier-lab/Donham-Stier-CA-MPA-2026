@@ -64,6 +64,9 @@ MBON <- read.csv(here::here("data", "MBON", "SBCMBON_kelp_forest_integrated_quad
 Sites2 <- read.csv(here::here("data", "MBON", "SBCMBON_kelp_forest_site_geolocation_20210120_KFM_LTER.csv"))
 Sites2$site_id <- as.factor(Sites2$site_id)  # Convert to factor for proper merging
 
+# Treat FORCE_BOOTSTRAP consistently across scripts: only force recompute when TRUE.
+force_boot <- exists("FORCE_BOOTSTRAP", envir = .GlobalEnv) && isTRUE(get("FORCE_BOOTSTRAP", envir = .GlobalEnv))
+
 ###########################################################################################
 ## 2. Process KFM subset: type conversions, date formatting, missing values
 ###########################################################################################
@@ -190,11 +193,25 @@ SizeFreq.Urch <- SizeFreq.Urch.OG
 
 # Cache bootstrap results to avoid re-running the slow loop
 .cache_kfm_urch <- here::here("data", "cache", "kfm_urchin_bootstrap.rds")
-if (file.exists(.cache_kfm_urch) && !exists("FORCE_BOOTSTRAP")) {
+if (file.exists(.cache_kfm_urch) && !force_boot) {
   cat("    Loading cached KFM urchin bootstrap results...\n")
   Urchin.site <- safe_read_rds(.cache_kfm_urch)
   if (is.null(Urchin.site)) {
     cat("    Cache invalid, will recompute...\n")
+  } else {
+    # Cache schema can evolve; invalidate cache if required columns are missing.
+    required_urch_cols <- c(
+      "site", "CA_MPA_Name_Short", "site_status",
+      "year", "area", "transect",
+      "count", "biomass", "y"
+    )
+    missing_urch_cols <- setdiff(required_urch_cols, names(Urchin.site))
+    if (length(missing_urch_cols) > 0) {
+      cat("    Cached KFM urchin bootstrap missing columns (",
+          paste(missing_urch_cols, collapse = ", "),
+          "); will recompute...\n", sep = "")
+      Urchin.site <- NULL
+    }
   }
 }
 
@@ -209,7 +226,7 @@ if (!exists("Urchin.site") || is.null(Urchin.site)) {
                  URCHINS$CA_MPA_Name_Short == u$CA_MPA_Name_Short[i] &
                  URCHINS$year == u$year[i] &
                  URCHINS$taxon_name == u$taxon_name[i])
-    n <- sum(URCHINS$count[t])
+    n <- sum(URCHINS$count[t], na.rm = TRUE)
     t2 <- which(SizeFreq.Urch$CA_MPA_Name_Short == u$CA_MPA_Name_Short[i] &
                   SizeFreq.Urch$site_status == u$status[i] &
                   SizeFreq.Urch$year == u$year[i] &
@@ -255,36 +272,38 @@ if (!exists("Urchin.site") || is.null(Urchin.site)) {
   cat("    Cached KFM urchin bootstrap results.\n")
 }
 
-# Merge with site table
-KFM.Urchin.site.merge <- merge(Urchin.site, sites.short, by.x = c("site"), by.y = c("site"),
-                                 all.x = TRUE)
-KFM.Urchin.site.merge <- KFM.Urchin.site.merge[, colnames(KFM.Urchin.site.merge)[c(2, 1, 17, 18, 4:9)]]
+# Urchin.site already contains KFM/MBON site_status and MPA assignment.
+# Do NOT merge with PISCO's `sites.short` (which may exist in the session and has different site IDs).
+KFM.Urchin.site.merge <- Urchin.site
 
 # Remove Old Anacapa MPA and the SMCA since they don't meet criteria for inclusion
-KFM.Urchin.site.merge <- subset(KFM.Urchin.site.merge,
-                                  CA_MPA_Name_Short.x != "Anacapa Island SMCA" &
-                                    CA_MPA_Name_Short.x != "Anacapa Island SMR 1978")
-# Zero-fill only numeric columns; preserve NAs in character/factor columns
-num_cols <- sapply(KFM.Urchin.site.merge, is.numeric)
-KFM.Urchin.site.merge[num_cols][is.na(KFM.Urchin.site.merge[num_cols])] <- 0
+KFM.Urchin.site.merge <- subset(
+  KFM.Urchin.site.merge,
+  !(CA_MPA_Name_Short %in% c("Anacapa Island SMCA", "Anacapa Island SMR 1978"))
+)
 
 # Find sites where urchin was found on transect but no size was recorded
-KFM.Urchin.null <- subset(KFM.Urchin.site.merge, count > 0 & biomass == 0)
+KFM.Urchin.null <- subset(KFM.Urchin.site.merge, count > 0 & (is.na(biomass) | biomass == 0))
 KFM.Urchin.site.merge.sub <- KFM.Urchin.site.merge
 
 # Remove sites where urchins were seen but not measured (can't get accurate biomass)
-for (i in 1:nrow(KFM.Urchin.null)) {
+for (i in seq_len(nrow(KFM.Urchin.null))) {
   KFM.Urchin.site.merge.sub <- subset(KFM.Urchin.site.merge.sub,
                                         site != KFM.Urchin.null$site[i] |
                                           year != KFM.Urchin.null$year[i])
 }
 
-names(KFM.Urchin.site.merge.sub)[names(KFM.Urchin.site.merge.sub) == "CA_MPA_Name_Short.x"] <- "CA_MPA_Name_Short"
-names(KFM.Urchin.site.merge.sub)[names(KFM.Urchin.site.merge.sub) == "site_status.y"] <- "site_status"
-
 # Account for different number of transects at sites
-KFM.Urchin.site.merge.sub$count.ave <- KFM.Urchin.site.merge.sub$count / KFM.Urchin.site.merge.sub$transect
-KFM.Urchin.site.merge.sub$biomass.ave <- KFM.Urchin.site.merge.sub$biomass / KFM.Urchin.site.merge.sub$transect
+KFM.Urchin.site.merge.sub$count.ave <- safe_divide(
+  KFM.Urchin.site.merge.sub$count,
+  KFM.Urchin.site.merge.sub$transect,
+  context = "KFM urchin count/transect"
+)
+KFM.Urchin.site.merge.sub$biomass.ave <- safe_divide(
+  KFM.Urchin.site.merge.sub$biomass,
+  KFM.Urchin.site.merge.sub$transect,
+  context = "KFM urchin biomass/transect"
+)
 
 KFM.Urchin.site.all <- KFM.Urchin.site.merge.sub
 
@@ -347,11 +366,24 @@ kfm.stipe.OG <- kfm.stipe.site
 
 # Cache bootstrap results to avoid re-running the slow loop
 .cache_kfm_macro <- here::here("data", "cache", "kfm_macro_bootstrap.rds")
-if (file.exists(.cache_kfm_macro) && !exists("FORCE_BOOTSTRAP")) {
+if (file.exists(.cache_kfm_macro) && !force_boot) {
   cat("    Loading cached KFM Macrocystis bootstrap results...\n")
   Macro.site <- safe_read_rds(.cache_kfm_macro)
   if (is.null(Macro.site)) {
     cat("    Cache invalid, will recompute...\n")
+  } else {
+    required_macro_cols <- c(
+      "site", "CA_MPA_Name_Short", "site_status",
+      "year", "transect", "area",
+      "y", "count", "biomass", "ind"
+    )
+    missing_macro_cols <- setdiff(required_macro_cols, names(Macro.site))
+    if (length(missing_macro_cols) > 0) {
+      cat("    Cached KFM Macrocystis bootstrap missing columns (",
+          paste(missing_macro_cols, collapse = ", "),
+          "); will recompute...\n", sep = "")
+      Macro.site <- NULL
+    }
   }
 }
 
@@ -366,7 +398,7 @@ if (!exists("Macro.site") || is.null(Macro.site)) {
                  MACRO$year == u$year[i] &
                  MACRO$area == u$area[i] &
                  MACRO$taxon_name == u$taxon_name[i])
-    n <- sum(MACRO$count[t])
+    n <- sum(MACRO$count[t], na.rm = TRUE)
     t2 <- which(kfm.stipe.site$site_id == u$site_id[i] &
                   kfm.stipe.site$SurveyYear == u$year[i] &
                   kfm.stipe.site$ScientificName == u$taxon_name[i])
@@ -390,29 +422,34 @@ if (!exists("Macro.site") || is.null(Macro.site)) {
         aveD <- mean(s$sum)
 
         data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                   site_status = u$status[i],
                    year = u$year[i], transect = length(t), area = u$area[i],
                    y = u$taxon_name[i], count = aveD, biomass = aveB, ind = n)
 
       } else if (n == 0 & length(t2) == 0) {
         # No kelp on transect or in stipe data
         data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                   site_status = u$status[i],
                    year = u$year[i], transect = length(t), area = u$area[i],
                    y = u$taxon_name[i], count = 0, biomass = 0, ind = 0)
 
       } else if (n != 0 & length(t2) == 0) {
         # Kelp on transect but no stipe data - mark as NA
         data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                   site_status = u$status[i],
                    year = u$year[i], transect = length(t), area = u$area[i],
                    y = u$taxon_name[i], count = NA, biomass = NA, ind = n)
 
       } else {
         data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                   site_status = u$status[i],
                    year = u$year[i], transect = length(t), area = u$area[i],
                    y = u$taxon_name[i], count = 0, biomass = 0, ind = n)
       }
     }, error = function(e) {
       warning("KFM Macro bootstrap failed for site ", u$site_id[i], " year ", u$year[i], ": ", e$message)
       data.frame(site = u$site_id[i], CA_MPA_Name_Short = u$CA_MPA_Name_Short[i],
+                 site_status = u$status[i],
                  year = u$year[i], transect = NA, area = u$area[i],
                  y = u$taxon_name[i], count = NA, biomass = NA, ind = NA)
     })
@@ -429,10 +466,9 @@ if (!exists("Macro.site") || is.null(Macro.site)) {
   cat("    Cached KFM Macrocystis bootstrap results.\n")
 }
 
-# Merge macro with site table
-KFM.Macro.site.merge <- merge(Macro.site, sites.short, by.x = c("site"), by.y = c("site"),
-                                all.x = TRUE)
-KFM.Macro.site.merge <- KFM.Macro.site.merge[, colnames(KFM.Macro.site.merge)[c(2, 1, 3, 12, 17, 18, 4:9)]]
+# Macro.site already contains KFM/MBON site_status and MPA assignment.
+# Do NOT merge with PISCO's `sites.short` (which may exist in the session and has different site IDs).
+KFM.Macro.site.merge <- Macro.site
 
 # Convert to per m2 by dividing by transects and area
 # Use safe_divide to handle any zero area/transect values
@@ -446,18 +482,34 @@ KFM.Macro.site.merge$densityIndCorr <- safe_divide(KFM.Macro.site.merge$ind, are
 ###########################################################################################
 
 # Wrangle macro columns
-KFM.Macro.site.all.sub <- KFM.Macro.site.merge[, colnames(KFM.Macro.site.merge)[c(1, 2, 5, 6, 3, 7, 11, 9, 8, 10, 14, 13, 15)]]
+KFM.Macro.site.all.sub <- KFM.Macro.site.merge[, c(
+  "site", "site_status", "year", "y", "CA_MPA_Name_Short", "area", "transect",
+  "count", "biomass", "ind",
+  "biomassCorr", "densityCorr", "densityIndCorr"
+)]
 names(KFM.Macro.site.all.sub)[names(KFM.Macro.site.all.sub) == "biomass"] <- "biomassRaw"
 names(KFM.Macro.site.all.sub)[names(KFM.Macro.site.all.sub) == "biomassCorr"] <- "biomass"
 names(KFM.Macro.site.all.sub)[names(KFM.Macro.site.all.sub) == "densityCorr"] <- "density"
-names(KFM.Macro.site.all.sub)[names(KFM.Macro.site.all.sub) == "CA_MPA_Name_Short.x"] <- "CA_MPA_Name_Short"
 
 # Wrangle urchin columns
-KFM.Urchin.site.all.sub <- KFM.Urchin.site.all[, colnames(KFM.Urchin.site.all)[c(1:6, 10, 7:9, 13, 14)]]
+KFM.Urchin.site.all.sub <- KFM.Urchin.site.all[, c(
+  "site", "CA_MPA_Name_Short", "site_status", "year", "area", "transect",
+  "count", "biomass", "y",
+  "Density", "bio.m2"
+)]
 names(KFM.Urchin.site.all.sub)[names(KFM.Urchin.site.all.sub) == "Density"] <- "density"
 names(KFM.Urchin.site.all.sub)[names(KFM.Urchin.site.all.sub) == "biomass"] <- "biomassRaw"
 names(KFM.Urchin.site.all.sub)[names(KFM.Urchin.site.all.sub) == "bio.m2"] <- "biomass"
+KFM.Urchin.site.all.sub$ind <- NA_real_
 KFM.Urchin.site.all.sub$densityIndCorr <- NA
+
+# Ensure identical column sets + ordering before rbind (prevents 'numbers of columns' errors).
+common_cols <- c(
+  "site", "site_status", "year", "y", "CA_MPA_Name_Short", "area", "transect",
+  "count", "biomassRaw", "ind", "biomass", "density", "densityIndCorr"
+)
+KFM.Macro.site.all.sub <- KFM.Macro.site.all.sub[, common_cols]
+KFM.Urchin.site.all.sub <- KFM.Urchin.site.all.sub[, common_cols]
 
 # Combine
 KFM.bio.site.all <- rbind(KFM.Macro.site.all.sub, KFM.Urchin.site.all.sub)
@@ -511,7 +563,7 @@ All.den <- subset(All.den, den != "N/A")  # Remove invalid values
 All.den <- calculate_proportions(All.den, "den")
 
 # Select columns needed for reshaping and calculate response ratio
-All.den.sub <- All.den[, colnames(All.den)[c(3, 7, 1, 2, 8, 12)]]
+All.den.sub <- All.den[, c("CA_MPA_Name_Short", "year", "y", "status", "area", "PropCorr")]
 
 # spread() from tidyr: converts long format to wide format
 # status column values (mpa, reference) become new columns with PropCorr values
@@ -528,7 +580,7 @@ All.bio <- kfm.ave.ave
 All.bio <- subset(All.bio, biomass != "N/A")
 All.bio <- calculate_proportions(All.bio, "biomass")
 
-All.bio.sub <- All.bio[, colnames(All.bio)[c(3, 7, 1, 2, 8, 12)]]
+All.bio.sub <- All.bio[, c("CA_MPA_Name_Short", "year", "y", "status", "area", "PropCorr")]
 Short.bio <- All.bio.sub %>%
   spread(status, PropCorr)
 Short.bio.diff <- calculate_log_response_ratio(Short.bio)
@@ -546,7 +598,7 @@ KFM.join.ave <- rbind(Short.den.diff, Short.bio.diff)
 kfm.edit.den <- subset(kfm.ave.ave, y != "Macrocystis pyrifera" | area != 2)
 kfm.edit.den <- subset(kfm.edit.den, y != "Macrocystis pyrifera" | area != 1)
 
-kfm.edit.den <- kfm.edit.den[, colnames(kfm.edit.den)[c(2, 3, 5, 7, 9, 1)]]
+kfm.edit.den <- kfm.edit.den[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "den", "y")]
 kfm.edit.den <- kfm.edit.den[complete.cases(kfm.edit.den), ]
 KFM.den <- kfm.edit.den %>%
   spread(status, den)
@@ -558,7 +610,7 @@ KFM.den.long$resp <- "Den"
 kfm.edit.bio <- subset(kfm.ave.ave, y != "Macrocystis pyrifera" | area != 2)
 kfm.edit.bio <- subset(kfm.edit.bio, y != "Macrocystis pyrifera" | area != 1)
 
-kfm.edit.bio <- kfm.edit.bio[, colnames(kfm.edit.bio)[c(2, 3, 5, 7, 10, 1)]]
+kfm.edit.bio <- kfm.edit.bio[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "biomass", "y")]
 kfm.edit.bio <- kfm.edit.bio[complete.cases(kfm.edit.bio), ]
 KFM.bio <- kfm.edit.bio %>%
   spread(status, biomass)
@@ -643,7 +695,7 @@ mbon.spul.max.rd <- subset(mbon.spul.max, sample_method == "rdfc")
 mbon.spul.max.vf <- subset(mbon.spul.max, sample_method == "visualfish")
 
 # -- KFM fish raw density dataframe (visual fish method) --
-mbon.fish.edit <- mbon.spul.max.vf[, colnames(mbon.spul.max.vf)[c(1, 3, 5, 6, 7, 10)]]
+mbon.fish.edit <- mbon.spul.max.vf[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "count", "taxon_name")]
 KFM.fish.den <- mbon.fish.edit %>%
   spread(status, count)
 KFM.fish.den$source <- "KFM"
@@ -654,30 +706,30 @@ KFM.fish.den.long$resp <- "Den"
 # -- Proportions for RDFC method --
 # Use standardized calculate_proportions() function from 01_utils.R
 # Add 'y' column required by the function (taxon_name already set to "SPUL")
+# NOTE: Using adaptive correction (min/2) for consistency across all taxa/programs.
+# This is statistically preferred over fixed +0.01 (Aitchison 1986) as it scales
+# appropriately with the data and avoids inflating effect sizes for rare species.
 mbon.spul.max.rd$y <- mbon.spul.max.rd$taxon_name
-mbon.spul.max.rd <- calculate_proportions(mbon.spul.max.rd, "count", correction_method = "fixed")
+mbon.spul.max.rd <- calculate_proportions(mbon.spul.max.rd, "count")
 
-All.den.spul.kfm.sub.rd <- mbon.spul.max.rd[, colnames(mbon.spul.max.rd)[c(3, 2, 6, 10, 1, 9)]]
+All.den.spul.kfm.sub.rd <- mbon.spul.max.rd[, c("CA_MPA_Name_Short", "sample_method", "year", "taxon_name", "status", "PropCorr")]
 Short.den.spul.kfm.sub.rd <- All.den.spul.kfm.sub.rd %>%
   spread(status, PropCorr)
-Short.den.spul.kfm.sub.rd.diff <- Short.den.spul.kfm.sub.rd[complete.cases(Short.den.spul.kfm.sub.rd), ]
-Short.den.spul.kfm.sub.rd.diff$Diff <- Short.den.spul.kfm.sub.rd.diff$mpa / Short.den.spul.kfm.sub.rd.diff$reference
-Short.den.spul.kfm.sub.rd.diff$lnDiff <- log(Short.den.spul.kfm.sub.rd.diff$Diff)
-colnames(Short.den.spul.kfm.sub.rd.diff)[4] <- "y"
+Short.den.spul.kfm.sub.rd.diff <- calculate_log_response_ratio(Short.den.spul.kfm.sub.rd)
+names(Short.den.spul.kfm.sub.rd.diff)[names(Short.den.spul.kfm.sub.rd.diff) == "taxon_name"] <- "y"
 Short.den.spul.kfm.sub.rd.diff$resp <- "RD"
 
 # -- Proportions for visual fish method --
 # Use standardized calculate_proportions() function from 01_utils.R
+# NOTE: Using adaptive correction (min/2) for consistency - see RDFC method comment above.
 mbon.spul.max.vf$y <- mbon.spul.max.vf$taxon_name
-mbon.spul.max.vf <- calculate_proportions(mbon.spul.max.vf, "count", correction_method = "fixed")
+mbon.spul.max.vf <- calculate_proportions(mbon.spul.max.vf, "count")
 
-All.den.spul.kfm.sub.vf <- mbon.spul.max.vf[, colnames(mbon.spul.max.vf)[c(3, 2, 6, 10, 1, 9)]]
+All.den.spul.kfm.sub.vf <- mbon.spul.max.vf[, c("CA_MPA_Name_Short", "sample_method", "year", "taxon_name", "status", "PropCorr")]
 Short.den.spul.kfm.sub.vf <- All.den.spul.kfm.sub.vf %>%
   spread(status, PropCorr)
-Short.den.spul.kfm.sub.vf.diff <- Short.den.spul.kfm.sub.vf[complete.cases(Short.den.spul.kfm.sub.vf), ]
-Short.den.spul.kfm.sub.vf.diff$Diff <- Short.den.spul.kfm.sub.vf.diff$mpa / Short.den.spul.kfm.sub.vf.diff$reference
-Short.den.spul.kfm.sub.vf.diff$lnDiff <- log(Short.den.spul.kfm.sub.vf.diff$Diff)
-colnames(Short.den.spul.kfm.sub.vf.diff)[4] <- "y"
+Short.den.spul.kfm.sub.vf.diff <- calculate_log_response_ratio(Short.den.spul.kfm.sub.vf)
+names(Short.den.spul.kfm.sub.vf.diff)[names(Short.den.spul.kfm.sub.vf.diff) == "taxon_name"] <- "y"
 Short.den.spul.kfm.sub.vf.diff$resp <- "Den"
 
 # Combine RDFC and visual fish response ratios

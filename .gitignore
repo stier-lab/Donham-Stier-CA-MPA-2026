@@ -13,18 +13,33 @@
 # Temporary R plot files
 Rplots.pdf
 
-# Logs (optional - uncomment to track logs)
-# logs/
+# Logs
+logs/
 
 # Large data files (symlinked to Google Drive - see CLAUDE.md for setup)
 data/MBON
 data/PISCO
 data/LTER
 data/LANDSAT
+data/MPA
 data/ALL_sizefreq_2024.csv
 
 # Cache files
 data/cache/
+data_cache/
+
+# Marmap bathymetry cache (downloaded at runtime)
+marmap_coord_*.csv
+
+# Firebase logs
+firebase-debug.log
+
+# Diagnostic plots (not for publication)
+plots/diagnostics/
+
+# Archive directories (historical code/figures, not for publication)
+code/archive/
+plots/archive/
 
 # IDE
 .vscode/

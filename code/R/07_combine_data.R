@@ -55,18 +55,19 @@
 # Now we combine them into one master dataset for the meta-analysis.
 
 # Ensure consistent column structure before binding
-# Different sources may have columns in different orders; we standardize them here
-#
-# TECHNICAL DEBT: Column indices are fragile - if upstream processing changes column
-# order, these selections may break silently. Future improvement: convert to named
-# column selection using dplyr::select(). The target columns for rbind are:
-#   CA_MPA_Name_Short, year, y, lnDiff, mpa, reference, Diff, resp, time, type,
-#   Location, Hectares, source, BA
-#
-# Current indices drop column 4 from each dataframe (typically a duplicate or unused column)
-Swath.join.sub <- Swath.join.sub[, colnames(Swath.join.sub)[c(1:3, 5:15)]]
-kfm.fish <- kfm.fish[, colnames(kfm.fish)[c(1, 3:15)]]
-KFM.join.ave <- KFM.join.ave[, colnames(KFM.join.ave)[c(1:3, 5:15)]]
+# Different sources may have extra columns that need to be removed:
+#   - Swath.join.sub has site_designation
+#   - kfm.fish has sample_method
+#   - KFM.join.ave has area
+# Use explicit column selection for robustness.
+
+# Standard columns for all response ratio dataframes
+RR_STANDARD_COLS <- c("CA_MPA_Name_Short", "year", "y", "lnDiff", "mpa", "reference",
+                      "Diff", "resp", "time", "type", "Location", "Hectares", "source", "BA")
+
+Swath.join.sub <- Swath.join.sub[, RR_STANDARD_COLS]
+kfm.fish <- kfm.fish[, RR_STANDARD_COLS]
+KFM.join.ave <- KFM.join.ave[, RR_STANDARD_COLS]
 
 # Combine all response ratio datasets using rbind() (row bind)
 # This stacks all dataframes vertically into one master dataframe
@@ -153,32 +154,48 @@ All.RR.sub.trans$source[All.RR.sub.trans$source == "LTER lob surveys"] <- "LTER"
 ## Combine all raw response data ###################################################################
 ####################################################################################################
 
-# Standardize species names in individual response datasets before combining
+# Standardize species names and column names before combining
+# Use explicit column selection instead of fragile indices
+
+# Helper function to prepare response dataframe for binding
+prepare_resp_df <- function(df, status_col = "status") {
+  # Rename y/taxon_name column to taxon_name if needed
+  if ("y" %in% names(df) && !"taxon_name" %in% names(df)) {
+    names(df)[names(df) == "y"] <- "taxon_name"
+  }
+  # Rename site_status to status if needed
+  if ("site_status" %in% names(df) && !"status" %in% names(df)) {
+    names(df)[names(df) == "site_status"] <- "status"
+  }
+  # Select and order standard columns
+  standard_cols <- c("CA_MPA_Name_Short", "year", "taxon_name", "source", "status", "value", "resp")
+  df[, standard_cols]
+}
+
+# Standardize species names
 PISCO.resp$y <- standardize_species_names(as.character(PISCO.resp$y))
-colnames(PISCO.resp)[3] <- "taxon_name"
+KFM.resp$y <- standardize_species_names(as.character(KFM.resp$y))
+LTER.resp$y <- standardize_species_names(as.character(LTER.resp$y))
+LTER.fish.resp$y <- standardize_species_names(as.character(LTER.fish.resp$y))
+LTER.macro.resp$y <- standardize_species_names(as.character(LTER.macro.resp$y))
+LTER.lob.resp$y <- standardize_species_names(as.character(LTER.lob.resp$y))
 
-KFM.fish.den.long <- KFM.fish.den.long[, colnames(KFM.fish.den.long)[c(1, 3:8)]]
+# Convert SPUL codes to full names
 KFM.fish.den.long$taxon_name[KFM.fish.den.long$taxon_name == "SPUL"] <- "Semicossyphus pulcher"
+LTER.fish.resp$y[LTER.fish.resp$y == "SPUL"] <- "Semicossyphus pulcher"
 
-KFM.resp <- KFM.resp[, colnames(KFM.resp)[c(1, 3:8)]]
-colnames(KFM.resp)[3] <- "taxon_name"
-KFM.resp$taxon_name <- standardize_species_names(as.character(KFM.resp$taxon_name))
-
-LTER.fish.resp <- LTER.fish.resp[, colnames(LTER.fish.resp)[c(1, 3:8)]]
-LTER.fish.resp$taxon_name[LTER.fish.resp$taxon_name == "SPUL"] <- "Semicossyphus pulcher"
-colnames(LTER.fish.resp)[2] <- "year"
-
-LTER.macro.resp <- LTER.macro.resp[, colnames(LTER.macro.resp)[c(1, 3:8)]]
-colnames(LTER.macro.resp)[2] <- "year"
-
-LTER.lob.resp <- LTER.lob.resp[, colnames(LTER.lob.resp)[c(1, 3:8)]]
-colnames(LTER.lob.resp)[2] <- "year"
-
-LTER.resp <- LTER.resp[, colnames(LTER.resp)[c(1, 3:8)]]
+# Prepare each dataframe with standardized columns
+PISCO.resp.std <- prepare_resp_df(PISCO.resp)
+KFM.resp.std <- prepare_resp_df(KFM.resp)
+KFM.fish.den.long.std <- prepare_resp_df(KFM.fish.den.long)
+LTER.resp.std <- prepare_resp_df(LTER.resp, status_col = "site_status")
+LTER.fish.resp.std <- prepare_resp_df(LTER.fish.resp)
+LTER.macro.resp.std <- prepare_resp_df(LTER.macro.resp)
+LTER.lob.resp.std <- prepare_resp_df(LTER.lob.resp)
 
 # Combine all raw response datasets
-All.Resp <- rbind(KFM.fish.den.long, LTER.fish.resp, LTER.macro.resp,
-                  LTER.lob.resp, LTER.resp, KFM.resp, PISCO.resp)
+All.Resp <- rbind(KFM.fish.den.long.std, LTER.fish.resp.std, LTER.macro.resp.std,
+                  LTER.lob.resp.std, LTER.resp.std, KFM.resp.std, PISCO.resp.std)
 
 ####################################################################################################
 ## Apply same exclusion logic to raw response data #################################################
@@ -225,8 +242,9 @@ if (n_dups_resp > 0) {
 All.Resp.sub <- assign_ba_from_site_table(All.Resp.sub, Site)
 All.Resp.sub <- assign_time_from_site_table(All.Resp.sub, Site)
 
-# Keep only essential columns
-All.Resp.sub <- All.Resp.sub[, colnames(All.Resp.sub)[c(1:7, 10:11)]]
+# Keep only essential columns (explicit selection for robustness)
+RESP_ESSENTIAL_COLS <- c("CA_MPA_Name_Short", "year", "taxon_name", "source", "status", "value", "resp", "BA", "time")
+All.Resp.sub <- All.Resp.sub[, RESP_ESSENTIAL_COLS]
 
 ####################################################################################################
 ## Calculate average responses and write summary ###################################################

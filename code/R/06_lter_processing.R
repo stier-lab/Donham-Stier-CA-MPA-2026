@@ -53,6 +53,11 @@
 # Source utility functions
 source(here::here("code", "R", "01_utils.R"))
 
+# Respect FORCE_BOOTSTRAP only when it is explicitly TRUE.
+# This prevents accidental cache-busting when the variable exists but is FALSE/0/"FALSE".
+force_boot <- exists("FORCE_BOOTSTRAP", envir = .GlobalEnv) &&
+  isTRUE(get("FORCE_BOOTSTRAP", envir = .GlobalEnv))
+
 ###########################################################################################
 ## 1. Process LTER urchin/macro data from MBON integrated dataset
 ###########################################################################################
@@ -91,7 +96,7 @@ lter.sub <- subset(lter.site,
                      (taxon_name == "Macrocystis pyrifera" & sample_method == "swath"))
 
 # Calculate density: count divided by survey area gives individuals per square meter
-lter.sub$den <- lter.sub$count / lter.sub$area
+lter.sub$den <- safe_divide(lter.sub$count, lter.sub$area, context = "LTER den = count/area")
 
 # Calculate site means using two-step aggregation (nested sampling design)
 # Step 1: Average across replicates within each transect
@@ -121,33 +126,78 @@ URCHINS <- mutate(URCHINS, taxon_name = case_when(
 URCHINS$replicate_id <- as.numeric(URCHINS$replicate_id)
 
 # Get unique site-year-transect-taxon combinations
-u <- unique(URCHINS[, c('year', 'site_id', 'CA_MPA_Name_Short', 'status',
-                        'area', 'taxon_name', 'transect_id')])
+u_cols_required <- c("year", "site_id", "CA_MPA_Name_Short", "status",
+                     "area", "taxon_name", "transect_id")
+missing_u_cols <- setdiff(u_cols_required, names(URCHINS))
+if (length(missing_u_cols) > 0) {
+  stop("URCHINS is missing required columns for LTER urchin bootstrap: ",
+       paste(missing_u_cols, collapse = ", "))
+}
+u_cols <- u_cols_required
+if ("site_designation" %in% names(URCHINS)) u_cols <- c(u_cols, "site_designation")
+if ("BaselineRegion" %in% names(URCHINS)) u_cols <- c(u_cols, "BaselineRegion")
+u <- unique(URCHINS[, u_cols])
 
 # Prepare size frequency data
 SizeFreq.Urch <- SizeFreq.Urch.OG
 SizeFreq.Urch <- SizeFreq.Urch[complete.cases(SizeFreq.Urch$size), ]
 
 # Bootstrap urchin biomass using utility function
-Urchin.site <- data.frame(site = NA, CA_MPA_Name_Short = NA, site_status = NA,
-                          year = NA, transect = NA, quad = NA,
-                          biomass = NA, count = NA, y = NA, area = NA)
-Urchin.SF <- data.frame(site = NA, CA_MPA_Name_Short = NA, site_status = NA,
-                        year = NA, transect = NA, quad = NA,
-                        biomass = NA, count = NA, y = NA, area = NA)
+Urchin.site <- data.frame(
+  site = character(),
+  CA_MPA_Name_Short = character(),
+  site_status = character(),
+  site_designation = character(),
+  BaselineRegion = character(),
+  year = integer(),
+  transect = character(),
+  quad = integer(),
+  biomass = numeric(),
+  count = numeric(),
+  y = character(),
+  area = numeric(),
+  stringsAsFactors = FALSE
+)
+Urchin.SF <- Urchin.site[0, ]
 
 # Cache bootstrap results to avoid re-running the slow loop
 .cache_lter_urch <- here::here("data", "cache", "lter_urchin_bootstrap.rds")
-if (file.exists(.cache_lter_urch) && !exists("FORCE_BOOTSTRAP")) {
+cached <- NULL
+if (file.exists(.cache_lter_urch) && !force_boot) {
   cat("    Loading cached LTER urchin bootstrap results...\n")
-  Urchin.site <- readRDS(.cache_lter_urch)
+  cached <- safe_read_rds(.cache_lter_urch, default = NULL)
+  if (is.null(cached)) {
+    cat("    Cache invalid, recomputing...\n")
+  }
+}
+
+if (!is.null(cached)) {
+  # Upgrade old cache schemas: earlier caches may not include these metadata columns.
+  if (!"site_designation" %in% names(cached)) cached$site_designation <- NA_character_
+  if (!"BaselineRegion" %in% names(cached)) cached$BaselineRegion <- NA_character_
+
+  required_core <- c(
+    "year", "site", "site_status", "CA_MPA_Name_Short",
+    "transect", "quad", "area", "y", "count", "biomass"
+  )
+  missing_core <- setdiff(required_core, names(cached))
+  if (length(missing_core) > 0) {
+    cat("    Cached LTER urchin bootstrap missing core columns (",
+        paste(missing_core, collapse = ", "),
+        "); recomputing...\n", sep = "")
+    cached <- NULL
+  }
+}
+
+if (!is.null(cached)) {
+  Urchin.site <- cached
 } else {
-  for (i in 1:nrow(u)) {
+  for (i in seq_len(nrow(u))) {
     t <- which(URCHINS$site_id == u$site_id[i] &
                  URCHINS$year == u$year[i] &
                  URCHINS$transect_id == u$transect_id[i] &
                  URCHINS$taxon_name == u$taxon_name[i])
-    n <- sum(URCHINS$count[t])
+    n <- sum(URCHINS$count[t], na.rm = TRUE)
     t2 <- which(SizeFreq.Urch$CA_MPA_Name_Short == u$CA_MPA_Name_Short[i] &
                   SizeFreq.Urch$site_status == u$status[i] &
                   SizeFreq.Urch$year == u$year[i] &
@@ -165,6 +215,8 @@ if (file.exists(.cache_lter_urch) && !exists("FORCE_BOOTSTRAP")) {
 
     Urchin.SF$site           <- u$site_id[i]
     Urchin.SF$CA_MPA_Name_Short <- u$CA_MPA_Name_Short[i]
+    Urchin.SF$site_designation <- if ("site_designation" %in% names(u)) as.character(u$site_designation[i]) else NA_character_
+    Urchin.SF$BaselineRegion <- if ("BaselineRegion" %in% names(u)) as.character(u$BaselineRegion[i]) else NA_character_
     Urchin.SF$year           <- u$year[i]
     Urchin.SF$transect       <- u$transect_id[i]
     Urchin.SF$quad           <- length(t)
@@ -182,12 +234,19 @@ if (file.exists(.cache_lter_urch) && !exists("FORCE_BOOTSTRAP")) {
   cat("    Cached LTER urchin bootstrap results.\n")
 }
 
-# Merge bootstrapped biomass with site info
-LTER.Urchin.site.merge <- merge(Urchin.site, sites.short,
-                                by.x = c("site", "site_status", "CA_MPA_Name_Short"),
-                                by.y = c("site", "site_status", "CA_MPA_Name_Short"),
-                                all.x = TRUE)
-LTER.Urchin.site.merge <- LTER.Urchin.site.merge[, colnames(LTER.Urchin.site.merge)[c(3, 1, 2, 4, 17, 20, 5:10)]]
+# Bootstrapped biomass output already carries site metadata (from Sites2 via URCHINS).
+# Avoid merging with sites.short (PISCO/KFM site table), which can silently mismatch and
+# makes downstream column-index slicing brittle.
+LTER.Urchin.site.merge <- Urchin.site
+need_urch_cols <- c("year", "site", "site_status", "CA_MPA_Name_Short",
+                    "site_designation", "BaselineRegion",
+                    "transect", "quad", "area", "y", "count", "biomass")
+missing_urch_cols <- setdiff(need_urch_cols, names(LTER.Urchin.site.merge))
+if (length(missing_urch_cols) > 0) {
+  stop("LTER.Urchin.site.merge missing required columns: ",
+       paste(missing_urch_cols, collapse = ", "))
+}
+LTER.Urchin.site.merge <- LTER.Urchin.site.merge[, need_urch_cols]
 # Zero-fill only numeric columns; preserve NAs in character/factor columns
 num_cols <- sapply(LTER.Urchin.site.merge, is.numeric)
 LTER.Urchin.site.merge[num_cols][is.na(LTER.Urchin.site.merge[num_cols])] <- 0
@@ -195,7 +254,7 @@ LTER.Urchin.site.merge[num_cols][is.na(LTER.Urchin.site.merge[num_cols])] <- 0
 # Remove site-years where urchins were counted but not sized (can't estimate biomass)
 LTER.Urchin.null <- subset(LTER.Urchin.site.merge, count > 0 & biomass == 0)
 LTER.Urchin.site.merge.sub <- LTER.Urchin.site.merge
-for (i in 1:nrow(LTER.Urchin.null)) {
+for (i in seq_len(nrow(LTER.Urchin.null))) {
   LTER.Urchin.site.merge.sub <- subset(LTER.Urchin.site.merge.sub,
                                        site != LTER.Urchin.null$site[i] |
                                          year != LTER.Urchin.null$year[i])
@@ -203,15 +262,27 @@ for (i in 1:nrow(LTER.Urchin.null)) {
 
 # Normalize by number of quads per transect
 LTER.Urchin.site.transectSum <- LTER.Urchin.site.merge.sub
-LTER.Urchin.site.transectSum$count   <- LTER.Urchin.site.transectSum$count / LTER.Urchin.site.transectSum$quad
-LTER.Urchin.site.transectSum$biomass <- LTER.Urchin.site.transectSum$biomass / LTER.Urchin.site.transectSum$quad
+LTER.Urchin.site.transectSum$count <- safe_divide(
+  LTER.Urchin.site.transectSum$count,
+  LTER.Urchin.site.transectSum$quad,
+  context = "LTER urchin count / quad"
+)
+LTER.Urchin.site.transectSum$biomass <- safe_divide(
+  LTER.Urchin.site.transectSum$biomass,
+  LTER.Urchin.site.transectSum$quad,
+  context = "LTER urchin biomass / quad"
+)
 
 # Average across transects
 LTER.Urchin.site.all <- LTER.Urchin.site.transectSum %>%
   group_by(year, site, CA_MPA_Name_Short, site_designation, site_status,
            BaselineRegion, y, area) %>%
   summarise_at(c("count", "biomass"), mean)
-LTER.Urchin.site.all$Density <- LTER.Urchin.site.all$count / LTER.Urchin.site.all$area
+LTER.Urchin.site.all$Density <- safe_divide(
+  LTER.Urchin.site.all$count,
+  LTER.Urchin.site.all$area,
+  context = "LTER urchin Density = count/area"
+)
 
 # Recode taxa in lter.ave to match
 lter.ave <- mutate(lter.ave, taxon_name = case_when(
@@ -226,7 +297,14 @@ LTER.allbio <- merge(lter.ave, LTER.Urchin.site.all,
                      all = TRUE)
 
 Swath.LTER <- LTER.allbio
-Swath.LTER <- Swath.LTER[, colnames(Swath.LTER)[c(1:5, 12, 6:10, 13:15)]]
+keep_swath_lter <- c("site_id", "status", "CA_MPA_Name_Short", "ChannelIsland", "MPA_Start",
+                     "Density", "time", "year", "taxon_name", "den", "biomass")
+missing_swath_lter <- setdiff(keep_swath_lter, names(Swath.LTER))
+if (length(missing_swath_lter) > 0) {
+  stop("Swath.LTER missing required columns after merge: ",
+       paste(missing_swath_lter, collapse = ", "))
+}
+Swath.LTER <- Swath.LTER[, keep_swath_lter]
 names(Swath.LTER)[names(Swath.LTER) == "Density"]   <- "count.y"
 names(Swath.LTER)[names(Swath.LTER) == "status"]    <- "site_status"
 names(Swath.LTER)[names(Swath.LTER) == "den"]       <- "Density"
@@ -254,7 +332,7 @@ All.den <- lter.ave.ave
 All.den <- All.den[complete.cases(All.den$den), ]
 All.den <- calculate_proportions(All.den, "den")
 
-All.den.sub <- All.den[, colnames(All.den)[c(3, 7, 1, 2, 11)]]
+All.den.sub <- All.den[, c("CA_MPA_Name_Short", "year", "y", "site_status", "PropCorr")]
 Short.den <- All.den.sub %>% spread(site_status, PropCorr)
 Short.den.diff <- calculate_log_response_ratio(Short.den)
 Short.den.diff$resp <- "Den"
@@ -264,7 +342,7 @@ All.bio <- lter.ave.ave
 All.bio <- All.bio[complete.cases(All.bio$biomass), ]
 All.bio <- calculate_proportions(All.bio, "biomass")
 
-All.bio.sub <- All.bio[, colnames(All.bio)[c(3, 7, 1, 2, 11)]]
+All.bio.sub <- All.bio[, c("CA_MPA_Name_Short", "year", "y", "site_status", "PropCorr")]
 Short.bio <- All.bio.sub %>% spread(site_status, PropCorr)
 Short.bio.diff <- calculate_log_response_ratio(Short.bio)
 Short.bio.diff$resp <- "Bio"
@@ -277,7 +355,7 @@ LTER.join.ave <- rbind(Short.den.diff, Short.bio.diff)
 # They're used for plotting raw data time series and as input to other analyses.
 
 # Select relevant columns for density response dataframe
-lter.edit.den <- lter.ave.ave[, colnames(lter.ave.ave)[c(2, 3, 5, 7, 8, 1)]]
+lter.edit.den <- lter.ave.ave[, c("site_status", "CA_MPA_Name_Short", "MPA_Start", "year", "den", "y")]
 lter.edit.den <- lter.edit.den[complete.cases(lter.edit.den), ]  # Remove rows with NAs
 
 # spread() converts from long to wide format: site_status values become columns
@@ -289,16 +367,16 @@ LTER.den <- LTER.den[complete.cases(LTER.den), ]
 # gather() converts from wide back to long format for storage
 # Columns 5:6 (mpa, reference) are gathered into key-value pairs
 # key = "site_status" (mpa or reference), value = "value" (the density)
-LTER.den.long <- gather(LTER.den, site_status, value, 5:6)
+LTER.den.long <- gather(LTER.den, site_status, value, mpa, reference)
 LTER.den.long$resp <- "Den"  # Label as density response
 
 # Same process for biomass
-lter.edit.bio <- lter.ave.ave[, colnames(lter.ave.ave)[c(2, 3, 5, 7, 9, 1)]]
+lter.edit.bio <- lter.ave.ave[, c("site_status", "CA_MPA_Name_Short", "MPA_Start", "year", "biomass", "y")]
 lter.edit.bio <- lter.edit.bio[complete.cases(lter.edit.bio), ]
 LTER.bio <- lter.edit.bio %>% spread(site_status, biomass)
 LTER.bio$source <- "LTER"
 LTER.bio <- LTER.bio[complete.cases(LTER.bio), ]
-LTER.bio.long <- gather(LTER.bio, site_status, value, 5:6)
+LTER.bio.long <- gather(LTER.bio, site_status, value, mpa, reference)
 LTER.bio.long$resp <- "Bio"
 
 # Combine density and biomass into one response dataframe
@@ -354,37 +432,29 @@ lter.lob.site.max <- lter.lob.site.ave %>%
   summarise_at(c("COUNT", "biomass"), mean)
 
 ## --- Lobster biomass proportions and log response ratios ---
-lter.lob.site.max$Prop <- 0
-lter.lob.site.max$PropCorr <- 0
+# NOTE: Using adaptive correction (min/2) for consistency across all taxa/programs.
+# This is statistically preferred over fixed +0.01 (Aitchison 1986) as it scales
+# appropriately with the data and avoids inflating effect sizes for rare species.
 lter.lob.site.max$taxon_name <- "Panulirus interruptus"
+lter.lob.site.max$y <- lter.lob.site.max$taxon_name  # Required for calculate_proportions()
 
-# Biomass proportions
-x_lob <- unique(lter.lob.site.max$CA_MPA_Name_Short)
-for (i in seq_along(x_lob)) {
-  idx <- which(lter.lob.site.max$CA_MPA_Name_Short == x_lob[i])
-  m <- max(lter.lob.site.max$biomass[idx])
-  if (m > 0) {
-    lter.lob.site.max$Prop[idx] <- lter.lob.site.max$biomass[idx] / m
-    lter.lob.site.max$PropCorr[idx] <- lter.lob.site.max$Prop[idx] + 0.01
-  }
-}
+# Rename YEAR to year for consistency with other data sources
+names(lter.lob.site.max)[names(lter.lob.site.max) == "YEAR"] <- "year"
 
-All.bio.panLTERall.sub <- lter.lob.site.max[, colnames(lter.lob.site.max)[c(2, 4, 9, 1, 8)]]
+# Biomass proportions - use standardized function with adaptive correction
+lter.lob.site.max <- calculate_proportions(lter.lob.site.max, "biomass")
+
+# Use column names instead of fragile indices
+All.bio.panLTERall.sub <- lter.lob.site.max[, c("CA_MPA_Name_Short", "year", "y", "status", "PropCorr")]
 Short.bio.panLTERall <- All.bio.panLTERall.sub %>% spread(status, PropCorr)
 Short.bio.panLTERall.diff <- calculate_log_response_ratio(Short.bio.panLTERall)
 Short.bio.panLTERall.diff$resp <- "Bio"
 
-# Count/density proportions
-for (i in seq_along(x_lob)) {
-  idx <- which(lter.lob.site.max$CA_MPA_Name_Short == x_lob[i])
-  m <- max(lter.lob.site.max$COUNT[idx])
-  if (m > 0) {
-    lter.lob.site.max$Prop[idx] <- lter.lob.site.max$COUNT[idx] / m
-    lter.lob.site.max$PropCorr[idx] <- lter.lob.site.max$Prop[idx] + 0.01
-  }
-}
+# Count/density proportions - use standardized function with adaptive correction
+lter.lob.site.max <- calculate_proportions(lter.lob.site.max, "COUNT")
 
-All.den.panLTERall.sub <- lter.lob.site.max[, colnames(lter.lob.site.max)[c(2, 4, 9, 1, 8)]]
+# Use column names instead of fragile indices
+All.den.panLTERall.sub <- lter.lob.site.max[, c("CA_MPA_Name_Short", "year", "y", "status", "PropCorr")]
 Short.den.panLTERall <- All.den.panLTERall.sub %>% spread(status, PropCorr)
 Short.den.panLTERall.diff <- calculate_log_response_ratio(Short.den.panLTERall)
 Short.den.panLTERall.diff$resp <- "Den"
@@ -409,18 +479,19 @@ LTER.lob <- assign_ba_from_site_table(LTER.lob, Sites2)
 lter.lob.site.max$Den <- lter.lob.site.max$COUNT / 300  # plots are 300 m2
 lter.lob.site.max$Bio <- lter.lob.site.max$biomass / 300
 
-lter.lob.edit.den <- lter.lob.site.max[, colnames(lter.lob.site.max)[c(1:4, 10, 9)]]
+# Use column names instead of fragile indices
+lter.lob.edit.den <- lter.lob.site.max[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "Den", "y")]
 LTER.lob.den <- lter.lob.edit.den %>% spread(status, Den)
 LTER.lob.den$source <- "LTER"
 LTER.lob.den.sub <- LTER.lob.den[complete.cases(LTER.lob.den), ]
-LTER.lob.den.long <- gather(LTER.lob.den.sub, status, value, 5:6)
+LTER.lob.den.long <- gather(LTER.lob.den.sub, status, value, mpa, reference)
 LTER.lob.den.long$resp <- "Den"
 
-lter.lob.edit.bio <- lter.lob.site.max[, colnames(lter.lob.site.max)[c(1:4, 11, 9)]]
+lter.lob.edit.bio <- lter.lob.site.max[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "Bio", "y")]
 LTER.lob.bio <- lter.lob.edit.bio %>% spread(status, Bio)
 LTER.lob.bio$source <- "LTER"
 LTER.lob.bio.sub <- LTER.lob.bio[complete.cases(LTER.lob.bio), ]
-LTER.lob.bio.long <- gather(LTER.lob.bio.sub, status, value, 5:6)
+LTER.lob.bio.long <- gather(LTER.lob.bio.sub, status, value, mpa, reference)
 LTER.lob.bio.long$resp <- "Bio"
 
 LTER.lob.resp <- rbind(LTER.lob.den.long, LTER.lob.bio.long)
@@ -439,7 +510,8 @@ lter.macro.site <- subset(lter.macro.site, CA_MPA_Name_Short == "Campus Point SM
                             CA_MPA_Name_Short == "Naples SMCA")
 
 # Calculate frond density and biomass using bio_macro() utility function
-lter.macro.site$frondDen <- lter.macro.site$FRONDS / lter.macro.site$AREA
+lter.macro.site$frondDen <- safe_divide(lter.macro.site$FRONDS, lter.macro.site$AREA,
+                                        context = "LTER macro frondDen = FRONDS/AREA")
 lter.macro.site$biomass  <- bio_macro(lter.macro.site$frondDen)
 
 # Summarise: quad -> transect -> site -> MPA level
@@ -447,7 +519,8 @@ lter.macro.site.sum <- lter.macro.site %>%
   group_by(YEAR, SITE, TRANSECT, QUAD, SIDE, AREA, status,
            CA_MPA_Name_Short, ChannelIsland, MPA_Start) %>%
   summarise_at(c("FRONDS", "biomass"), sum)
-lter.macro.site.sum$den <- lter.macro.site.sum$FRONDS / lter.macro.site.sum$AREA
+lter.macro.site.sum$den <- safe_divide(lter.macro.site.sum$FRONDS, lter.macro.site.sum$AREA,
+                                       context = "LTER macro den = FRONDS/AREA")
 
 lter.macro.site.ave <- lter.macro.site.sum %>%
   group_by(YEAR, TRANSECT, SITE, status, CA_MPA_Name_Short,
@@ -463,45 +536,32 @@ lter.macro.site.max <- lter.macro.site.ave %>%
   summarise_at(c("den", "biomass"), mean)
 
 ## --- Macrocystis frond density proportions and log response ratios ---
-lter.macro.site.max$Prop <- 0
-lter.macro.site.max$PropCorr <- 0
+# NOTE: Using adaptive correction (min/2) for consistency across all taxa/programs.
+# This is statistically preferred over fixed +0.01 (Aitchison 1986) as it scales
+# appropriately with the data and avoids inflating effect sizes for rare species.
 lter.macro.site.max$taxon_name <- "Macrocystis pyrifera"
+lter.macro.site.max$y <- lter.macro.site.max$taxon_name  # Required for calculate_proportions()
 
-x_macro <- unique(lter.macro.site.max$CA_MPA_Name_Short)
+# Rename YEAR to year for consistency with other data sources
+names(lter.macro.site.max)[names(lter.macro.site.max) == "YEAR"] <- "year"
 
-# Frond density proportions
-for (i in seq_along(x_macro)) {
-  idx <- which(lter.macro.site.max$CA_MPA_Name_Short == x_macro[i])
-  m <- max(lter.macro.site.max$den[idx])
-  if (m > 0) {
-    lter.macro.site.max$Prop[idx] <- lter.macro.site.max$den[idx] / m
-    lter.macro.site.max$PropCorr[idx] <- lter.macro.site.max$Prop[idx] + 0.01
-  }
-}
+# Frond density proportions - use standardized function with adaptive correction
+lter.macro.site.max <- calculate_proportions(lter.macro.site.max, "den")
 
-All.lter.macro.frond.sub <- lter.macro.site.max[, colnames(lter.macro.site.max)[c(2, 4, 9, 1, 8)]]
+# Use column names instead of fragile indices
+All.lter.macro.frond.sub <- lter.macro.site.max[, c("CA_MPA_Name_Short", "year", "y", "status", "PropCorr")]
 Short.lter.macro.frond <- All.lter.macro.frond.sub %>% spread(status, PropCorr)
 Short.lter.macro.frond.diff <- calculate_log_response_ratio(Short.lter.macro.frond)
 Short.lter.macro.frond.diff$resp <- "Den"
-colnames(Short.lter.macro.frond.diff)[2] <- "year"
-colnames(Short.lter.macro.frond.diff)[3] <- "y"
 
-# Biomass proportions
-for (i in seq_along(x_macro)) {
-  idx <- which(lter.macro.site.max$CA_MPA_Name_Short == x_macro[i])
-  m <- max(lter.macro.site.max$biomass[idx])
-  if (m > 0) {
-    lter.macro.site.max$Prop[idx] <- lter.macro.site.max$biomass[idx] / m
-    lter.macro.site.max$PropCorr[idx] <- lter.macro.site.max$Prop[idx] + 0.01
-  }
-}
+# Biomass proportions - use standardized function with adaptive correction
+lter.macro.site.max <- calculate_proportions(lter.macro.site.max, "biomass")
 
-All.lter.macro.bio.sub <- lter.macro.site.max[, colnames(lter.macro.site.max)[c(2, 4, 9, 1, 8)]]
+# Use column names instead of fragile indices
+All.lter.macro.bio.sub <- lter.macro.site.max[, c("CA_MPA_Name_Short", "year", "y", "status", "PropCorr")]
 Short.lter.macro.bio <- All.lter.macro.bio.sub %>% spread(status, PropCorr)
 Short.lter.macro.bio.diff <- calculate_log_response_ratio(Short.lter.macro.bio)
 Short.lter.macro.bio.diff$resp <- "Bio"
-colnames(Short.lter.macro.bio.diff)[2] <- "year"
-colnames(Short.lter.macro.bio.diff)[3] <- "y"
 
 # Combine macrocystis results
 Short.lter.macro <- rbind(Short.lter.macro.frond.diff, Short.lter.macro.bio.diff)
@@ -517,18 +577,19 @@ Short.lter.macro$source <- "LTER macro surveys"
 Short.lter.macro <- assign_ba_from_site_table(Short.lter.macro, Sites2)
 
 ## --- Create LTER macrocystis response dataframes ---
-lter.macro.edit.den <- lter.macro.site.max[, colnames(lter.macro.site.max)[c(1:4, 5, 9)]]
+# Use column names instead of fragile indices
+lter.macro.edit.den <- lter.macro.site.max[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "den", "y")]
 LTER.macro.den <- lter.macro.edit.den %>% spread(status, den)
 LTER.macro.den$source <- "LTER"
 LTER.macro.den.sub <- LTER.macro.den[complete.cases(LTER.macro.den), ]
-LTER.macro.den.long <- gather(LTER.macro.den.sub, status, value, 5:6)
+LTER.macro.den.long <- gather(LTER.macro.den.sub, status, value, mpa, reference)
 LTER.macro.den.long$resp <- "Den"
 
-lter.macro.edit.bio <- lter.macro.site.max[, colnames(lter.macro.site.max)[c(1:4, 6, 9)]]
+lter.macro.edit.bio <- lter.macro.site.max[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "biomass", "y")]
 LTER.macro.bio <- lter.macro.edit.bio %>% spread(status, biomass)
 LTER.macro.bio$source <- "LTER"
 LTER.macro.bio.sub <- LTER.macro.bio[complete.cases(LTER.macro.bio), ]
-LTER.macro.bio.long <- gather(LTER.macro.bio.sub, status, value, 5:6)
+LTER.macro.bio.long <- gather(LTER.macro.bio.sub, status, value, mpa, reference)
 LTER.macro.bio.long$resp <- "Bio"
 
 LTER.macro.resp <- rbind(LTER.macro.den.long, LTER.macro.bio.long)
@@ -575,46 +636,35 @@ lter.fish.max <- lter.fish.ave %>%
   summarise_at(c("COUNT", "biomass"), mean)
 
 ## --- Fish count proportions and log response ratios ---
-lter.fish.max$Prop <- 0
-lter.fish.max$PropCorr <- 0
+# NOTE: Using adaptive correction (min/2) for consistency across all taxa/programs.
+# This is statistically preferred over fixed +0.01 (Aitchison 1986) as it scales
+# appropriately with the data and avoids inflating effect sizes for rare species.
 lter.fish.max$taxon_name <- "SPUL"
+lter.fish.max$y <- lter.fish.max$taxon_name  # Required for calculate_proportions()
 
-x_fish <- unique(lter.fish.max$CA_MPA_Name_Short)
+# Rename YEAR to year for consistency with other data sources
+names(lter.fish.max)[names(lter.fish.max) == "YEAR"] <- "year"
 
-# Count proportions
-for (i in seq_along(x_fish)) {
-  idx <- which(lter.fish.max$CA_MPA_Name_Short == x_fish[i])
-  m <- max(lter.fish.max$COUNT[idx])
-  if (m > 0) {
-    lter.fish.max$Prop[idx] <- lter.fish.max$COUNT[idx] / m
-    lter.fish.max$PropCorr[idx] <- lter.fish.max$Prop[idx] + 0.01
-  }
-}
+# Count proportions - use standardized function with adaptive correction
+lter.fish.max <- calculate_proportions(lter.fish.max, "COUNT")
 
-All.lter.fish.count.sub <- lter.fish.max[, colnames(lter.fish.max)[c(2, 4, 9, 1, 8)]]
+# Use column names instead of fragile indices
+All.lter.fish.count.sub <- lter.fish.max[, c("CA_MPA_Name_Short", "year", "y", "status", "PropCorr")]
 Short.lter.fish.count <- All.lter.fish.count.sub %>% spread(status, PropCorr)
 Short.lter.fish.count.diff <- calculate_log_response_ratio(Short.lter.fish.count)
 Short.lter.fish.count.diff$resp <- "Den"
 
-# Biomass proportions
-for (i in seq_along(x_fish)) {
-  idx <- which(lter.fish.max$CA_MPA_Name_Short == x_fish[i])
-  m <- max(lter.fish.max$biomass[idx])
-  if (m > 0) {
-    lter.fish.max$Prop[idx] <- lter.fish.max$biomass[idx] / m
-    lter.fish.max$PropCorr[idx] <- lter.fish.max$Prop[idx] + 0.01
-  }
-}
+# Biomass proportions - use standardized function with adaptive correction
+lter.fish.max <- calculate_proportions(lter.fish.max, "biomass")
 
-All.lter.spul.bio.sub <- lter.fish.max[, colnames(lter.fish.max)[c(2, 4, 9, 1, 8)]]
+# Use column names instead of fragile indices
+All.lter.spul.bio.sub <- lter.fish.max[, c("CA_MPA_Name_Short", "year", "y", "status", "PropCorr")]
 Short.lter.spul.bio <- All.lter.spul.bio.sub %>% spread(status, PropCorr)
 Short.lter.spul.bio.diff <- calculate_log_response_ratio(Short.lter.spul.bio)
 Short.lter.spul.bio.diff$resp <- "Bio"
 
 # Combine fish results
 LTER.fish <- rbind(Short.lter.fish.count.diff, Short.lter.spul.bio.diff)
-colnames(LTER.fish)[2] <- "year"
-colnames(LTER.fish)[3] <- "y"
 
 # Assign time and BA labels using utility functions
 LTER.fish <- assign_time_from_site_table(LTER.fish, Sites2)
@@ -630,18 +680,19 @@ LTER.fish <- assign_ba_from_site_table(LTER.fish, Sites2)
 lter.fish.max$Bio <- lter.fish.max$biomass / 80
 lter.fish.max$Den <- lter.fish.max$COUNT / 80
 
-lter.fish.edit.den <- lter.fish.max[, colnames(lter.fish.max)[c(1:4, 11, 9)]]
+# Use column names instead of fragile indices
+lter.fish.edit.den <- lter.fish.max[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "Den", "y")]
 LTER.fish.den <- lter.fish.edit.den %>% spread(status, Den)
 LTER.fish.den$source <- "LTER"
 LTER.fish.den.sub <- LTER.fish.den[complete.cases(LTER.fish.den), ]
-LTER.fish.den.long <- gather(LTER.fish.den.sub, status, value, 5:6)
+LTER.fish.den.long <- gather(LTER.fish.den.sub, status, value, mpa, reference)
 LTER.fish.den.long$resp <- "Den"
 
-lter.fish.edit.bio <- lter.fish.max[, colnames(lter.fish.max)[c(1:4, 10, 9)]]
+lter.fish.edit.bio <- lter.fish.max[, c("status", "CA_MPA_Name_Short", "MPA_Start", "year", "Bio", "y")]
 LTER.fish.bio <- lter.fish.edit.bio %>% spread(status, Bio)
 LTER.fish.bio$source <- "LTER"
 LTER.fish.bio.sub <- LTER.fish.bio[complete.cases(LTER.fish.bio), ]
-LTER.fish.bio.long <- gather(LTER.fish.bio.sub, status, value, 5:6)
+LTER.fish.bio.long <- gather(LTER.fish.bio.sub, status, value, mpa, reference)
 LTER.fish.bio.long$resp <- "Bio"
 
 LTER.fish.resp <- rbind(LTER.fish.den.long, LTER.fish.bio.long)

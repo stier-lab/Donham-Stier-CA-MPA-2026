@@ -254,11 +254,16 @@ bootstrap_biomass <- function(count, size_freq_indices, size_freq_table,
   n <- count
   t2 <- size_freq_indices
 
+  # Guard: NA counts cause "missing value where TRUE/FALSE needed" in conditionals
+  if (is.na(n)) {
+    return(list(biomass = NA, se = NA, count = n))
+  }
+
   # Case 1: We have both counts and size frequency data
-  if (n != 0 & length(t2) != 0) {
+  if (n != 0 && length(t2) != 0) {
     # Build a "population" of sizes from the size frequency records
     # Each size is repeated by its frequency count
-    a <- NULL
+    a <- numeric(0)
     for (j in seq_along(t2)) {
       reps <- rep(size_freq_table$size[t2[j]], size_freq_table$count[t2[j]])
       a <- c(a, reps)
@@ -295,7 +300,7 @@ bootstrap_biomass <- function(count, size_freq_indices, size_freq_table,
     return(list(biomass = 0, se = 0, count = 0))
 
   # Case 3: Individuals observed but no size data available
-  } else if (n != 0 & length(t2) == 0) {
+  } else if (n != 0 && length(t2) == 0) {
     return(list(biomass = NA, se = NA, count = n))
 
   # Case 4: Fallback
@@ -405,11 +410,18 @@ calculate_proportions <- function(df, value_col, correction_method = "adaptive")
 #'   - Diff: Raw ratio (mpa / reference)
 #'   - lnDiff: Natural log of the ratio
 calculate_log_response_ratio <- function(df) {
-  # Remove rows with any missing values
-  df <- df[complete.cases(df), ]
+  if (!all(c("mpa", "reference") %in% names(df))) {
+    stop("calculate_log_response_ratio(): expected columns 'mpa' and 'reference'.")
+  }
 
-  # Calculate ratio and log ratio
-  df$Diff <- df$mpa / df$reference
+  # Only drop rows missing required inputs; preserve rows with unrelated NA columns.
+  keep <- complete.cases(df[, c("mpa", "reference")])
+  df <- df[keep, , drop = FALSE]
+
+  df$Diff <- safe_divide(df$mpa, df$reference, replace_zero = TRUE, context = "mpa/reference")
+
+  # Log is undefined for non-positive ratios. Avoid Inf/NaN propagation.
+  df$Diff[!is.finite(df$Diff) | df$Diff <= 0] <- NA_real_
   df$lnDiff <- log(df$Diff)
 
   df
