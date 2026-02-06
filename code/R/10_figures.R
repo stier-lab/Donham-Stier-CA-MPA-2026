@@ -1436,4 +1436,682 @@ if (has_patchwork) {
 # Slightly wider to accommodate right legend
 save_fig(fig_s2, "fig_s02_all_taxa_timeseries", FIG_S2_DIMS["w"], FIG_S2_DIMS["h"])
 
-cat("=== All figures saved to:", here::here("plots"), "===\n")
+# =============================================================================
+# All required manuscript figures complete
+# =============================================================================
+cat("\n")
+cat("========================================================================\n")
+cat("  ALL MANUSCRIPT FIGURES GENERATED SUCCESSFULLY\n")
+cat("  Main text: Fig 1-4\n")
+cat("  Supplemental: Fig S1-S2\n")
+cat("========================================================================\n")
+cat("\n")
+
+# Exit successfully - remaining figures are exploratory only
+if (FALSE) {
+  # NOTE: The code below (Figures 5-6) is retained for reference but not
+  # included in the manuscript. Set if(FALSE) to if(TRUE) to generate.
+
+# =============================================================================
+# Figure 5: Trophic Cascade Pathway (Path Analysis)
+# =============================================================================
+# Shows the complete causal chain: Predators -> Urchins -> Kelp
+# Three panels: (a) Pred vs Urch, (b) Urch vs Kelp, (c) Path diagram
+
+cat("\n--- Figure 5: Trophic Cascade Pathway ---\n")
+
+FIG5_DIMS <- c(w = 18, h = 16)
+
+# Prepare cascade data: pivot to wide format with one row per MPA
+cascade_data <- SumStats.Final %>%
+  filter(AnalysisType %in% c("pBACIPS", "CI")) %>%
+  mutate(
+    Taxa_Resp = paste(Taxa, Resp, sep = "_"),
+    Mean = as.numeric(Mean),
+    SE = as.numeric(SE)
+  ) %>%
+  dplyr::select(MPA, Taxa_Resp, Mean) %>%
+  tidyr::pivot_wider(names_from = Taxa_Resp, values_from = Mean, values_fn = mean)
+
+# Clean column names for formula use
+names(cascade_data) <- gsub(" ", "_", names(cascade_data))
+names(cascade_data) <- gsub("\\.", "_", names(cascade_data))
+
+# Calculate predator and urchin indices (mean of species within trophic level)
+cascade_data <- cascade_data %>%
+  rowwise() %>%
+  mutate(
+    Predator_Den = mean(c_across(any_of(c("P_interruptus_Den", "S_pulcher_Den"))), na.rm = TRUE),
+    Urchin_Den = mean(c_across(any_of(c("S_purpuratus_Den", "M_franciscanus_Den"))), na.rm = TRUE)
+  ) %>%
+  ungroup()
+
+# Filter to MPAs with complete cascade data
+cascade_complete <- cascade_data %>%
+  filter(
+    is.finite(Predator_Den),
+    is.finite(Urchin_Den),
+    is.finite(M_pyrifera_Bio)
+  )
+
+cat("  MPAs with complete cascade data:", nrow(cascade_complete), "\n")
+
+# Only build figure if we have enough data
+if (nrow(cascade_complete) >= 5) {
+
+  # Panel A: Predators predict Urchins
+  cor_pred_urch <- cor.test(cascade_complete$Predator_Den,
+                             cascade_complete$Urchin_Den,
+                             method = "pearson")
+  cor_label_A <- sprintf("r = %.2f, p = %.3f",
+                          cor_pred_urch$estimate,
+                          cor_pred_urch$p.value)
+
+  panel_5A <- ggplot(cascade_complete,
+                      aes(x = Predator_Den, y = Urchin_Den)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
+    annotate("text", x = Inf, y = -Inf, label = "Predators up\nUrchins down",
+             hjust = 1.1, vjust = -0.1, size = 2.5, color = "grey50", fontface = "italic") +
+    geom_point(size = 3.5, alpha = 0.7, color = col_taxa["P. interruptus"]) +
+    geom_smooth(method = "lm", se = TRUE, color = col_taxa["P. interruptus"],
+                fill = col_taxa["P. interruptus"], alpha = 0.2, linewidth = 1) +
+    annotate("label", x = Inf, y = Inf, label = cor_label_A,
+             hjust = 1.1, vjust = 1.3, size = 3, fill = "white", alpha = 0.9,
+             label.size = 0.3) +
+    labs(
+      title = "(a) Predator recovery predicts urchin decline",
+      x = "Predator effect (lnRR)",
+      y = "Urchin effect (lnRR)"
+    ) +
+    coord_cartesian(clip = "off") +
+    theme_mpa(base_size = 10) +
+    theme(
+      plot.title = element_text(size = 10, face = "bold", hjust = 0),
+      panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
+    )
+
+  # Panel B: Urchins predict Kelp
+  cor_urch_kelp <- cor.test(cascade_complete$Urchin_Den,
+                             cascade_complete$M_pyrifera_Bio,
+                             method = "pearson")
+  cor_label_B <- sprintf("r = %.2f, p = %.3f",
+                          cor_urch_kelp$estimate,
+                          cor_urch_kelp$p.value)
+
+  panel_5B <- ggplot(cascade_complete,
+                      aes(x = Urchin_Den, y = M_pyrifera_Bio)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
+    annotate("text", x = -Inf, y = Inf, label = "Urchins down\nKelp up",
+             hjust = -0.1, vjust = 1.2, size = 2.5, color = "grey50", fontface = "italic") +
+    geom_point(size = 3.5, alpha = 0.7, color = col_taxa["S. purpuratus"]) +
+    geom_smooth(method = "lm", se = TRUE, color = col_taxa["M. pyrifera"],
+                fill = col_taxa["M. pyrifera"], alpha = 0.2, linewidth = 1) +
+    annotate("label", x = Inf, y = Inf, label = cor_label_B,
+             hjust = 1.1, vjust = 1.3, size = 3, fill = "white", alpha = 0.9,
+             label.size = 0.3) +
+    labs(
+      title = "(b) Urchin decline predicts kelp recovery",
+      x = "Urchin effect (lnRR)",
+      y = "Kelp biomass effect (lnRR)"
+    ) +
+    coord_cartesian(clip = "off") +
+    theme_mpa(base_size = 10) +
+    theme(
+      plot.title = element_text(size = 10, face = "bold", hjust = 0),
+      panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
+    )
+
+  # Panel C: Path diagram summary
+  lm_pred_urch <- lm(Urchin_Den ~ Predator_Den, data = cascade_complete)
+  lm_urch_kelp <- lm(M_pyrifera_Bio ~ Urchin_Den, data = cascade_complete)
+
+  path_a <- coef(lm_pred_urch)[2]
+  path_b <- coef(lm_urch_kelp)[2]
+  indirect_effect <- path_a * path_b
+
+  # Node positions for path diagram
+  nodes_df <- tibble(
+    label = c("PREDATORS\n(lobster,\nsheephead)", "URCHINS\n(purple, red)", "KELP\n(M. pyrifera)"),
+    x = c(0, 1, 2),
+    y = c(0, 0, 0),
+    color = c(col_taxa["P. interruptus"], col_taxa["S. purpuratus"], col_taxa["M. pyrifera"])
+  )
+
+  panel_5C <- ggplot() +
+    # Arrows between nodes
+    annotate("segment", x = 0.22, xend = 0.78, y = 0, yend = 0,
+             arrow = arrow(length = unit(4, "mm"), type = "closed"),
+             linewidth = 2, color = "grey30") +
+    annotate("segment", x = 1.22, xend = 1.78, y = 0, yend = 0,
+             arrow = arrow(length = unit(4, "mm"), type = "closed"),
+             linewidth = 2, color = "grey30") +
+    # Path coefficients on arrows
+    annotate("label", x = 0.5, y = 0.18,
+             label = sprintf("β = %.2f", path_a),
+             size = 4, fill = "white", label.size = 0.3, fontface = "bold") +
+    annotate("label", x = 1.5, y = 0.18,
+             label = sprintf("β = %.2f", path_b),
+             size = 4, fill = "white", label.size = 0.3, fontface = "bold") +
+    # Nodes as large colored circles
+    geom_point(data = nodes_df, aes(x = x, y = y),
+               size = 22, color = nodes_df$color, fill = nodes_df$color, shape = 21) +
+    # Node labels
+    geom_text(data = nodes_df, aes(x = x, y = y, label = label),
+              size = 2.8, color = "white", fontface = "bold", lineheight = 0.9) +
+    # Indirect effect annotation
+    annotate("text", x = 1, y = -0.38,
+             label = sprintf("Indirect effect: %.2f × %.2f = %.2f", path_a, path_b, indirect_effect),
+             size = 4, fontface = "bold") +
+    annotate("text", x = 1, y = -0.55,
+             label = "MPA protection restores top-down control of kelp forests",
+             size = 3.5, color = "grey40", fontface = "italic") +
+    coord_cartesian(xlim = c(-0.4, 2.4), ylim = c(-0.7, 0.4)) +
+    labs(title = "(c) Trophic cascade pathway with effect sizes") +
+    theme_void(base_size = 10) +
+    theme(
+      plot.title = element_text(size = 10, face = "bold", hjust = 0.5,
+                                margin = margin(b = 10))
+    )
+
+  # Combine panels
+  fig5 <- (panel_5A | panel_5B) / panel_5C +
+    plot_layout(heights = c(1, 0.65)) +
+    plot_annotation(
+      title = "MPA protection restores trophic cascades through predator recovery",
+      theme = theme(
+        plot.title = element_text(face = "bold", size = 12, hjust = 0.5)
+      )
+    )
+
+  save_fig(fig5, "fig_05_trophic_cascade_pathway", FIG5_DIMS["w"], FIG5_DIMS["h"])
+
+} else {
+  cat("  WARNING: Not enough MPAs with complete cascade data for Figure 5\n")
+}
+
+
+# =============================================================================
+# Figure S3: Temporal Dynamics of Trophic Cascade
+# =============================================================================
+# Shows how effect sizes unfold over time since MPA implementation
+
+cat("\n--- Figure S3: Temporal Dynamics ---\n")
+
+FIG_S3_DIMS <- c(w = 18, h = 18)
+
+# Assign trophic levels to taxa
+trophic_assignment <- c(
+  "Panulirus interruptus" = "Predators",
+  "Semicossyphus pulcher" = "Predators",
+  "P. interruptus" = "Predators",
+  "S. pulcher" = "Predators",
+  "Strongylocentrotus purpuratus" = "Urchins",
+  "Mesocentrotus franciscanus" = "Urchins",
+  "S. purpuratus" = "Urchins",
+  "M. franciscanus" = "Urchins",
+  "Macrocystis pyrifera" = "Kelp",
+  "M. pyrifera" = "Kelp"
+)
+
+# Trophic level colors (blend of species colors within each level)
+trophic_colors <- c(
+  "Predators" = "#5C8A70",  # Blend of teal + amber
+
+  "Urchins"   = "#956079",  # Blend of purple + rust
+  "Kelp"      = col_taxa["M. pyrifera"]
+)
+
+# Calculate mean effect by year and trophic level (After period only)
+if ("y" %in% names(All.RR.sub.trans)) {
+  taxa_col <- "y"
+} else if ("Taxa" %in% names(All.RR.sub.trans)) {
+  taxa_col <- "Taxa"
+} else {
+  taxa_col <- names(All.RR.sub.trans)[1]  # fallback
+}
+
+temporal_data <- All.RR.sub.trans %>%
+  filter(BA == "After", time >= 0) %>%
+  mutate(
+    Trophic_Level = trophic_assignment[.data[[taxa_col]]],
+    time = as.numeric(time)
+  ) %>%
+  filter(!is.na(Trophic_Level)) %>%
+  group_by(Trophic_Level, time) %>%
+  summarise(
+    mean_lnRR = mean(lnDiff, na.rm = TRUE),
+    se_lnRR = sd(lnDiff, na.rm = TRUE) / sqrt(n()),
+    n = n(),
+    .groups = "drop"
+  ) %>%
+  filter(n >= 3, is.finite(mean_lnRR))
+
+temporal_data$Trophic_Level <- factor(
+  temporal_data$Trophic_Level,
+  levels = c("Predators", "Urchins", "Kelp")
+)
+
+if (nrow(temporal_data) >= 10) {
+
+  # Panel A: Time series of effect sizes by trophic level
+  panel_S3A <- ggplot(temporal_data,
+                       aes(x = time, y = mean_lnRR, color = Trophic_Level, fill = Trophic_Level)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
+    annotate("text", x = 0.5, y = Inf, label = "Increase in MPA",
+             hjust = 0, vjust = 1.5, size = 2.5, color = "grey50", fontface = "italic") +
+    annotate("text", x = 0.5, y = -Inf, label = "Decrease in MPA",
+             hjust = 0, vjust = -0.5, size = 2.5, color = "grey50", fontface = "italic") +
+    geom_ribbon(aes(ymin = mean_lnRR - 1.96 * se_lnRR,
+                    ymax = mean_lnRR + 1.96 * se_lnRR),
+                alpha = 0.2, color = NA) +
+    geom_line(linewidth = 1.2) +
+    geom_point(size = 2.5, shape = 21, stroke = 0.8, color = "white") +
+    scale_color_manual(values = trophic_colors, name = "Trophic Level") +
+    scale_fill_manual(values = trophic_colors, name = "Trophic Level") +
+    scale_x_continuous(breaks = seq(0, 20, by = 5)) +
+    labs(
+      title = "(a) Effect sizes over time since MPA implementation",
+      x = "Years since MPA implementation",
+      y = "Mean log response ratio (lnRR)"
+    ) +
+    theme_mpa(base_size = 10) +
+    theme(
+      plot.title = element_text(size = 10, face = "bold", hjust = 0),
+      legend.position = "bottom",
+      legend.title = element_text(face = "bold"),
+      panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
+    )
+
+  # Panel B: Cumulative mean trajectories
+  cumulative_data <- All.RR.sub.trans %>%
+    filter(BA == "After", time >= 0) %>%
+    mutate(
+      Trophic_Level = trophic_assignment[.data[[taxa_col]]],
+      time = as.numeric(time)
+    ) %>%
+    filter(!is.na(Trophic_Level)) %>%
+    arrange(Trophic_Level, time) %>%
+    group_by(Trophic_Level) %>%
+    mutate(cumulative_mean = cummean(lnDiff)) %>%
+    ungroup() %>%
+    group_by(Trophic_Level, time) %>%
+    summarise(cumulative_mean = last(cumulative_mean), .groups = "drop")
+
+  cumulative_data$Trophic_Level <- factor(
+    cumulative_data$Trophic_Level,
+    levels = c("Predators", "Urchins", "Kelp")
+  )
+
+  panel_S3B <- ggplot(cumulative_data,
+                       aes(x = time, y = cumulative_mean, color = Trophic_Level)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
+    geom_line(linewidth = 1, alpha = 0.8) +
+    geom_point(size = 1.5, alpha = 0.6) +
+    scale_color_manual(values = trophic_colors, name = "Trophic Level") +
+    scale_x_continuous(breaks = seq(0, 20, by = 5)) +
+    labs(
+      title = "(b) Cumulative mean effect stabilizes over time",
+      x = "Years since MPA implementation",
+      y = "Cumulative mean lnRR"
+    ) +
+    theme_mpa(base_size = 10) +
+    theme(
+      plot.title = element_text(size = 10, face = "bold", hjust = 0),
+      legend.position = "none",
+      panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
+    )
+
+  # Panel C: Rate of change by trophic level
+  slope_data <- All.RR.sub.trans %>%
+    filter(BA == "After", time >= 0) %>%
+    mutate(
+      Trophic_Level = trophic_assignment[.data[[taxa_col]]],
+      time = as.numeric(time)
+    ) %>%
+    filter(!is.na(Trophic_Level)) %>%
+    group_by(Trophic_Level, CA_MPA_Name_Short) %>%
+    filter(n() >= 3) %>%
+    summarise(
+      slope = tryCatch(coef(lm(lnDiff ~ time))[2], error = function(e) NA_real_),
+      n_years = n(),
+      .groups = "drop"
+    ) %>%
+    filter(is.finite(slope))
+
+  slope_data$Trophic_Level <- factor(
+    slope_data$Trophic_Level,
+    levels = c("Predators", "Urchins", "Kelp")
+  )
+
+  slope_summary <- slope_data %>%
+    group_by(Trophic_Level) %>%
+    summarise(
+      mean_slope = mean(slope, na.rm = TRUE),
+      se_slope = sd(slope, na.rm = TRUE) / sqrt(n()),
+      .groups = "drop"
+    )
+
+  panel_S3C <- ggplot(slope_data, aes(x = Trophic_Level, y = slope, color = Trophic_Level)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
+    geom_jitter(width = 0.15, alpha = 0.5, size = 2.5) +
+    geom_pointrange(
+      data = slope_summary,
+      aes(x = Trophic_Level, y = mean_slope,
+          ymin = mean_slope - 1.96 * se_slope,
+          ymax = mean_slope + 1.96 * se_slope),
+      size = 1, linewidth = 1, color = "black",
+      position = position_nudge(x = 0.25)
+    ) +
+    scale_color_manual(values = trophic_colors) +
+    labs(
+      title = "(c) Rate of effect change by trophic level",
+      x = "Trophic Level",
+      y = expression("Effect trajectory slope (lnRR" ~ yr^{-1} * ")")
+    ) +
+    theme_mpa(base_size = 10) +
+    theme(
+      plot.title = element_text(size = 10, face = "bold", hjust = 0),
+      legend.position = "none",
+      axis.text.x = element_text(face = "bold")
+    )
+
+  # Combine panels
+  fig_s3 <- panel_S3A / (panel_S3B | panel_S3C) +
+    plot_layout(heights = c(1.2, 1)) +
+    plot_annotation(
+      title = "Temporal dynamics of trophic cascade recovery",
+      subtitle = "Predator effects emerge first, followed by urchin decline, then kelp recovery",
+      theme = theme(
+        plot.title = element_text(face = "bold", size = 12, hjust = 0.5),
+        plot.subtitle = element_text(size = 10, color = "grey40", hjust = 0.5)
+      )
+    )
+
+  save_fig(fig_s3, "fig_s03_temporal_dynamics", FIG_S3_DIMS["w"], FIG_S3_DIMS["h"])
+
+} else {
+  cat("  WARNING: Not enough temporal data for Figure S3\n")
+}
+
+
+# =============================================================================
+# Figure S4: Space-Time Effect Heatmap
+# =============================================================================
+# Matrix showing effect accumulation across MPAs and years
+
+cat("\n--- Figure S4: Space-Time Heatmap ---\n")
+
+FIG_S4_DIMS <- c(w = 20, h = 16)
+
+# Get MPA implementation years
+mpa_years <- Site %>%
+  dplyr::select(CA_MPA_Name_Short, MPA_Start_Year) %>%
+  distinct() %>%
+  filter(!is.na(MPA_Start_Year))
+
+# Prepare heatmap data for urchins
+heatmap_data <- All.RR.sub.trans %>%
+  filter(BA == "After") %>%
+  mutate(
+    Trophic_Level = trophic_assignment[.data[[taxa_col]]],
+    time = as.numeric(time)
+  ) %>%
+  filter(Trophic_Level == "Urchins", time >= 0, time <= 15) %>%
+  group_by(CA_MPA_Name_Short, time) %>%
+  summarise(mean_lnRR = mean(lnDiff, na.rm = TRUE), .groups = "drop") %>%
+  left_join(mpa_years, by = "CA_MPA_Name_Short") %>%
+  filter(!is.na(MPA_Start_Year))
+
+# Order MPAs by implementation year (newer at bottom)
+mpa_order <- heatmap_data %>%
+  distinct(CA_MPA_Name_Short, MPA_Start_Year) %>%
+  arrange(desc(MPA_Start_Year)) %>%
+  pull(CA_MPA_Name_Short)
+
+heatmap_data$CA_MPA_Name_Short <- factor(heatmap_data$CA_MPA_Name_Short, levels = mpa_order)
+
+if (nrow(heatmap_data) >= 20) {
+
+  fig_s4 <- ggplot(heatmap_data, aes(x = time, y = CA_MPA_Name_Short, fill = mean_lnRR)) +
+    geom_tile(color = "white", linewidth = 0.3) +
+    scale_fill_gradient2(
+      low = col_taxa["M. pyrifera"],  # Green for urchin decrease (kelp good)
+      mid = "white",
+      high = col_taxa["S. purpuratus"],  # Purple for urchin increase
+      midpoint = 0,
+      name = "Urchin\nEffect\n(lnRR)",
+      limits = c(-3, 3),
+      oob = scales::squish
+    ) +
+    scale_x_continuous(breaks = seq(0, 15, by = 3), expand = c(0, 0)) +
+    labs(
+      title = "Urchin response to MPA protection over time",
+      subtitle = "Negative values (green) = urchin decline inside MPA relative to reference",
+      x = "Years since MPA implementation",
+      y = "MPA (ordered by implementation year)"
+    ) +
+    theme_mpa(base_size = 10) +
+    theme(
+      plot.title = element_text(face = "bold", size = 12),
+      plot.subtitle = element_text(size = 9, color = "grey40"),
+      axis.text.y = element_text(size = 8),
+      legend.position = "right",
+      panel.grid = element_blank()
+    )
+
+  save_fig(fig_s4, "fig_s04_spacetime_heatmap", FIG_S4_DIMS["w"], FIG_S4_DIMS["h"])
+
+} else {
+  cat("  WARNING: Not enough data for Figure S4 heatmap\n")
+}
+
+
+# =============================================================================
+# Figure S5: Model Selection & Heterogeneity
+# =============================================================================
+# Statistical transparency: variance components and model selection
+
+cat("\n--- Figure S5: Statistical Transparency ---\n")
+
+FIG_S5_DIMS <- c(w = 18, h = 12)
+
+# Panel A: Model selection distribution by taxa
+model_dist <- SumStats.Final %>%
+  group_by(Taxa, Model) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  group_by(Taxa) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+model_dist$Taxa <- factor(model_dist$Taxa, levels = taxa_levels)
+
+# Model colors
+col_model <- c(
+  "Step" = "#4A90A4",
+  "Linear" = "#7B68A6",
+  "Asymptotic" = "#D4933B",
+  "Sigmoid" = "#B85A4C",
+  "Mean" = "#8C7B6A"
+)
+
+panel_S5A <- ggplot(model_dist, aes(x = Taxa, y = prop, fill = Model)) +
+  geom_col(position = "stack", width = 0.7, color = "white", linewidth = 0.3) +
+  scale_fill_manual(values = col_model, name = "Best Model") +
+  scale_y_continuous(labels = scales::percent_format(), expand = c(0, 0)) +
+  labs(
+    title = "(a) Model selection distribution by taxa",
+    subtitle = "Proportion of MPAs selecting each pBACIPS model form",
+    x = NULL,
+    y = "Proportion of MPAs"
+  ) +
+  theme_mpa(base_size = 10) +
+  theme(
+    plot.title = element_text(face = "bold", size = 10),
+    plot.subtitle = element_text(size = 8, color = "grey40"),
+    axis.text.x = element_text(face = "italic", angle = 25, hjust = 1),
+    legend.position = "right"
+  )
+
+# Panel B: Variance components (if meta-analysis objects exist)
+if (exists("meta_biomass") && exists("meta_density")) {
+
+  var_comp <- data.frame(
+    Response = rep(c("Biomass", "Density"), each = 2),
+    Component = rep(c("MPA", "Source"), 2),
+    tau2 = c(
+      meta_biomass$sigma2[1], meta_biomass$sigma2[2],
+      meta_density$sigma2[1], meta_density$sigma2[2]
+    )
+  )
+
+  panel_S5B <- ggplot(var_comp, aes(x = tau2, y = Response, fill = Component)) +
+    geom_col(position = "dodge", width = 0.6, color = "white", linewidth = 0.3) +
+    scale_fill_manual(
+      values = c("MPA" = col_taxa["S. pulcher"], "Source" = col_taxa["P. interruptus"]),
+      name = "Variance\nComponent"
+    ) +
+    scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
+    labs(
+      title = "(b) Meta-analysis variance components",
+      subtitle = expression("Between-group heterogeneity ("*tau^2*")"),
+      x = expression(tau^2),
+      y = NULL
+    ) +
+    theme_mpa(base_size = 10) +
+    theme(
+      plot.title = element_text(face = "bold", size = 10),
+      plot.subtitle = element_text(size = 8, color = "grey40"),
+      legend.position = "right"
+    )
+
+  fig_s5 <- panel_S5A / panel_S5B +
+    plot_layout(heights = c(1, 0.8)) +
+    plot_annotation(
+      title = "Statistical transparency: Model selection and heterogeneity",
+      theme = theme(
+        plot.title = element_text(face = "bold", size = 12, hjust = 0.5)
+      )
+    )
+
+} else {
+  fig_s5 <- panel_S5A +
+    plot_annotation(
+      title = "Model selection distribution across taxa",
+      theme = theme(
+        plot.title = element_text(face = "bold", size = 12, hjust = 0.5)
+      )
+    )
+}
+
+save_fig(fig_s5, "fig_s05_statistical_transparency", FIG_S5_DIMS["w"], FIG_S5_DIMS["h"])
+
+
+# =============================================================================
+# Figure 6: Trophic Cascade Flow Diagram (Conceptual)
+# =============================================================================
+# Sankey-style visualization showing effect flow through food web
+
+cat("\n--- Figure 6: Trophic Cascade Flow ---\n")
+
+FIG6_DIMS <- c(w = 18, h = 10)
+
+# Get meta-analytic means for each taxa from Table2
+if (exists("Table2")) {
+
+  # Extract density effects for the flow diagram
+  meta_means <- Table2 %>%
+    filter(Response == "Density") %>%
+    dplyr::select(Taxa, Estimate, CI_lower, CI_upper) %>%
+    mutate(
+      Trophic = case_when(
+        Taxa %in% c("P. interruptus", "S. pulcher") ~ "Predators",
+        Taxa %in% c("S. purpuratus", "M. franciscanus") ~ "Urchins",
+        Taxa == "M. pyrifera" ~ "Kelp",
+        TRUE ~ NA_character_
+      ),
+      Direction = ifelse(Estimate > 0, "Increase", "Decrease"),
+      Significant = (CI_lower > 0) | (CI_upper < 0)
+    )
+
+  # Create conceptual flow diagram
+  # Layer 1: Trophic levels as colored bars
+  # Layer 2: Arrows showing direction of effects
+
+  trophic_summary <- meta_means %>%
+    group_by(Trophic) %>%
+    summarise(
+      mean_effect = mean(Estimate, na.rm = TRUE),
+      n_taxa = n(),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      x = case_when(Trophic == "Predators" ~ 1, Trophic == "Urchins" ~ 2, Trophic == "Kelp" ~ 3),
+      direction_label = ifelse(mean_effect > 0, "↑ INCREASE", "↓ DECREASE"),
+      y = 0
+    )
+
+  # Arrow data
+  arrows_df <- data.frame(
+    x_start = c(1.3, 2.3),
+    x_end = c(1.7, 2.7),
+    y = c(0, 0),
+    label = c("Predation\npressure", "Grazing\nrelease")
+  )
+
+  fig6 <- ggplot() +
+    # Background rectangles for trophic levels
+    annotate("rect", xmin = 0.5, xmax = 1.5, ymin = -0.5, ymax = 0.5,
+             fill = col_taxa["P. interruptus"], alpha = 0.3) +
+    annotate("rect", xmin = 1.5, xmax = 2.5, ymin = -0.5, ymax = 0.5,
+             fill = col_taxa["S. purpuratus"], alpha = 0.3) +
+    annotate("rect", xmin = 2.5, xmax = 3.5, ymin = -0.5, ymax = 0.5,
+             fill = col_taxa["M. pyrifera"], alpha = 0.3) +
+    # Arrows between levels
+    geom_segment(data = arrows_df,
+                 aes(x = x_start, xend = x_end, y = y, yend = y),
+                 arrow = arrow(length = unit(5, "mm"), type = "closed"),
+                 linewidth = 3, color = "grey30") +
+    # Arrow labels
+    geom_text(data = arrows_df, aes(x = (x_start + x_end)/2, y = 0.3, label = label),
+              size = 3, fontface = "italic", color = "grey30", lineheight = 0.9) +
+    # Trophic level labels
+    annotate("text", x = 1, y = 0.15, label = "PREDATORS", fontface = "bold", size = 4) +
+    annotate("text", x = 1, y = -0.05, label = "(lobster, sheephead)", size = 3, color = "grey40") +
+    annotate("text", x = 1, y = -0.25, label = "↑ INCREASE", size = 4, fontface = "bold",
+             color = col_taxa["P. interruptus"]) +
+    annotate("text", x = 2, y = 0.15, label = "URCHINS", fontface = "bold", size = 4) +
+    annotate("text", x = 2, y = -0.05, label = "(purple, red)", size = 3, color = "grey40") +
+    annotate("text", x = 2, y = -0.25, label = "↓ DECREASE", size = 4, fontface = "bold",
+             color = col_taxa["S. purpuratus"]) +
+    annotate("text", x = 3, y = 0.15, label = "KELP", fontface = "bold", size = 4) +
+    annotate("text", x = 3, y = -0.05, label = "(M. pyrifera)", size = 3, color = "grey40", fontface = "italic") +
+    annotate("text", x = 3, y = -0.25, label = "↑ INCREASE", size = 4, fontface = "bold",
+             color = col_taxa["M. pyrifera"]) +
+    # MPA protection arrow at left
+    annotate("segment", x = 0.3, xend = 0.3, y = -0.4, yend = 0.4,
+             arrow = arrow(length = unit(4, "mm"), type = "closed", ends = "first"),
+             linewidth = 2, color = col_site["Inside"]) +
+    annotate("text", x = 0.15, y = 0, label = "MPA\nPROTECTION",
+             size = 3, fontface = "bold", color = col_site["Inside"], angle = 90) +
+    coord_cartesian(xlim = c(0, 3.7), ylim = c(-0.6, 0.5)) +
+    labs(
+      title = "Trophic cascade mechanism in California MPA kelp forests",
+      subtitle = "MPA protection triggers a three-level cascade: predator recovery → urchin decline → kelp recovery"
+    ) +
+    theme_void(base_size = 10) +
+    theme(
+      plot.title = element_text(face = "bold", size = 12, hjust = 0.5, margin = margin(b = 5)),
+      plot.subtitle = element_text(size = 10, color = "grey40", hjust = 0.5, margin = margin(b = 10))
+    )
+
+  save_fig(fig6, "fig_06_trophic_flow", FIG6_DIMS["w"], FIG6_DIMS["h"])
+
+} else {
+  cat("  WARNING: Table2 not found - skipping Figure 6\n")
+}
+
+} # End if(FALSE) - exploratory figures not included in manuscript
+
+cat("\n=== All required manuscript figures saved to:", here::here("plots"), "===\n")

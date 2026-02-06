@@ -578,6 +578,146 @@ write.csv(Table2, here::here("data", "table_02_meta_analysis.csv"), row.names = 
 cat("\nTable 2 exported to:", here::here("data", "table_02_meta_analysis.csv"), "\n")
 
 ####################################################################################################
+## META-ANALYSIS FILTERING AUDIT: Track exactly what enters meta-analysis #########################
+####################################################################################################
+
+cat("\n")
+cat("==========================================\n")
+cat("META-ANALYSIS FILTERING AUDIT\n")
+cat("==========================================\n")
+
+# Create comprehensive audit of what enters meta-analysis
+# Start with all data entering this script (SumStats.Final)
+
+# Track biomass data through filtering
+cat("\n--- BIOMASS Meta-Analysis Filtering ---\n")
+cat("Input to meta-analysis (SumStats.Final, Resp='Bio'):", nrow(biomass_data), "\n")
+
+# Create biomass audit
+BiomassAudit <- biomass_data[, c("Taxa", "MPA", "Source", "Mean", "SE", "vi")]
+BiomassAudit$Input_Order <- seq_len(nrow(BiomassAudit))
+
+# Track outlier status
+if (length(outliers_bio) > 0) {
+  BiomassAudit$Is_Outlier <- seq_len(nrow(biomass_data)) %in% outliers_bio
+  BiomassAudit$Cooks_Distance <- cooks_bio
+} else {
+  BiomassAudit$Is_Outlier <- FALSE
+  BiomassAudit$Cooks_Distance <- cooks_bio
+}
+BiomassAudit$Cooks_Threshold <- cooks_threshold_bio
+BiomassAudit$In_Final_Analysis <- !BiomassAudit$Is_Outlier
+
+cat("Outliers removed:", sum(BiomassAudit$Is_Outlier), "\n")
+cat("Final biomass observations:", sum(BiomassAudit$In_Final_Analysis), "\n")
+
+# k-values by taxa
+cat("\nBiomass k-values (observations per taxa):\n")
+bio_k <- aggregate(In_Final_Analysis ~ Taxa, data = BiomassAudit,
+                   FUN = function(x) c(input = length(x), final = sum(x)))
+for (i in seq_len(nrow(bio_k))) {
+  cat(sprintf("  %s: %d input -> %d final (k=%d)\n",
+              bio_k$Taxa[i], bio_k$In_Final_Analysis[i, "input"],
+              bio_k$In_Final_Analysis[i, "final"],
+              bio_k$In_Final_Analysis[i, "final"]))
+}
+
+# Track density data through filtering
+cat("\n--- DENSITY Meta-Analysis Filtering ---\n")
+cat("Input to meta-analysis (SumStats.Final, Resp='Den'):", nrow(density_data), "\n")
+
+# Create density audit
+DensityAudit <- density_data[, c("Taxa", "MPA", "Source", "Mean", "SE", "vi")]
+DensityAudit$Input_Order <- seq_len(nrow(DensityAudit))
+
+# Track outlier status
+if (length(outliers_den) > 0) {
+  DensityAudit$Is_Outlier <- seq_len(nrow(density_data)) %in% outliers_den
+  DensityAudit$Cooks_Distance <- cooks_den
+} else {
+  DensityAudit$Is_Outlier <- FALSE
+  DensityAudit$Cooks_Distance <- cooks_den
+}
+DensityAudit$Cooks_Threshold <- cooks_threshold_den
+DensityAudit$In_Final_Analysis <- !DensityAudit$Is_Outlier
+
+cat("Outliers removed:", sum(DensityAudit$Is_Outlier), "\n")
+cat("Final density observations:", sum(DensityAudit$In_Final_Analysis), "\n")
+
+# k-values by taxa
+cat("\nDensity k-values (observations per taxa):\n")
+den_k <- aggregate(In_Final_Analysis ~ Taxa, data = DensityAudit,
+                   FUN = function(x) c(input = length(x), final = sum(x)))
+for (i in seq_len(nrow(den_k))) {
+  cat(sprintf("  %s: %d input -> %d final (k=%d)\n",
+              den_k$Taxa[i], den_k$In_Final_Analysis[i, "input"],
+              den_k$In_Final_Analysis[i, "final"],
+              den_k$In_Final_Analysis[i, "final"]))
+}
+
+# Combine and write audit
+BiomassAudit$Response <- "Biomass"
+DensityAudit$Response <- "Density"
+MetaAnalysisAudit <- rbind(BiomassAudit, DensityAudit)
+
+# Add exclusion reason
+MetaAnalysisAudit$Exclusion_Reason <- ifelse(MetaAnalysisAudit$In_Final_Analysis,
+                                              "INCLUDED",
+                                              paste0("Outlier (Cook's D=",
+                                                     round(MetaAnalysisAudit$Cooks_Distance, 4),
+                                                     " > ", round(MetaAnalysisAudit$Cooks_Threshold, 4), ")"))
+
+# Write to CSV
+meta_audit_file <- here::here("outputs", "filter_audit_meta_analysis.csv")
+write.csv(MetaAnalysisAudit, meta_audit_file, row.names = FALSE)
+cat("\nMeta-analysis filter audit saved to:", meta_audit_file, "\n")
+
+# LOBSTER SPECIFIC DETAIL
+cat("\n--- LOBSTER (P. interruptus) META-ANALYSIS DETAIL ---\n")
+lob_bio <- subset(BiomassAudit, Taxa == "P. interruptus")
+lob_den <- subset(DensityAudit, Taxa == "P. interruptus")
+
+cat("\nLobster Biomass:\n")
+cat(sprintf("  Total in meta-analysis input: %d\n", nrow(lob_bio)))
+cat(sprintf("  Outliers removed: %d\n", sum(lob_bio$Is_Outlier)))
+cat(sprintf("  Final k: %d\n", sum(lob_bio$In_Final_Analysis)))
+if (nrow(lob_bio) > 0) {
+  cat("  Detail:\n")
+  for (i in seq_len(nrow(lob_bio))) {
+    status <- ifelse(lob_bio$In_Final_Analysis[i], "+", "-")
+    cat(sprintf("    %s %s (%s): Effect=%.3f, SE=%.3f, Cook's=%.4f %s\n",
+                status, lob_bio$MPA[i], lob_bio$Source[i],
+                as.numeric(lob_bio$Mean[i]), as.numeric(lob_bio$SE[i]),
+                lob_bio$Cooks_Distance[i],
+                ifelse(lob_bio$Is_Outlier[i], "[OUTLIER]", "")))
+  }
+}
+
+cat("\nLobster Density:\n")
+cat(sprintf("  Total in meta-analysis input: %d\n", nrow(lob_den)))
+cat(sprintf("  Outliers removed: %d\n", sum(lob_den$Is_Outlier)))
+cat(sprintf("  Final k: %d\n", sum(lob_den$In_Final_Analysis)))
+if (nrow(lob_den) > 0) {
+  cat("  Detail:\n")
+  for (i in seq_len(nrow(lob_den))) {
+    status <- ifelse(lob_den$In_Final_Analysis[i], "+", "-")
+    cat(sprintf("    %s %s (%s): Effect=%.3f, SE=%.3f, Cook's=%.4f %s\n",
+                status, lob_den$MPA[i], lob_den$Source[i],
+                as.numeric(lob_den$Mean[i]), as.numeric(lob_den$SE[i]),
+                lob_den$Cooks_Distance[i],
+                ifelse(lob_den$Is_Outlier[i], "[OUTLIER]", "")))
+  }
+}
+
+# Create combined summary across both filtering stages
+cat("\n--- COMPLETE DATA FLOW SUMMARY ---\n")
+cat("This traces data from effect size calculation through meta-analysis.\n")
+cat("For full detail, see:\n")
+cat("  1. outputs/filter_audit_effect_sizes.csv (08_effect_sizes.R filtering)\n")
+cat("  2. outputs/filter_audit_meta_analysis.csv (09_meta_analysis.R outlier removal)\n")
+cat("  3. outputs/filter_summary_by_taxa.csv (taxa-level summary)\n")
+
+####################################################################################################
 ## Table 3: Linear relationships between taxa (urchin density ~ kelp biomass) ######################
 ####################################################################################################
 

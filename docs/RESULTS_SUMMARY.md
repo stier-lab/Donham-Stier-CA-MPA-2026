@@ -1,278 +1,224 @@
 # Results Summary: CA MPA Kelp Forest Analysis
 
-**Generated:** 2026-02-05 (Updated with current pipeline values)
+**Generated:** 2026-02-06 08:43:40
 **Pipeline version:** Modular pBACIPS v2.0
-**For:** Emily Donham & Adrian Stier
-**Source:** table_02_meta_analysis.csv (authoritative)
 
 ---
 
-## Executive Summary
+## Overview
 
-**Bottom Line: California's MPAs are restoring kelp forest trophic cascades through density-mediated urchin control.**
+This document summarizes the key results from the California MPA kelp forest
+pBACIPS analysis. Effect sizes represent the log response ratio (ln[MPA/Reference])
+at t=11 years post-MPA implementation.
 
-This analysis provides strong evidence that Marine Protected Areas in California are having their intended ecological effects on kelp forest ecosystems. The primary mechanism is **population-level control** of urchins (density effects), with more variable biomass responses.
-
-| Finding | Effect Size | Percent Change | p-value | Status |
-|---------|-------------|----------------|---------|--------|
-| **Purple urchin density declined** | lnRR = -2.40 | **-91%** | p < 0.001*** | **SIGNIFICANT** |
-| **Purple urchin biomass** | lnRR = -0.53 | -41% | p = 0.192 | Not significant |
-| **Kelp forests recovered** | lnRR = +0.67 | **+96%** | p = 0.031* | **SIGNIFICANT** |
-| **Sheephead rebounded** | lnRR = +1.23 | **+243%** | p < 0.001*** | **SIGNIFICANT** |
-| **Red urchin increased** | lnRR = +0.86 | **+137%** | p = 0.014* | **SIGNIFICANT** |
-| **Lobster biomass** | lnRR = +0.66 | +93% | p = 0.220 | Not significant (k=2) |
-
-*Significance: \*p<0.05, \*\*p<0.01, \*\*\*p<0.001*
-
-**Key statistical notes:**
-- Purple urchin **density** (population size) shows the strongest effect (p < 0.001), while **biomass** (size structure) is more variable (p = 0.192)
-- Lobster effects are based on only k=2 MPAs, limiting statistical power despite large effect magnitude
-- Sheephead provides robust evidence for predator recovery (k=10, p < 0.001)
-- All five focal taxa showed effects in expected directions; four showed significant effects for at least one metric
-
----
-
-## Key Findings
-
-### 1. Trophic Cascade Evidence
-
-The classic kelp forest trophic cascade is operating inside MPAs, primarily through **density-mediated** urchin control:
-
-```
-Predators INCREASE inside MPAs
-    Sheephead: +243% biomass (p < 0.001) ← STRONG EVIDENCE
-    Lobster: +93% biomass (p = 0.220, k=2) ← Promising but limited data
-                ↓
-Purple urchin POPULATIONS DECLINE inside MPAs
-    Density: -91% (p < 0.001) ← STRONGEST EFFECT
-    Biomass: -41% (p = 0.192) ← Variable across sites
-                ↓
-Kelp (giant kelp) INCREASES inside MPAs
-    Kelp: +96% biomass (p = 0.031) ← SIGNIFICANT
-```
-
-**Quantitative support:**
-- Purple urchin **density** shows the strongest MPA effect: **lnRR = -2.40** (p < 0.001, **-91%**)
-- Purple urchin biomass declined on average but with high variability: **lnRR = -0.53** (p = 0.192, -41%)
-- Kelp biomass increased significantly: **lnRR = +0.67** (p = 0.031, **+96%**)
-- Kelp biomass increased where urchins decreased (negative correlation across sites)
-
-**Interpretation:** The density effect (population size) is more robust than biomass because it directly measures predator-mediated population control. Biomass variability may reflect site-specific differences in urchin size structure.
-
-### 2. Predator Recovery
-
-California sheephead shows strong evidence of recovery; lobster shows promising trends with limited replication:
-
-| Predator | lnRR | % Change | p-value | k | Status |
-|----------|------|----------|---------|---|--------|
-| California sheephead | +1.23 | **+243%** | p < 0.001*** | 10 | **SIGNIFICANT** |
-| California spiny lobster | +0.66 | +93% | p = 0.220 | 2 | Not significant |
-
-**Sheephead:** Strong, robust evidence of recovery. The +243% biomass increase across 10 MPAs provides ironclad support for predator recovery inside MPAs.
-
-**Lobster:** The 93% average increase is ecologically meaningful, but limited site replication (k=2) prevents strong statistical support. The wide confidence interval [-0.41, 1.73] reflects high site-to-site variability.
-
-**Note on density vs. biomass:**
-- Lobster density: lnRR = +0.73, p = 0.229 (k=2, not significant)
-- Sheephead density: lnRR = -0.32, p = 0.536 (k=10, not significant)
-
-The stronger biomass effects suggest MPAs allow individuals to grow larger (size-selective fishing outside MPAs removes large individuals).
-
-### 3. Spatial Consistency
-
-The MPA effect is remarkably consistent across the network:
-
-| Taxa | n sites | % Significant | Dominant direction | Mean lnRR | Mean % change |
-|------|---------|---------------|-------------------|-----------|---------------|
-| Purple urchin | 22 | **82%** (18/22) | Decrease | -2.00 | **-86%** |
-| Giant kelp | 16 | **69%** (11/16) | Increase | +2.22 | **+820%** |
-| Sheephead | 39 | **67%** (26/39) | Increase | +0.60 | **+82%** |
-| Spiny lobster | 23 | **65%** (15/23) | Increase | +1.39 | **+301%** |
-| Red urchin | 25 | **72%** (18/25) | Mixed | -0.65 | -48% |
-
----
-
-## Interpretation Guide
-
-### Understanding Effect Sizes
-
-Effect sizes are reported as **log response ratios (lnRR)** at t=11 years post-MPA implementation:
-
-```
-lnRR = ln(MPA value / Reference value)
-```
-
-| lnRR Value | Meaning | Percent Change |
-|------------|---------|----------------|
-| +0.69 | MPA has 2x higher values | +100% |
-| +0.41 | MPA has 1.5x higher values | +50% |
-| 0 | No difference | 0% |
-| -0.41 | MPA has 1.5x lower values | -33% |
-| -0.69 | MPA has 2x lower values | -50% |
-| -2.09 | MPA has 8x lower values | -88% |
-
-### What Positive/Negative Effects Mean for Each Taxa
-
-| Taxa | Scientific Name | Positive Effect Means | Negative Effect Means | Expected Direction |
-|------|-----------------|----------------------|----------------------|-------------------|
-| **Purple urchin** | *Strongylocentrotus purpuratus* | More urchins in MPA (unexpected) | Fewer urchins in MPA (expected - predation) | **Negative** |
-| **Red urchin** | *Mesocentrotus franciscanus* | More red urchins in MPA | Fewer red urchins in MPA | Mixed (also fished) |
-| **Giant kelp** | *Macrocystis pyrifera* | More kelp in MPA (expected - less grazing) | Less kelp in MPA (unexpected) | **Positive** |
-| **Spiny lobster** | *Panulirus interruptus* | More/larger lobsters in MPA (expected - no fishing) | Fewer lobsters in MPA (unexpected) | **Positive** |
-| **Sheephead** | *Semicossyphus pulcher* | More/larger sheephead in MPA (expected - no fishing) | Fewer sheephead in MPA (unexpected) | **Positive** |
+**Interpretation:**
+- Positive effect size = higher values inside MPA vs reference
+- Negative effect size = lower values inside MPA vs reference
+- Significance threshold: p < 0.05
 
 ---
 
 ## Meta-Analysis Results (Table 2)
 
-**Source:** table_02_meta_analysis.csv (authoritative pipeline output)
+### Biomass
 
-### Biomass Responses
+| Taxa | k | Estimate | SE | t | p-value | 95% CI | Effect |
+|------|---|----------|----|----|---------|--------|--------|
+| S. purpuratus | 3 | -0.5337 | 0.4002 | -1.3335 | 0.1924 | [-1.3511, 0.2837] | negative |
+| M. franciscanus | 3 | 0.8648 | 0.3309 | 2.6131 | 0.0139* | [0.1889, 1.5407] | positive |
+| M. pyrifera | 17 | 0.674 | 0.298 | 2.2616 | 0.0311* | [0.0654, 1.2827] | positive |
+| P. interruptus | 2 | 0.6566 | 0.524 | 1.2532 | 0.2198 | [-0.4135, 1.7268] | positive |
+| S. pulcher | 10 | 1.2334 | 0.3082 | 4.0019 | 0.0004*** | [0.604, 1.8629] | positive |
 
-| Taxa | Common Name | k | Estimate | SE | p-value | 95% CI | Interpretation |
-|------|-------------|---|----------|----|----|--------|----------------|
-| S. purpuratus | Purple urchin | 3 | -0.53 | 0.40 | 0.192 | [-1.35, 0.28] | 41% lower (not significant) |
-| M. franciscanus | Red urchin | 3 | **+0.86** | 0.33 | 0.014* | [0.19, 1.54] | **137% higher biomass** |
-| M. pyrifera | Giant kelp | 17 | **+0.67** | 0.30 | 0.031* | [0.07, 1.28] | **96% higher biomass** |
-| P. interruptus | Spiny lobster | 2 | +0.66 | 0.52 | 0.220 | [-0.41, 1.73] | 93% higher (not significant) |
-| S. pulcher | Sheephead | 10 | **+1.23** | 0.31 | <0.001*** | [0.60, 1.86] | **243% higher biomass** |
+### Density
 
-### Density Responses
-
-| Taxa | Common Name | k | Estimate | SE | p-value | 95% CI | Interpretation |
-|------|-------------|---|----------|----|----|--------|----------------|
-| S. purpuratus | Purple urchin | 6 | **-2.40** | 0.53 | <0.001*** | [-3.53, -1.27] | **91% lower density** |
-| M. franciscanus | Red urchin | 1 | -0.44 | 0.75 | 0.562 | [-2.04, 1.15] | 36% lower (not significant, k=1) |
-| P. interruptus | Spiny lobster | 2 | +0.73 | 0.58 | 0.229 | [-0.51, 1.98] | 108% higher (not significant) |
-| S. pulcher | Sheephead | 10 | -0.32 | 0.51 | 0.536 | [-1.42, 0.77] | 27% lower (not significant) |
+| Taxa | k | Estimate | SE | t | p-value | 95% CI | Effect |
+|------|---|----------|----|----|---------|--------|--------|
+| S. purpuratus | 6 | -2.4015 | 0.5307 | -4.5254 | 0.0004*** | [-3.5327, -1.2704] | negative |
+| M. franciscanus | 1 | -0.4432 | 0.7477 | -0.5928 | 0.5621 | [-2.0369, 1.1504] | negative |
+| P. interruptus | 2 | 0.7315 | 0.5839 | 1.2528 | 0.2294 | [-0.513, 1.9761] | positive |
+| S. pulcher | 10 | -0.3244 | 0.5124 | -0.6331 | 0.5362 | [-1.4166, 0.7678] | negative |
 
 *Significance: \*p<0.05, \*\*p<0.01, \*\*\*p<0.001*
-*k = number of MPA-level effect sizes included in meta-analysis*
-
-### Important: Significance Changes from Previous Analysis
-
-**The current pipeline (v2.0) produces different results than the original manuscript draft due to methodological improvements:**
-
-| Effect | Previous p-value | Current p-value | Change |
-|--------|------------------|-----------------|--------|
-| S. purpuratus Biomass | 0.042 | **0.192** | Lost significance |
-| P. interruptus Biomass | 0.047 | **0.220** | Lost significance |
-| M. franciscanus Biomass | 0.626 | **0.014** | Gained significance |
-| S. pulcher Biomass | 0.558 | **<0.001** | Gained significance |
-
-**Why the changes?** The new pipeline includes data source (PISCO, KFM, LTER) as a crossed random effect, properly accounting for program-level variation. This increases standard errors by 20-50% and produces more conservative, statistically appropriate estimates. See CHANGELOG_FOR_EMILY.md for details.
-
-### Notes on Biomass vs. Density
-
-**Why do biomass and density sometimes diverge?**
-
-- **Purple urchin:** Density declined dramatically (-91%, p<0.001) but biomass less consistently (-41%, p=0.192). This indicates strong **population control** even if individual size effects are variable.
-- **Sheephead:** Strong biomass effect (+243%, p<0.001) but density not significant. Larger fish, not just more fish - classic fishing pressure removal pattern.
-- **Red urchin:** Positive biomass effect (+137%, p=0.014) reflects commercial fishing pressure outside MPAs (red urchins are harvested; purple urchins are not).
-- **Lobster:** Limited data (k=2 MPAs) makes statistical inference difficult despite large effect magnitude (+93%).
 
 ### Heterogeneity Statistics
 
-Heterogeneity indicates how variable the MPA effect is across sites and data sources:
-
-| Response | tau2 (MPA) | tau2 (Source) | Interpretation |
-|----------|------------|---------------|----------------|
-| Biomass | 0.0848 | 0.1231 | Low-moderate heterogeneity; effects fairly consistent |
-| Density | 0.5205 | 0.8777 | High heterogeneity; effects vary substantially by site |
-
-**Implication:** Biomass effects are more consistent across the MPA network than density effects. This may reflect local factors (habitat quality, distance to fishing pressure) that influence abundance but not size structure.
+| Response | tau2 (MPA) | tau2 (Source) |
+|----------|------------|---------------|
+| Biomass | 0.1657 | 0.121 |
+| Density | 0.0742 | 0.5131 |
 
 ---
 
-## MPA Performance Summary
+## Appendix: Replicate-Level Effect Sizes
 
-### Strongest MPA Effects
+Effect sizes for each MPA-taxa-response combination.
 
-These MPAs show the most consistent positive effects (predator increases, urchin decreases, kelp recovery):
+### S. purpuratus
 
-| MPA | Region | Highlights |
-|-----|--------|------------|
-| **South Point SMR** | Santa Rosa Island | Strong effects across all taxa; kelp +520%, lobster density +100x |
-| **Gull Island SMR** | Santa Cruz Island | Kelp biomass +2960% (strongest single effect), predators up |
-| **Naples SMCA** | Mainland | Consistent predator recovery; sheephead +680%, lobster +214% |
-| **Scorpion SMR** | Santa Cruz Island | Strong kelp recovery (+10,600% - caveat: low baseline), lobster up |
-| **Santa Barbara Island SMR** | Channel Islands | Kelp +280x, strong lobster recovery |
+| MPA | Response | Source | Effect Size | SE | 95% CI | Result |
+|-----|----------|--------|-------------|-------|--------|--------|
+| Abalone Cove SMCA | Bio | PISCO | 0.2129 | 0.471 | [-0.8133, 1.2391] | Not significant |
+| Anacapa Island SMR 2003 | Bio | KFM | -2.2454 | 0.8248 | [-4.0035, -0.4874] | Significant decrease |
+| Campus Point SMCA | Bio | PISCO | -1.7674 | 0.6992 | [-3.3254, -0.2094] | Significant decrease |
+| Gull Island SMR | Bio | PISCO | -1.5178 | 0.4907 | [-2.5778, -0.4577] | Significant decrease |
+| Harris Point SMR | Bio | PISCO | -1.0384 | 0.2412 | [-1.5557, -0.5212] | Significant decrease |
+| Naples SMCA | Bio | PISCO | -0.7267 | 0.1586 | [-1.0723, -0.3812] | Significant decrease |
+| Point Vicente SMCA | Bio | PISCO | -0.4846 | 0.2893 | [-1.1096, 0.1403] | Not significant |
+| Scorpion SMR | Bio | PISCO | -0.9521 | 0.3822 | [-1.7623, -0.1419] | Significant decrease |
+| South Point SMR | Bio | PISCO | -1.3862 | 0.532 | [-2.5454, -0.2271] | Significant decrease |
+| South Point SMR | Bio | KFM | -0.9506 | 0.2888 | [-1.5661, -0.3351] | Significant decrease |
+| Abalone Cove SMCA | Den | PISCO | -2.8135 | 1.1871 | [-5.4262, -0.2007] | Significant decrease |
+| Anacapa Island SMR 2003 | Den | KFM | -2.6173 | 0.8097 | [-4.3432, -0.8914] | Significant decrease |
+| Anacapa Island SMR 2003 | Den | PISCO | -2.2179 | 0.403 | [-3.0822, -1.3535] | Significant decrease |
+| Campus Point SMCA | Den | PISCO | -2.5823 | 0.5035 | [-3.6793, -1.4852] | Significant decrease |
+| Gull Island SMR | Den | PISCO | -1.6996 | 0.4605 | [-2.6873, -0.7119] | Significant decrease |
+| Harris Point SMR | Den | PISCO | -0.388 | 0.2193 | [-0.8528, 0.0768] | Not significant |
+| Matlahuayl SMR | Den | PISCO | -2.3777 | 0.4292 | [-3.4811, -1.2743] | Significant decrease |
+| Naples SMCA | Den | PISCO | -0.576 | 0.1503 | [-0.9006, -0.2514] | Significant decrease |
+| Point Vicente SMCA | Den | PISCO | -0.3472 | 0.3731 | [-1.1475, 0.4531] | Not significant |
+| Scorpion SMR | Den | PISCO | -1.4648 | 0.3309 | [-2.1599, -0.7697] | Significant decrease |
+| South Point SMR | Den | KFM | -1.3069 | 0.2597 | [-1.8604, -0.7533] | Significant decrease |
+| South Point SMR | Den | PISCO | -1.4105 | 0.3935 | [-2.2543, -0.5666] | Significant decrease |
 
-### Weaker or Mixed Effects
+### M. franciscanus
 
-These MPAs show weaker, mixed, or unexpected patterns:
+| MPA | Response | Source | Effect Size | SE | 95% CI | Result |
+|-----|----------|--------|-------------|-------|--------|--------|
+| Abalone Cove SMCA | Bio | PISCO | -1.6149 | 0.4914 | [-2.6965, -0.5333] | Significant decrease |
+| Anacapa Island SMR 2003 | Bio | KFM | -2.6218 | 0.436 | [-3.5512, -1.6925] | Significant decrease |
+| Campus Point SMCA | Bio | PISCO | -0.2588 | 0.3803 | [-1.0959, 0.5783] | Not significant |
+| Gull Island SMR | Bio | KFM | 1.146 | 0.3909 | [0.3516, 1.9404] | Significant increase |
+| Gull Island SMR | Bio | PISCO | 0.247 | 0.2923 | [-0.3799, 0.874] | Not significant |
+| Harris Point SMR | Bio | PISCO | 0.0103 | 0.1497 | [-0.3107, 0.3313] | Not significant |
+| Naples SMCA | Bio | LTER | 1.0984 | 0.2057 | [0.6402, 1.5567] | Significant increase |
+| Naples SMCA | Bio | PISCO | 1.2056 | 0.2469 | [0.6677, 1.7436] | Significant increase |
+| Point Vicente SMCA | Bio | PISCO | 0.2549 | 0.126 | [-0.0174, 0.5272] | Not significant |
+| Scorpion SMR | Bio | PISCO | 0.0656 | 0.1477 | [-0.2461, 0.3773] | Not significant |
+| South Point SMR | Bio | PISCO | 1.2023 | 0.2143 | [0.7393, 1.6652] | Significant increase |
+| South Point SMR | Bio | KFM | 1.2126 | 0.0961 | [1.009, 1.4163] | Significant increase |
+| Abalone Cove SMCA | Den | PISCO | -2.4162 | 0.3481 | [-3.1824, -1.65] | Significant decrease |
+| Anacapa Island SMR 2003 | Den | KFM | -2.7358 | 0.4302 | [-3.6528, -1.8188] | Significant decrease |
+| Anacapa Island SMR 2003 | Den | PISCO | -1.2279 | 0.258 | [-1.7813, -0.6745] | Significant decrease |
+| Campus Point SMCA | Den | PISCO | -1.0448 | 0.3686 | [-1.8478, -0.2417] | Significant decrease |
+| Gull Island SMR | Den | PISCO | -0.8908 | 0.3627 | [-1.6688, -0.1129] | Significant decrease |
+| Harris Point SMR | Den | KFM | -0.5323 | 0.3681 | [-1.2775, 0.2129] | Not significant |
+| Harris Point SMR | Den | PISCO | 0.5331 | 0.1157 | [0.2879, 0.7784] | Significant increase |
+| Matlahuayl SMR | Den | PISCO | -6.323 | 1.0662 | [-9.0636, -3.5823] | Significant decrease |
+| Naples SMCA | Den | PISCO | 1.0694 | 0.1653 | [0.7123, 1.4266] | Significant increase |
+| Point Vicente SMCA | Den | PISCO | 0.2004 | 0.1234 | [-0.0642, 0.465] | Not significant |
+| Scorpion SMR | Den | PISCO | -0.4569 | 0.1575 | [-0.7877, -0.1261] | Significant decrease |
+| South Point SMR | Den | PISCO | 0.5759 | 0.1842 | [0.1833, 0.9684] | Significant increase |
+| South Point SMR | Den | KFM | 0.6094 | 0.097 | [0.4037, 0.8152] | Significant increase |
 
-| MPA | Region | Notes |
-|-----|--------|-------|
-| **Point Vicente SMCA** | Palos Verdes | Weak effects overall; may need more time or has compliance issues |
-| **Harris Point SMR** | San Miguel Island | Mixed results; kelp not significant, some predators weak |
-| **Abalone Cove SMCA** | Palos Verdes | Some unexpected negative effects; red urchin declined |
-| **Anacapa Island SMR** | Channel Islands | Strong urchin decline but mixed kelp/predator response |
-| **Dana Point SMCA** | Orange County | Limited data; effects not significant |
+### M. pyrifera
 
-### Data Quality Notes
+| MPA | Response | Source | Effect Size | SE | 95% CI | Result |
+|-----|----------|--------|-------------|-------|--------|--------|
+| Abalone Cove SMCA | Bio | PISCO | 0.0929 | 0.4395 | [-0.8646, 1.0504] | Not significant |
+| Abalone Cove SMCA | Bio | Landsat | 3.0387 | 0.7799 | [1.4538, 4.6236] | Significant increase |
+| Anacapa Island SMR 2003 | Bio | PISCO | 1.536 | 0.4059 | [0.6708, 2.4012] | Significant increase |
+| Anacapa Island SMR 2003 | Bio | KFM | 0.8022 | 1.1392 | [-1.5155, 3.1199] | Not significant |
+| Cabrillo SMR | Bio | Landsat | -0.1213 | 1.8258 | [-3.8405, 3.5978] | Not significant |
+| Campus Point SMCA | Bio | LTER | 1.7789 | 0.5273 | [0.6822, 2.8755] | Significant increase |
+| Campus Point SMCA | Bio | PISCO | 1.6169 | 0.6343 | [0.2348, 2.9989] | Significant increase |
+| Campus Point SMCA | Bio | Landsat | 0.4308 | 0.4877 | [-0.5593, 1.4209] | Not significant |
+| Carrington Pt SMR | Bio | Landsat | 2.5496 | 0.6268 | [1.2771, 3.8222] | Significant increase |
+| Farnsworth Onshore SMCA | Bio | Landsat | -1.9067 | 0.9737 | [-3.9261, 0.1127] | Not significant |
+| Gull Island SMR | Bio | PISCO | 1.6757 | 0.5108 | [0.58, 2.7713] | Significant increase |
+| Gull Island SMR | Bio | KFM | 2.5322 | 0.5322 | [1.4656, 3.5987] | Significant increase |
+| Gull Island SMR | Bio | Landsat | 0.8811 | 0.2825 | [0.3076, 1.4546] | Significant increase |
+| Harris Point SMR | Bio | PISCO | -0.5664 | 0.3456 | [-1.2991, 0.1663] | Not significant |
+| Harris Point SMR | Bio | Landsat | 0.7468 | 0.5278 | [-0.3259, 1.8194] | Not significant |
+| Matlahuayl SMR | Bio | PISCO | 1.962 | 0.5776 | [0.5487, 3.3754] | Significant increase |
+| Naples SMCA | Bio | LTER | 3.7129 | 1.0927 | [1.4405, 5.9854] | Significant increase |
+| Naples SMCA | Bio | Landsat | -0.0922 | 0.7464 | [-1.6074, 1.423] | Not significant |
+| Naples SMCA | Bio | PISCO | -0.7152 | 0.2081 | [-1.1647, -0.2656] | Significant decrease |
+| Point Dume SMCA | Bio | Landsat | 0.2394 | 0.4933 | [-0.762, 1.2408] | Not significant |
+| Point Dume SMR | Bio | Landsat | 1.0933 | 1.0334 | [-1.0046, 3.1913] | Not significant |
+| Point Vicente SMCA | Bio | Landsat | 1.8299 | 0.7655 | [0.2725, 3.3873] | Significant increase |
+| Point Vicente SMCA | Bio | PISCO | -0.5287 | 0.3316 | [-1.2399, 0.1826] | Not significant |
+| Santa Barbara Island SMR | Bio | KFM | 3.1025 | 0.776 | [1.5492, 4.6557] | Significant increase |
+| Santa Barbara Island SMR | Bio | Landsat | 2.0391 | 0.4963 | [1.0316, 3.0466] | Significant increase |
+| Scorpion SMR | Bio | PISCO | 2.568 | 0.6118 | [1.2827, 3.8534] | Significant increase |
+| Skunk Pt SMR | Bio | Landsat | 0.7773 | 0.611 | [-0.4644, 2.0191] | Not significant |
+| South La Jolla SMR | Bio | Landsat | 3.0581 | 1.4819 | [0.0466, 6.0697] | Significant increase |
+| South Point SMR | Bio | PISCO | 0.5977 | 0.2879 | [-0.016, 1.2113] | Not significant |
+| South Point SMR | Bio | KFM | 3.002 | 0.9057 | [1.1571, 4.8469] | Significant increase |
+| South Point SMR | Bio | Landsat | 0.0178 | 0.2574 | [-0.5048, 0.5403] | Not significant |
+| Swamis SMCA | Bio | Landsat | -1.8229 | 1.0917 | [-4.0391, 0.3933] | Not significant |
 
-| MPA | Caveat |
-|-----|--------|
-| Anacapa Island SMR 2003 | Some extremely large effect sizes (may reflect low baseline or data issues) |
-| Matlahuayl SMR | Strong red urchin decline (-6.3 lnRR for density) - verify data |
-| Several Channel Islands SMRs | Kelp effects >5 lnRR may reflect recovery from near-zero baselines |
+### P. interruptus
 
----
+| MPA | Response | Source | Effect Size | SE | 95% CI | Result |
+|-----|----------|--------|-------------|-------|--------|--------|
+| Abalone Cove SMCA | Bio | PISCO | -1.674 | 0.5994 | [-2.9933, -0.3547] | Significant decrease |
+| Campus Point SMCA | Bio | PISCO | 2.9683 | 0.9072 | [0.9917, 4.945] | Significant increase |
+| Campus Point SMCA | Bio | LTER | 1.6562 | 0.7007 | [0.095, 3.2174] | Significant increase |
+| Matlahuayl SMR | Bio | PISCO | 0.2317 | 0.6473 | [-1.3521, 1.8155] | Not significant |
+| Naples SMCA | Bio | LTER | 0.8481 | 0.3136 | [0.1578, 1.5383] | Significant increase |
+| Naples SMCA | Bio | PISCO | 1.1476 | 0.4302 | [0.2183, 2.0769] | Significant increase |
+| Point Vicente SMCA | Bio | PISCO | 0.3924 | 0.4786 | [-0.661, 1.4459] | Not significant |
+| Abalone Cove SMCA | Den | PISCO | -0.8885 | 0.4568 | [-1.8838, 0.1068] | Not significant |
+| Anacapa Island SMR 2003 | Den | KFM | 3.3458 | 0.3004 | [2.7089, 3.9827] | Significant increase |
+| Anacapa Island SMR 2003 | Den | PISCO | 2.0849 | 0.2378 | [1.578, 2.5918] | Significant increase |
+| Campus Point SMCA | Den | PISCO | 2.3747 | 0.7748 | [0.6865, 4.0629] | Significant increase |
+| Campus Point SMCA | Den | LTER | -0.0553 | 0.2314 | [-0.5645, 0.454] | Not significant |
+| Gull Island SMR | Den | PISCO | 2.1034 | 0.3673 | [1.3206, 2.8862] | Significant increase |
+| Harris Point SMR | Den | PISCO | 0.6936 | 0.2641 | [0.1307, 1.2565] | Significant increase |
+| Matlahuayl SMR | Den | PISCO | -0.1091 | 0.3758 | [-1.0287, 0.8105] | Not significant |
+| Naples SMCA | Den | LTER | 0.5586 | 0.2986 | [-0.0986, 1.2158] | Not significant |
+| Naples SMCA | Den | PISCO | 0.6104 | 0.2984 | [-0.0342, 1.255] | Not significant |
+| Point Vicente SMCA | Den | PISCO | -0.288 | 0.3857 | [-1.1154, 0.5393] | Not significant |
+| Santa Barbara Island SMR | Den | KFM | 1.9917 | 0.3406 | [1.3021, 2.6812] | Significant increase |
+| Scorpion SMR | Den | PISCO | 2.6353 | 0.256 | [2.0995, 3.1712] | Significant increase |
+| Scorpion SMR | Den | KFM | 2.5971 | 0.3072 | [1.9747, 3.2196] | Significant increase |
+| South Point SMR | Den | PISCO | 2.5756 | 0.4202 | [1.6745, 3.4768] | Significant increase |
+| South Point SMR | Den | KFM | 0.8924 | 0.2611 | [0.3388, 1.446] | Significant increase |
 
-## Trophic Cascade Analysis
+### S. pulcher
 
-### The Mechanism
-
-The trophic cascade hypothesis predicts:
-
-1. **Protection from fishing** allows predators (lobster, sheephead) to increase
-2. **Increased predation** reduces urchin populations
-3. **Reduced herbivory** allows kelp to recover
-
-### Statistical Evidence by Trophic Level
-
-| Trophic Level | Taxa | Response | lnRR | % Change | p-value | Status |
-|---------------|------|----------|------|----------|---------|--------|
-| **Top predator** | Sheephead | Biomass | +1.23 | +243% | <0.001*** | **SIGNIFICANT** |
-| **Top predator** | Lobster | Biomass | +0.66 | +93% | 0.220 | Not significant (k=2) |
-| **Herbivore** | Purple urchin | Density | -2.40 | -91% | <0.001*** | **SIGNIFICANT** |
-| **Herbivore** | Purple urchin | Biomass | -0.53 | -41% | 0.192 | Not significant |
-| **Primary producer** | Giant kelp | Biomass | +0.67 | +96% | 0.031* | **SIGNIFICANT** |
-
-**Cascade interpretation:** The density-mediated pathway (sheephead → urchin density → kelp) is statistically robust. The biomass pathway shows expected directions but higher variability.
-
-### Evidence from Cross-Taxa Correlations
-
-Our data support this cascade:
-
-**Urchin-Kelp Relationship:**
-- Where purple urchin density declined most, kelp biomass increased most
-- This negative correlation (Figure 4 in manuscript) is the hallmark of top-down control
-- Correlation is strongest for purple urchin density vs. kelp biomass
-
-**Predator-Urchin Relationship:**
-- Lobster density increases correlate with purple urchin decreases
-- Sheephead biomass increases correlate with urchin decreases
-- Effect sizes are consistent with predator-mediated urchin control
-
-### Interpreting the Red Urchin Paradox
-
-**Why does red urchin biomass INCREASE inside MPAs when purple urchin populations decline?**
-
-| Metric | Red Urchin | Purple Urchin | Interpretation |
-|--------|------------|---------------|----------------|
-| Biomass lnRR | **+0.86** (+137%) | -0.53 (-41%) | Red increases, purple decreases |
-| Biomass p-value | **p = 0.014*** | p = 0.192 | Red significant, purple not |
-| Density lnRR | -0.44 (-36%) | **-2.40** (-91%) | Both decline but purple much more |
-| Density p-value | p = 0.562 (k=1) | **p < 0.001*** | Purple highly significant |
-
-Red urchins (*M. franciscanus*) are commercially harvested outside MPAs. The significant positive biomass effect likely reflects:
-1. Reduced fishing pressure on red urchins inside MPAs
-2. Red urchins growing larger (higher individual biomass)
-3. Different predator vulnerability (red urchins are larger, spiny, harder to eat)
-
-This is not inconsistent with the trophic cascade - it shows that **fishing effects can override predation effects** for a harvested species. Purple urchin populations (density) decline strongly because they are not fished and are more vulnerable to predation.
+| MPA | Response | Source | Effect Size | SE | 95% CI | Result |
+|-----|----------|--------|-------------|-------|--------|--------|
+| Abalone Cove SMCA | Bio | PISCO | 2.3533 | 0.9139 | [0.362, 4.3446] | Significant increase |
+| Anacapa Island SMR 2003 | Bio | PISCO | 0.3783 | 0.1302 | [0.1047, 0.6518] | Significant increase |
+| Blue Cavern Onshore SMCA | Bio | PISCO | 1.6715 | 0.5452 | [0.3822, 2.9608] | Significant increase |
+| Campus Point SMCA | Bio | LTER | -2.2354 | 1.6333 | [-5.6423, 1.1716] | Not significant |
+| Campus Point SMCA | Bio | PISCO | 0.0886 | 0.2769 | [-0.5052, 0.6824] | Not significant |
+| Cat Harbor SMCA | Bio | PISCO | 0.663 | 0.1526 | [0.3023, 1.0238] | Significant increase |
+| Dana Point SMCA | Bio | PISCO | -0.1 | 0.7991 | [-2.0554, 1.8554] | Not significant |
+| Farnsworth Onshore SMCA | Bio | PISCO | 0.3805 | 0.2431 | [-0.2443, 1.0053] | Not significant |
+| Gull Island SMR | Bio | PISCO | 0.6297 | 0.1425 | [0.3303, 0.929] | Significant increase |
+| Harris Point SMR | Bio | PISCO | 2.5255 | 0.6108 | [1.2307, 3.8203] | Significant increase |
+| Long Point SMR | Bio | PISCO | 1.5277 | 0.3739 | [0.6436, 2.4119] | Significant increase |
+| Matlahuayl SMR | Bio | PISCO | 0.3191 | 0.4515 | [-0.7856, 1.4239] | Not significant |
+| Naples SMCA | Bio | PISCO | 2.0512 | 0.2049 | [1.6118, 2.4906] | Significant increase |
+| Point Vicente SMCA | Bio | PISCO | 1.2727 | 0.38 | [0.4673, 2.0782] | Significant increase |
+| Santa Barbara Island SMR | Bio | PISCO | 0.566 | 0.1302 | [0.2657, 0.8663] | Significant increase |
+| Scorpion SMR | Bio | PISCO | 0.5102 | 0.0681 | [0.3676, 0.6529] | Significant increase |
+| South Point SMR | Bio | PISCO | 0.8413 | 0.1074 | [0.6165, 1.0662] | Significant increase |
+| Swamis SMCA | Bio | PISCO | 3.0836 | 0.7764 | [1.1839, 4.9834] | Significant increase |
+| Abalone Cove SMCA | Den | PISCO | 1.4808 | 0.5818 | [0.2131, 2.7485] | Significant increase |
+| Anacapa Island SMR 2003 | Den | KFM | 1.2379 | 0.4273 | [0.327, 2.1487] | Significant increase |
+| Anacapa Island SMR 2003 | Den | PISCO | -0.6778 | 0.2673 | [-1.2417, -0.1139] | Significant decrease |
+| Blue Cavern Onshore SMCA | Den | PISCO | -1.8543 | 0.7458 | [-3.6793, -0.0293] | Significant decrease |
+| Campus Point SMCA | Den | LTER | -0.5359 | 0.6937 | [-1.983, 0.9111] | Not significant |
+| Campus Point SMCA | Den | PISCO | -0.0571 | 0.2412 | [-0.5745, 0.4602] | Not significant |
+| Cat Harbor SMCA | Den | PISCO | 0.4123 | 0.1889 | [-0.0342, 0.8589] | Not significant |
+| Dana Point SMCA | Den | PISCO | -0.3392 | 0.5732 | [-1.7417, 1.0633] | Not significant |
+| Farnsworth Onshore SMCA | Den | PISCO | 0.0311 | 0.0948 | [-0.2125, 0.2748] | Not significant |
+| Gull Island SMR | Den | PISCO | 0.3184 | 0.0959 | [0.117, 0.5199] | Significant increase |
+| Harris Point SMR | Den | PISCO | 1.5312 | 0.2686 | [0.9619, 2.1005] | Significant increase |
+| Harris Point SMR | Den | KFM | -1.1723 | 0.5113 | [-2.2103, -0.1343] | Significant decrease |
+| Long Point SMR | Den | PISCO | 0.6287 | 0.2231 | [0.1013, 1.1562] | Significant increase |
+| Matlahuayl SMR | Den | PISCO | 0.1079 | 0.3409 | [-0.7263, 0.9421] | Not significant |
+| Naples SMCA | Den | PISCO | 1.6366 | 0.157 | [1.2999, 1.9734] | Significant increase |
+| Point Vicente SMCA | Den | PISCO | 0.3289 | 0.1083 | [0.1003, 0.5575] | Significant increase |
+| Santa Barbara Island SMR | Den | PISCO | -0.1035 | 0.1049 | [-0.3409, 0.1339] | Not significant |
+| Scorpion SMR | Den | PISCO | 0.0884 | 0.0683 | [-0.0546, 0.2315] | Not significant |
+| South Point SMR | Den | KFM | 0.2348 | 0.1109 | [-2e-04, 0.4699] | Not significant |
+| South Point SMR | Den | PISCO | 0.5243 | 0.0896 | [0.3368, 0.7119] | Significant increase |
+| Swamis SMCA | Den | PISCO | 2.139 | 0.6512 | [0.5457, 3.7323] | Significant increase |
 
 ---
 
@@ -280,395 +226,20 @@ This is not inconsistent with the trophic cascade - it shows that **fishing effe
 
 ### Effect Direction Summary
 
-| Direction | Count | Percentage |
-|-----------|-------|------------|
-| Significant increases inside MPA | 56 | 45% |
-| Significant decreases inside MPA | 32 | 26% |
-| Not significant | 37 | 30% |
-| **Total effects analyzed** | **125** | 100% |
+- **Significant increases inside MPA:** 61
+- **Significant decreases inside MPA:** 32
+- **Not significant:** 48
+- **Total effects analyzed:** 141
 
 ### Summary by Taxa
 
-| Taxa | Common Name | n | Sig. (%) | Direction | Mean lnRR | Mean % Change |
-|------|-------------|---|----------|-----------|-----------|---------------|
-| S. purpuratus | Purple urchin | 22 | 18 (82%) | **Negative** | -2.00 | **-86%** |
-| M. franciscanus | Red urchin | 25 | 18 (72%) | Mixed | -0.65 | -48% |
-| M. pyrifera | Giant kelp | 16 | 11 (69%) | **Positive** | +2.22 | **+820%** |
-| P. interruptus | Spiny lobster | 23 | 15 (65%) | **Positive** | +1.39 | **+301%** |
-| S. pulcher | Sheephead | 39 | 26 (67%) | **Positive** | +0.60 | **+82%** |
-
-**Formula:** Percent change = (exp(lnRR) - 1) × 100%
-
----
-
-## Appendix: Site-by-Site Effect Sizes
-
-Effect sizes for each MPA, grouped by site with all taxa together for easier site-level review.
-
-### Abalone Cove SMCA
-
-*Location: Palos Verdes Peninsula, mainland*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | +0.21 | 0.47 | [-0.81, 1.24] | Not significant |
-| S. purpuratus | Density | -2.81 | 1.19 | [-5.43, -0.20] | **Significant decrease** |
-| M. franciscanus | Biomass | -1.61 | 0.49 | [-2.70, -0.53] | **Significant decrease** |
-| M. franciscanus | Density | -2.42 | 0.35 | [-3.18, -1.65] | **Significant decrease** |
-| M. pyrifera | Biomass | +0.09 | 0.44 | [-0.86, 1.05] | Not significant |
-| P. interruptus | Biomass | -1.67 | 0.60 | [-2.99, -0.35] | **Significant decrease** |
-| P. interruptus | Density | -0.89 | 0.46 | [-1.88, 0.11] | Not significant |
-| S. pulcher | Biomass | +2.35 | 0.91 | [0.36, 4.34] | **Significant increase** |
-| S. pulcher | Density | +1.48 | 0.58 | [0.21, 2.75] | **Significant increase** |
-
-**Site summary:** Mixed results. Urchins declining (especially red urchin), but lobster also declining - may indicate local fishing pressure or compliance issues. Sheephead showing expected increase.
-
----
-
-### Anacapa Island SMR 2003
-
-*Location: Channel Islands, Anacapa Island*
-*Data sources: PISCO, KFM*
-
-| Taxa | Response | Source | Effect Size | SE | 95% CI | Result |
-|------|----------|--------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | KFM | -3.88 | 1.42 | [-6.92, -0.84] | **Significant decrease** |
-| S. purpuratus | Density | KFM | -4.52 | 1.40 | [-7.50, -1.54] | **Significant decrease** |
-| S. purpuratus | Density | PISCO | -4.03 | 0.73 | [-5.60, -2.46] | **Significant decrease** |
-| M. franciscanus | Biomass | KFM | -4.53 | 0.75 | [-6.13, -2.92] | **Significant decrease** |
-| M. franciscanus | Density | PISCO | -2.23 | 0.47 | [-3.24, -1.23] | **Significant decrease** |
-| M. franciscanus | Density | KFM | -4.73 | 0.74 | [-6.31, -3.14] | **Significant decrease** |
-| M. pyrifera | Biomass | PISCO | +1.54 | 0.41 | [0.67, 2.40] | **Significant increase** |
-| M. pyrifera | Biomass | KFM | +0.80 | 1.14 | [-1.52, 3.12] | Not significant |
-| P. interruptus | Density | KFM | +3.35 | 0.30 | [2.71, 3.98] | **Significant increase** |
-| P. interruptus | Density | PISCO | +2.08 | 0.24 | [1.58, 2.59] | **Significant increase** |
-| S. pulcher | Biomass | PISCO | +0.38 | 0.13 | [0.10, 0.65] | **Significant increase** |
-| S. pulcher | Density | PISCO | -1.23 | 0.49 | [-2.26, -0.21] | **Significant decrease** |
-| S. pulcher | Density | KFM | +2.31 | 0.80 | [0.60, 4.02] | **Significant increase** |
-
-**Site summary:** Very strong urchin declines (both species). Kelp recovering. Lobster dramatically higher. Caveat: Very large effect sizes for urchins may reflect low reference site values - verify data.
-
----
-
-### Blue Cavern Onshore SMCA
-
-*Location: Catalina Island*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. pulcher | Biomass | +1.67 | 0.55 | [0.38, 2.96] | **Significant increase** |
-| S. pulcher | Density | -1.85 | 0.75 | [-3.68, -0.03] | **Significant decrease** |
-
-**Site summary:** Limited taxa coverage. Sheephead biomass up but density down - suggests larger fish, not more fish.
-
----
-
-### Campus Point SMCA
-
-*Location: Santa Barbara, mainland (UCSB Campus Point)*
-*Data sources: PISCO, LTER*
-
-| Taxa | Response | Source | Effect Size | SE | 95% CI | Result |
-|------|----------|--------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | PISCO | -1.77 | 0.70 | [-3.33, -0.21] | **Significant decrease** |
-| S. purpuratus | Density | PISCO | -2.58 | 0.50 | [-3.68, -1.49] | **Significant decrease** |
-| M. franciscanus | Biomass | PISCO | -0.26 | 0.38 | [-1.10, 0.58] | Not significant |
-| M. franciscanus | Density | PISCO | -1.04 | 0.37 | [-1.85, -0.24] | **Significant decrease** |
-| M. pyrifera | Biomass | LTER | +1.65 | 0.49 | [0.63, 2.67] | **Significant increase** |
-| M. pyrifera | Biomass | PISCO | +1.62 | 0.63 | [0.23, 3.00] | **Significant increase** |
-| P. interruptus | Biomass | PISCO | +2.97 | 0.91 | [0.99, 4.95] | **Significant increase** |
-| P. interruptus | Biomass | LTER | +1.64 | 0.69 | [0.10, 3.18] | **Significant increase** |
-| P. interruptus | Density | PISCO | +2.37 | 0.77 | [0.69, 4.06] | **Significant increase** |
-| P. interruptus | Density | LTER | -0.06 | 0.24 | [-0.58, 0.46] | Not significant |
-| S. pulcher | Biomass | LTER | -2.01 | 1.42 | [-4.98, 0.96] | Not significant |
-| S. pulcher | Biomass | PISCO | +0.09 | 0.28 | [-0.51, 0.68] | Not significant |
-| S. pulcher | Density | LTER | -0.63 | 1.26 | [-3.25, 1.99] | Not significant |
-| S. pulcher | Density | PISCO | -0.06 | 0.24 | [-0.57, 0.46] | Not significant |
-
-**Site summary:** Strong trophic cascade signal. Urchins down, kelp up, lobster up. LTER and PISCO data show good agreement for kelp and lobster. Sheephead effects variable.
-
----
-
-### Cat Harbor SMCA
-
-*Location: Catalina Island*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. pulcher | Biomass | +0.66 | 0.15 | [0.30, 1.02] | **Significant increase** |
-| S. pulcher | Density | +0.41 | 0.19 | [-0.03, 0.86] | Not significant (marginal) |
-
-**Site summary:** Limited taxa. Sheephead showing expected increase.
-
----
-
-### Dana Point SMCA
-
-*Location: Orange County, mainland*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. pulcher | Biomass | -0.10 | 0.80 | [-2.06, 1.86] | Not significant |
-| S. pulcher | Density | -0.34 | 0.57 | [-1.74, 1.06] | Not significant |
-
-**Site summary:** No significant effects detected. May need more time or have compliance issues.
-
----
-
-### Farnsworth Onshore SMCA
-
-*Location: Catalina Island*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. pulcher | Biomass | +0.38 | 0.24 | [-0.24, 1.01] | Not significant |
-| S. pulcher | Density | +0.03 | 0.09 | [-0.21, 0.27] | Not significant |
-
-**Site summary:** Weak effects. May reflect small reserve size or high connectivity with fished areas.
-
----
-
-### Gull Island SMR
-
-*Location: Santa Cruz Island, Channel Islands*
-*Data sources: PISCO, KFM*
-
-| Taxa | Response | Source | Effect Size | SE | 95% CI | Result |
-|------|----------|--------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | PISCO | -2.48 | 0.80 | [-4.22, -0.75] | **Significant decrease** |
-| S. purpuratus | Density | PISCO | -3.09 | 0.84 | [-4.89, -1.29] | **Significant decrease** |
-| M. franciscanus | Biomass | KFM | +1.77 | 0.60 | [0.54, 3.00] | **Significant increase** |
-| M. franciscanus | Biomass | PISCO | +0.25 | 0.29 | [-0.38, 0.87] | Not significant |
-| M. franciscanus | Density | PISCO | -1.62 | 0.66 | [-3.03, -0.21] | **Significant decrease** |
-| M. pyrifera | Biomass | PISCO | +3.05 | 0.93 | [1.05, 5.04] | **Significant increase** |
-| M. pyrifera | Biomass | KFM | **+8.06** | 1.69 | [4.66, 11.45] | **Significant increase** |
-| P. interruptus | Density | PISCO | +2.10 | 0.37 | [1.32, 2.89] | **Significant increase** |
-| S. pulcher | Biomass | PISCO | +1.14 | 0.26 | [0.60, 1.69] | **Significant increase** |
-| S. pulcher | Density | PISCO | +0.58 | 0.17 | [0.21, 0.95] | **Significant increase** |
-
-**Site summary:** One of the strongest MPA effects in the network. Kelp recovery is exceptional (KFM: +3100%). Clear trophic cascade: urchins down, kelp up, predators up.
-
----
-
-### Harris Point SMR
-
-*Location: San Miguel Island, Channel Islands*
-*Data sources: PISCO, KFM*
-
-| Taxa | Response | Source | Effect Size | SE | 95% CI | Result |
-|------|----------|--------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | PISCO | -1.04 | 0.24 | [-1.56, -0.52] | **Significant decrease** |
-| S. purpuratus | Density | PISCO | -0.39 | 0.22 | [-0.85, 0.08] | Not significant (marginal) |
-| M. franciscanus | Biomass | PISCO | +0.01 | 0.15 | [-0.31, 0.33] | Not significant |
-| M. franciscanus | Density | KFM | -0.82 | 0.57 | [-1.97, 0.33] | Not significant |
-| M. franciscanus | Density | PISCO | +0.53 | 0.12 | [0.29, 0.78] | **Significant increase** |
-| M. pyrifera | Biomass | PISCO | -0.57 | 0.35 | [-1.30, 0.17] | Not significant |
-| P. interruptus | Density | PISCO | +1.26 | 0.48 | [0.24, 2.28] | **Significant increase** |
-| S. pulcher | Biomass | PISCO | +2.53 | 0.61 | [1.23, 3.82] | **Significant increase** |
-| S. pulcher | Density | PISCO | +1.53 | 0.27 | [0.96, 2.10] | **Significant increase** |
-| S. pulcher | Density | KFM | -2.19 | 0.96 | [-4.14, -0.23] | **Significant decrease** |
-
-**Site summary:** Mixed results. Purple urchin and sheephead respond as expected. Kelp not showing significant recovery - may reflect oceanographic conditions at this exposed site.
-
----
-
-### Long Point SMR
-
-*Location: Catalina Island*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. pulcher | Biomass | +1.53 | 0.37 | [0.64, 2.41] | **Significant increase** |
-| S. pulcher | Density | +0.63 | 0.22 | [0.10, 1.16] | **Significant increase** |
-
-**Site summary:** Limited taxa. Sheephead responding well.
-
----
-
-### Matlahuayl SMR
-
-*Location: La Jolla, San Diego*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. purpuratus | Density | -2.38 | 0.43 | [-3.48, -1.27] | **Significant decrease** |
-| M. franciscanus | Density | **-6.32** | 1.07 | [-9.06, -3.58] | **Significant decrease** |
-| M. pyrifera | Biomass | +1.96 | 0.58 | [0.55, 3.38] | **Significant increase** |
-| P. interruptus | Biomass | +0.23 | 0.65 | [-1.35, 1.82] | Not significant |
-| P. interruptus | Density | -0.11 | 0.38 | [-1.03, 0.81] | Not significant |
-| S. pulcher | Biomass | +0.32 | 0.45 | [-0.79, 1.42] | Not significant |
-| S. pulcher | Density | +0.11 | 0.34 | [-0.73, 0.94] | Not significant |
-
-**Site summary:** Very strong urchin declines (especially red urchin - verify this extreme value). Kelp recovering. Lobster and sheephead not significant - may reflect fishing pressure nearby or habitat differences.
-
----
-
-### Naples SMCA
-
-*Location: Santa Barbara County, mainland*
-*Data sources: PISCO, LTER*
-
-| Taxa | Response | Source | Effect Size | SE | 95% CI | Result |
-|------|----------|--------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | PISCO | -0.73 | 0.16 | [-1.07, -0.38] | **Significant decrease** |
-| S. purpuratus | Density | PISCO | -0.58 | 0.15 | [-0.90, -0.25] | **Significant decrease** |
-| M. franciscanus | Biomass | LTER | +1.10 | 0.21 | [0.64, 1.56] | **Significant increase** |
-| M. franciscanus | Biomass | PISCO | +1.21 | 0.25 | [0.67, 1.74] | **Significant increase** |
-| M. franciscanus | Density | PISCO | +1.07 | 0.17 | [0.71, 1.43] | **Significant increase** |
-| M. pyrifera | Biomass | LTER | +2.41 | 0.64 | [1.08, 3.75] | **Significant increase** |
-| M. pyrifera | Biomass | PISCO | -0.72 | 0.21 | [-1.16, -0.27] | **Significant decrease** |
-| P. interruptus | Biomass | LTER | +0.84 | 0.31 | [0.17, 1.52] | **Significant increase** |
-| P. interruptus | Biomass | PISCO | +1.15 | 0.43 | [0.22, 2.08] | **Significant increase** |
-| P. interruptus | Density | LTER | +0.56 | 0.30 | [-0.10, 1.22] | Not significant |
-| P. interruptus | Density | PISCO | +0.61 | 0.30 | [-0.03, 1.26] | Not significant (marginal) |
-| S. pulcher | Biomass | PISCO | +2.05 | 0.20 | [1.61, 2.49] | **Significant increase** |
-| S. pulcher | Density | PISCO | +1.64 | 0.16 | [1.30, 1.97] | **Significant increase** |
-
-**Site summary:** Excellent trophic cascade evidence. Purple urchins down, kelp up (LTER), predators up. Note discrepancy in kelp between LTER (+2.41) and PISCO (-0.72) - may reflect different survey locations within MPA.
-
----
-
-### Point Vicente SMCA
-
-*Location: Palos Verdes Peninsula, mainland*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | -0.48 | 0.29 | [-1.11, 0.14] | Not significant |
-| S. purpuratus | Density | -0.35 | 0.37 | [-1.15, 0.45] | Not significant |
-| M. franciscanus | Biomass | +0.25 | 0.13 | [-0.02, 0.53] | Not significant (marginal) |
-| M. franciscanus | Density | +0.20 | 0.12 | [-0.06, 0.47] | Not significant |
-| M. pyrifera | Biomass | -0.53 | 0.33 | [-1.24, 0.18] | Not significant |
-| P. interruptus | Biomass | +0.39 | 0.48 | [-0.66, 1.45] | Not significant |
-| P. interruptus | Density | -0.29 | 0.39 | [-1.12, 0.54] | Not significant |
-| S. pulcher | Biomass | +1.27 | 0.38 | [0.47, 2.08] | **Significant increase** |
-| S. pulcher | Density | +0.33 | 0.11 | [0.10, 0.56] | **Significant increase** |
-
-**Site summary:** Weak MPA effects overall. Only sheephead showing significant response. This mainland site may have high fishing pressure, poor compliance, or edge effects.
-
----
-
-### Santa Barbara Island SMR
-
-*Location: Channel Islands*
-*Data sources: PISCO, KFM*
-
-| Taxa | Response | Source | Effect Size | SE | 95% CI | Result |
-|------|----------|--------|-------------|------|--------|--------|
-| M. pyrifera | Biomass | KFM | **+5.64** | 1.41 | [2.82, 8.46] | **Significant increase** |
-| P. interruptus | Density | KFM | +3.26 | 0.56 | [2.13, 4.39] | **Significant increase** |
-| S. pulcher | Biomass | PISCO | +1.03 | 0.24 | [0.48, 1.58] | **Significant increase** |
-| S. pulcher | Density | PISCO | -0.10 | 0.10 | [-0.34, 0.13] | Not significant |
-
-**Site summary:** Strong kelp and lobster recovery. Kelp biomass increased ~280-fold - likely reflecting recovery from very low baseline.
-
----
-
-### Scorpion SMR
-
-*Location: Santa Cruz Island, Channel Islands*
-*Data sources: PISCO, KFM*
-
-| Taxa | Response | Source | Effect Size | SE | 95% CI | Result |
-|------|----------|--------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | PISCO | -1.64 | 0.66 | [-3.04, -0.25] | **Significant decrease** |
-| S. purpuratus | Density | PISCO | -2.66 | 0.60 | [-3.93, -1.40] | **Significant decrease** |
-| M. franciscanus | Biomass | PISCO | +0.07 | 0.15 | [-0.25, 0.38] | Not significant |
-| M. franciscanus | Density | PISCO | -0.83 | 0.29 | [-1.43, -0.23] | **Significant decrease** |
-| M. pyrifera | Biomass | PISCO | **+4.67** | 1.11 | [2.33, 7.01] | **Significant increase** |
-| P. interruptus | Density | PISCO | +2.64 | 0.26 | [2.10, 3.17] | **Significant increase** |
-| P. interruptus | Density | KFM | +4.01 | 0.47 | [3.05, 4.98] | **Significant increase** |
-| S. pulcher | Biomass | PISCO | +0.51 | 0.07 | [0.37, 0.65] | **Significant increase** |
-| S. pulcher | Density | PISCO | +0.09 | 0.07 | [-0.05, 0.23] | Not significant |
-
-**Site summary:** Strong trophic cascade. Both urchin species declining, kelp dramatically increased (+10,700%), lobster way up. Classic MPA response.
-
----
-
-### South Point SMR
-
-*Location: Santa Rosa Island, Channel Islands*
-*Data sources: PISCO, KFM*
-
-| Taxa | Response | Source | Effect Size | SE | 95% CI | Result |
-|------|----------|--------|-------------|------|--------|--------|
-| S. purpuratus | Biomass | PISCO | -2.27 | 0.87 | [-4.17, -0.37] | **Significant decrease** |
-| S. purpuratus | Biomass | KFM | -1.64 | 0.50 | [-2.71, -0.58] | **Significant decrease** |
-| S. purpuratus | Density | KFM | -2.26 | 0.45 | [-3.21, -1.30] | **Significant decrease** |
-| S. purpuratus | Density | PISCO | -2.56 | 0.72 | [-4.10, -1.03] | **Significant decrease** |
-| M. franciscanus | Biomass | PISCO | +1.20 | 0.21 | [0.74, 1.67] | **Significant increase** |
-| M. franciscanus | Biomass | KFM | +1.21 | 0.10 | [1.01, 1.42] | **Significant increase** |
-| M. franciscanus | Density | PISCO | +0.58 | 0.18 | [0.18, 0.97] | **Significant increase** |
-| M. franciscanus | Density | KFM | +0.61 | 0.10 | [0.40, 0.82] | **Significant increase** |
-| M. pyrifera | Biomass | PISCO | +0.60 | 0.29 | [-0.02, 1.21] | Not significant (marginal) |
-| M. pyrifera | Biomass | KFM | **+5.19** | 1.56 | [2.00, 8.37] | **Significant increase** |
-| P. interruptus | Density | PISCO | **+4.68** | 0.76 | [3.04, 6.32] | **Significant increase** |
-| P. interruptus | Density | KFM | +0.89 | 0.26 | [0.34, 1.45] | **Significant increase** |
-| S. pulcher | Biomass | PISCO | +0.84 | 0.11 | [0.62, 1.07] | **Significant increase** |
-| S. pulcher | Density | KFM | +0.26 | 0.12 | [0.00, 0.51] | **Significant increase** |
-| S. pulcher | Density | PISCO | +0.52 | 0.09 | [0.34, 0.71] | **Significant increase** |
-
-**Site summary:** Model MPA response. Strong, consistent effects across all taxa and both data sources. Purple urchins down 90%, kelp up 520% (KFM), lobster density up 100x (PISCO). PISCO and KFM data show excellent agreement.
-
----
-
-### Swamis SMCA
-
-*Location: Encinitas, San Diego County*
-*Data source: PISCO*
-
-| Taxa | Response | Effect Size | SE | 95% CI | Result |
-|------|----------|-------------|------|--------|--------|
-| S. pulcher | Biomass | **+3.08** | 0.78 | [1.18, 4.98] | **Significant increase** |
-| S. pulcher | Density | +2.14 | 0.65 | [0.55, 3.73] | **Significant increase** |
-
-**Site summary:** Limited taxa but strong sheephead response (+2100% biomass).
-
----
-
-## Methods Notes
-
-### Effect Size Calculation
-
-Effect sizes represent the log response ratio (lnRR) comparing MPA sites to paired reference sites at **t=11 years** post-implementation. This standardized time point ensures comparability across MPAs with different establishment dates (2003 for Channel Islands, 2012 for mainland).
-
-### Statistical Model
-
-We used progressive-change Before-After-Control-Impact-Pairs (pBACIPS) methodology:
-
-```
-Response ~ Treatment * Period + (Period | Site)
-```
-
-Where:
-- Treatment = MPA vs Reference
-- Period = Before vs After implementation
-- Random slopes allow sites to differ in their temporal trends
-
-### Meta-Analysis
-
-Multilevel random-effects meta-analysis using REML estimation:
-
-```r
-rma.mv(yi = Effect, V = SE^2, mods = ~Taxa - 1,
-       random = list(~1|MPA, ~1|Source), test = "t")
-```
-
-### Data Sources
-
-| Source | Full Name | Coverage | Primary Focus |
-|--------|-----------|----------|---------------|
-| PISCO | Partnership for Interdisciplinary Studies of Coastal Oceans | 2000-present | Fish, invertebrates, kelp |
-| KFM/NPS | Kelp Forest Monitoring / National Park Service | 1985-present | Channel Islands comprehensive |
-| LTER | Long-Term Ecological Research | 2000-present | Santa Barbara Channel |
+| Taxa | n | Significant | Mean Effect |
+|------|---|-------------|-------------|
+| S. purpuratus | 22 | 18 (82%) | -1.394 |
+| M. franciscanus | 25 | 18 (72%) | -0.428 |
+| M. pyrifera | 32 | 17 (53%) | 1.123 |
+| P. interruptus | 23 | 15 (65%) | 1.161 |
+| S. pulcher | 39 | 25 (64%) | 0.577 |
 
 ---
 

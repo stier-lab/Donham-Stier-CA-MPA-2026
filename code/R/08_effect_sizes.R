@@ -1261,6 +1261,147 @@ cat("SumStats rows:", nrow(SumStats), "\n")
 cat("SumStats.Final rows:", nrow(SumStats.Final), "\n")
 
 ####################################################################################################
+## FILTERING AUDIT: Track exactly what is excluded and why ########################################
+####################################################################################################
+
+cat("\n")
+cat("====================================\n")
+cat("FILTERING AUDIT: Effect Size Data\n")
+cat("====================================\n")
+
+# Start with all complete cases from SumStats
+SumStats_complete <- SumStats[complete.cases(SumStats), ]
+cat("Step 0: Complete cases in SumStats:", nrow(SumStats_complete), "\n")
+
+# Create audit dataframe tracking each observation
+FilterAudit <- SumStats_complete[, c("Taxa", "MPA", "Source", "Resp", "Mean", "SE", "Model", "Primary", "Type", "LinearBefore")]
+FilterAudit$Step0_Complete <- TRUE
+
+# Step 1: Check if MPA exists in Site metadata (merge success)
+FilterAudit$Step1_SiteMerge <- FilterAudit$MPA %in% Site$CA_MPA_Name_Short
+FilterAudit$Step1_Reason <- ifelse(FilterAudit$Step1_SiteMerge, "OK", "MPA not in Site metadata")
+
+# Step 2: Analysis type filter (pBACIPS OR (CI + LinearBefore==NA + Primary==Y))
+FilterAudit$Step2_TypeFilter <- (
+  FilterAudit$Type == "pBACIPS" |
+  (FilterAudit$Type == "CI" & FilterAudit$LinearBefore == "NA" & FilterAudit$Primary == "Y")
+)
+FilterAudit$Step2_Reason <- ifelse(FilterAudit$Step2_TypeFilter, "OK",
+  ifelse(FilterAudit$Type == "CI" & FilterAudit$LinearBefore != "NA",
+         paste0("CI but LinearBefore=", FilterAudit$LinearBefore),
+  ifelse(FilterAudit$Type == "CI" & FilterAudit$Primary != "Y",
+         "CI but Primary=N (not the selected model)",
+  ifelse(FilterAudit$Type == "BACI", "BACI type not included",
+         paste0("Unknown type: ", FilterAudit$Type)))))
+
+# Step 3: Excluded MPA filter
+EXCLUDED_MPAS <- c("Painted Cave SMCA", "San Miguel Island SC",
+                   "Arrow Point to Lion Head Point SMCA", "Judith Rk SMR",
+                   "Point Conception SMR")
+FilterAudit$Step3_MPAFilter <- !(FilterAudit$MPA %in% EXCLUDED_MPAS)
+FilterAudit$Step3_Reason <- ifelse(FilterAudit$Step3_MPAFilter, "OK",
+  ifelse(FilterAudit$MPA == "Painted Cave SMCA", "Excluded: lobster take allowed",
+  ifelse(FilterAudit$MPA == "San Miguel Island SC", "Excluded: unusual location",
+  ifelse(FilterAudit$MPA == "Arrow Point to Lion Head Point SMCA", "Excluded: finfish fishing allowed",
+  ifelse(FilterAudit$MPA == "Judith Rk SMR", "Excluded: overlaps San Miguel Island SC",
+  ifelse(FilterAudit$MPA == "Point Conception SMR", "Excluded: data quality",
+         "Excluded: unknown reason"))))))
+
+# Overall: passes all filters
+FilterAudit$Passes_All <- FilterAudit$Step1_SiteMerge & FilterAudit$Step2_TypeFilter & FilterAudit$Step3_MPAFilter
+
+# Determine exclusion reason (first failing step)
+FilterAudit$Exclusion_Reason <- ifelse(FilterAudit$Passes_All, "INCLUDED",
+  ifelse(!FilterAudit$Step1_SiteMerge, FilterAudit$Step1_Reason,
+  ifelse(!FilterAudit$Step2_TypeFilter, FilterAudit$Step2_Reason,
+         FilterAudit$Step3_Reason)))
+
+# Summary statistics
+cat("\n--- Filtering Summary ---\n")
+cat("Total complete effect sizes:", nrow(FilterAudit), "\n")
+cat("  Pass Site merge:", sum(FilterAudit$Step1_SiteMerge), "\n")
+cat("  Pass Type filter:", sum(FilterAudit$Step2_TypeFilter), "\n")
+cat("  Pass MPA filter:", sum(FilterAudit$Step3_MPAFilter), "\n")
+cat("  Pass ALL filters:", sum(FilterAudit$Passes_All), "\n")
+cat("  Excluded:", sum(!FilterAudit$Passes_All), "\n")
+
+# Breakdown by exclusion reason
+cat("\n--- Exclusion Reasons ---\n")
+reason_table <- table(FilterAudit$Exclusion_Reason)
+for (reason in names(sort(reason_table, decreasing = TRUE))) {
+  cat(sprintf("  %s: %d\n", reason, reason_table[reason]))
+}
+
+# Breakdown by taxa
+cat("\n--- By Taxa (Passes All) ---\n")
+taxa_summary <- aggregate(Passes_All ~ Taxa + Resp, data = FilterAudit,
+                          FUN = function(x) c(total = length(x), included = sum(x)))
+for (i in seq_len(nrow(taxa_summary))) {
+  cat(sprintf("  %s (%s): %d/%d included\n",
+              taxa_summary$Taxa[i], taxa_summary$Resp[i],
+              taxa_summary$Passes_All[i, "included"],
+              taxa_summary$Passes_All[i, "total"]))
+}
+
+# Write detailed audit to CSV
+audit_file <- here::here("outputs", "filter_audit_effect_sizes.csv")
+if (!dir.exists(here::here("outputs"))) {
+  dir.create(here::here("outputs"), recursive = TRUE)
+}
+write.csv(FilterAudit, audit_file, row.names = FALSE)
+cat("\nDetailed filter audit saved to:", audit_file, "\n")
+
+# Create taxa-specific summary
+TaxaSummary <- FilterAudit %>%
+  dplyr::group_by(Taxa, Resp) %>%
+  dplyr::summarise(
+    Total_Generated = dplyr::n(),
+    Passed_SiteMerge = sum(Step1_SiteMerge),
+    Passed_TypeFilter = sum(Step2_TypeFilter),
+    Passed_MPAFilter = sum(Step3_MPAFilter),
+    Final_Included = sum(Passes_All),
+    Excluded = sum(!Passes_All),
+    .groups = "drop"
+  ) %>%
+  dplyr::arrange(Taxa, Resp)
+
+taxa_summary_file <- here::here("outputs", "filter_summary_by_taxa.csv")
+write.csv(TaxaSummary, taxa_summary_file, row.names = FALSE)
+cat("Taxa summary saved to:", taxa_summary_file, "\n")
+
+# Focus on lobster for the specific question
+cat("\n--- LOBSTER (P. interruptus) DETAIL ---\n")
+lobster_audit <- subset(FilterAudit, Taxa == "P. interruptus")
+if (nrow(lobster_audit) > 0) {
+  cat("Total lobster effect sizes generated:", nrow(lobster_audit), "\n")
+  cat("By response type:\n")
+  for (resp in unique(lobster_audit$Resp)) {
+    lob_resp <- subset(lobster_audit, Resp == resp)
+    cat(sprintf("  %s: %d total, %d included\n", resp, nrow(lob_resp), sum(lob_resp$Passes_All)))
+  }
+  cat("\nLobster exclusions:\n")
+  lob_excluded <- subset(lobster_audit, !Passes_All)
+  if (nrow(lob_excluded) > 0) {
+    for (i in seq_len(nrow(lob_excluded))) {
+      cat(sprintf("  - %s %s (%s): %s\n",
+                  lob_excluded$MPA[i], lob_excluded$Resp[i],
+                  lob_excluded$Source[i], lob_excluded$Exclusion_Reason[i]))
+    }
+  } else {
+    cat("  (none excluded)\n")
+  }
+  cat("\nLobster inclusions:\n")
+  lob_included <- subset(lobster_audit, Passes_All)
+  if (nrow(lob_included) > 0) {
+    for (i in seq_len(nrow(lob_included))) {
+      cat(sprintf("  + %s %s (%s): Effect=%.3f\n",
+                  lob_included$MPA[i], lob_included$Resp[i],
+                  lob_included$Source[i], as.numeric(lob_included$Mean[i])))
+    }
+  }
+}
+
+####################################################################################################
 ## Model Diagnostics Summary #######################################################################
 ####################################################################################################
 

@@ -1,30 +1,30 @@
 MPA,Taxa,Source,Response,Effect_Size,SE,CI_Lower,CI_Upper,Model_Type,Significant,Direction,Qualitative
 Abalone Cove SMCA,S. purpuratus,PISCO,Bio,0.2129,0.471,-0.8133,1.2391,Mean,FALSE,Increase inside MPA,Not significant
-Anacapa Island SMR 2003,S. purpuratus,KFM,Bio,-3.8785,1.4247,-6.9151,-0.8418,Linear,TRUE,Decrease inside MPA,Significant decrease
+Anacapa Island SMR 2003,S. purpuratus,KFM,Bio,-2.2454,0.8248,-4.0035,-0.4874,Linear,TRUE,Decrease inside MPA,Significant decrease
 Campus Point SMCA,S. purpuratus,PISCO,Bio,-1.7674,0.6992,-3.3254,-0.2094,Linear,TRUE,Decrease inside MPA,Significant decrease
-Gull Island SMR,S. purpuratus,PISCO,Bio,-2.4836,0.8029,-4.2183,-0.749,Linear,TRUE,Decrease inside MPA,Significant decrease
+Gull Island SMR,S. purpuratus,PISCO,Bio,-1.5178,0.4907,-2.5778,-0.4577,Linear,TRUE,Decrease inside MPA,Significant decrease
 Harris Point SMR,S. purpuratus,PISCO,Bio,-1.0384,0.2412,-1.5557,-0.5212,Mean,TRUE,Decrease inside MPA,Significant decrease
 Naples SMCA,S. purpuratus,PISCO,Bio,-0.7267,0.1586,-1.0723,-0.3812,Mean,TRUE,Decrease inside MPA,Significant decrease
 Point Vicente SMCA,S. purpuratus,PISCO,Bio,-0.4846,0.2893,-1.1096,0.1403,Mean,FALSE,Decrease inside MPA,Not significant
-Scorpion SMR,S. purpuratus,PISCO,Bio,-1.6446,0.6601,-3.044,-0.2452,Linear,TRUE,Decrease inside MPA,Significant decrease
-South Point SMR,S. purpuratus,PISCO,Bio,-2.2684,0.8706,-4.1653,-0.3715,Linear,TRUE,Decrease inside MPA,Significant decrease
-South Point SMR,S. purpuratus,KFM,Bio,-1.6419,0.4988,-2.705,-0.5788,Linear,TRUE,Decrease inside MPA,Significant decrease
+Scorpion SMR,S. purpuratus,PISCO,Bio,-0.9521,0.3822,-1.7623,-0.1419,Linear,TRUE,Decrease inside MPA,Significant decrease
+South Point SMR,S. purpuratus,PISCO,Bio,-1.3862,0.532,-2.5454,-0.2271,Linear,TRUE,Decrease inside MPA,Significant decrease
+South Point SMR,S. purpuratus,KFM,Bio,-0.9506,0.2888,-1.5661,-0.3351,Linear,TRUE,Decrease inside MPA,Significant decrease
 Abalone Cove SMCA,S. purpuratus,PISCO,Den,-2.8135,1.1871,-5.4262,-0.2007,Linear,TRUE,Decrease inside MPA,Significant decrease
-Anacapa Island SMR 2003,S. purpuratus,KFM,Den,-4.5208,1.3986,-7.5019,-1.5397,Linear,TRUE,Decrease inside MPA,Significant decrease
-Anacapa Island SMR 2003,S. purpuratus,PISCO,Den,-4.0325,0.7327,-5.604,-2.461,Linear,TRUE,Decrease inside MPA,Significant decrease
+Anacapa Island SMR 2003,S. purpuratus,KFM,Den,-2.6173,0.8097,-4.3432,-0.8914,Linear,TRUE,Decrease inside MPA,Significant decrease
+Anacapa Island SMR 2003,S. purpuratus,PISCO,Den,-2.2179,0.403,-3.0822,-1.3535,Linear,TRUE,Decrease inside MPA,Significant decrease
 Campus Point SMCA,S. purpuratus,PISCO,Den,-2.5823,0.5035,-3.6793,-1.4852,Linear,TRUE,Decrease inside MPA,Significant decrease
-Gull Island SMR,S. purpuratus,PISCO,Den,-3.0902,0.8373,-4.8861,-1.2943,Linear,TRUE,Decrease inside MPA,Significant decrease
+Gull Island SMR,S. purpuratus,PISCO,Den,-1.6996,0.4605,-2.6873,-0.7119,Linear,TRUE,Decrease inside MPA,Significant decrease
 Harris Point SMR,S. purpuratus,PISCO,Den,-0.388,0.2193,-0.8528,0.0768,Mean,FALSE,Decrease inside MPA,Not significant
 Matlahuayl SMR,S. purpuratus,PISCO,Den,-2.3777,0.4292,-3.4811,-1.2743,Linear,TRUE,Decrease inside MPA,Significant decrease
 Naples SMCA,S. purpuratus,PISCO,Den,-0.576,0.1503,-0.9006,-0.2514,Mean,TRUE,Decrease inside MPA,Significant decrease
 Point Vicente SMCA,S. purpuratus,PISCO,Den,-0.3472,0.3731,-1.1475,0.4531,Mean,FALSE,Decrease inside MPA,Not significant
-Scorpion SMR,S. purpuratus,PISCO,Den,-2.6633,0.6016,-3.9271,-1.3994,Linear,TRUE,Decrease inside MPA,Significant decrease
-South Point SMR,S. purpuratus,KFM,Den,-2.2573,0.4486,-3.2135,-1.3011,Linear,TRUE,Decrease inside MPA,Significant decrease
-South Point SMR,S. purpuratus,PISCO,Den,-2.5645,0.7154,-4.0988,-1.0302,Linear,TRUE,Decrease inside MPA,Significant decrease
+Scorpion SMR,S. purpuratus,PISCO,Den,-1.4648,0.3309,-2.1599,-0.7697,Linear,TRUE,Decrease inside MPA,Significant decrease
+South Point SMR,S. purpuratus,KFM,Den,-1.3069,0.2597,-1.8604,-0.7533,Linear,TRUE,Decrease inside MPA,Significant decrease
+South Point SMR,S. purpuratus,PISCO,Den,-1.4105,0.3935,-2.2543,-0.5666,Linear,TRUE,Decrease inside MPA,Significant decrease
 Abalone Cove SMCA,M. franciscanus,PISCO,Bio,-1.6149,0.4914,-2.6965,-0.5333,Linear,TRUE,Decrease inside MPA,Significant decrease
-Anacapa Island SMR 2003,M. franciscanus,KFM,Bio,-4.5286,0.7531,-6.1338,-2.9234,Linear,TRUE,Decrease inside MPA,Significant decrease
+Anacapa Island SMR 2003,M. franciscanus,KFM,Bio,-2.6218,0.436,-3.5512,-1.6925,Linear,TRUE,Decrease inside MPA,Significant decrease
 Campus Point SMCA,M. franciscanus,PISCO,Bio,-0.2588,0.3803,-1.0959,0.5783,Mean,FALSE,Decrease inside MPA,Not significant
-Gull Island SMR,M. franciscanus,KFM,Bio,1.7711,0.6041,0.5435,2.9987,Linear,TRUE,Increase inside MPA,Significant increase
+Gull Island SMR,M. franciscanus,KFM,Bio,1.146,0.3909,0.3516,1.9404,Linear,TRUE,Increase inside MPA,Significant increase
 Gull Island SMR,M. franciscanus,PISCO,Bio,0.247,0.2923,-0.3799,0.874,Mean,FALSE,Increase inside MPA,Not significant
 Harris Point SMR,M. franciscanus,PISCO,Bio,0.0103,0.1497,-0.3107,0.3313,Mean,FALSE,Increase inside MPA,Not significant
 Naples SMCA,M. franciscanus,LTER,Bio,1.0984,0.2057,0.6402,1.5567,Mean,TRUE,Increase inside MPA,Significant increase
@@ -34,93 +34,109 @@ Scorpion SMR,M. franciscanus,PISCO,Bio,0.0656,0.1477,-0.2461,0.3773,Mean,FALSE,I
 South Point SMR,M. franciscanus,PISCO,Bio,1.2023,0.2143,0.7393,1.6652,Mean,TRUE,Increase inside MPA,Significant increase
 South Point SMR,M. franciscanus,KFM,Bio,1.2126,0.0961,1.009,1.4163,Mean,TRUE,Increase inside MPA,Significant increase
 Abalone Cove SMCA,M. franciscanus,PISCO,Den,-2.4162,0.3481,-3.1824,-1.65,Linear,TRUE,Decrease inside MPA,Significant decrease
-Anacapa Island SMR 2003,M. franciscanus,PISCO,Den,-2.2325,0.4691,-3.2387,-1.2264,Linear,TRUE,Decrease inside MPA,Significant decrease
-Anacapa Island SMR 2003,M. franciscanus,KFM,Den,-4.7255,0.7431,-6.3094,-3.1415,Linear,TRUE,Decrease inside MPA,Significant decrease
+Anacapa Island SMR 2003,M. franciscanus,KFM,Den,-2.7358,0.4302,-3.6528,-1.8188,Linear,TRUE,Decrease inside MPA,Significant decrease
+Anacapa Island SMR 2003,M. franciscanus,PISCO,Den,-1.2279,0.258,-1.7813,-0.6745,Linear,TRUE,Decrease inside MPA,Significant decrease
 Campus Point SMCA,M. franciscanus,PISCO,Den,-1.0448,0.3686,-1.8478,-0.2417,Linear,TRUE,Decrease inside MPA,Significant decrease
-Gull Island SMR,M. franciscanus,PISCO,Den,-1.6197,0.6595,-3.0341,-0.2053,Linear,TRUE,Decrease inside MPA,Significant decrease
-Harris Point SMR,M. franciscanus,KFM,Den,-0.8226,0.5689,-1.9743,0.3291,Linear,FALSE,Decrease inside MPA,Not significant
+Gull Island SMR,M. franciscanus,PISCO,Den,-0.8908,0.3627,-1.6688,-0.1129,Linear,TRUE,Decrease inside MPA,Significant decrease
+Harris Point SMR,M. franciscanus,KFM,Den,-0.5323,0.3681,-1.2775,0.2129,Linear,FALSE,Decrease inside MPA,Not significant
 Harris Point SMR,M. franciscanus,PISCO,Den,0.5331,0.1157,0.2879,0.7784,Mean,TRUE,Increase inside MPA,Significant increase
 Matlahuayl SMR,M. franciscanus,PISCO,Den,-6.323,1.0662,-9.0636,-3.5823,Linear,TRUE,Decrease inside MPA,Significant decrease
 Naples SMCA,M. franciscanus,PISCO,Den,1.0694,0.1653,0.7123,1.4266,Mean,TRUE,Increase inside MPA,Significant increase
 Point Vicente SMCA,M. franciscanus,PISCO,Den,0.2004,0.1234,-0.0642,0.465,Mean,FALSE,Increase inside MPA,Not significant
-Scorpion SMR,M. franciscanus,PISCO,Den,-0.8307,0.2863,-1.4322,-0.2292,Linear,TRUE,Decrease inside MPA,Significant decrease
+Scorpion SMR,M. franciscanus,PISCO,Den,-0.4569,0.1575,-0.7877,-0.1261,Linear,TRUE,Decrease inside MPA,Significant decrease
 South Point SMR,M. franciscanus,PISCO,Den,0.5759,0.1842,0.1833,0.9684,Mean,TRUE,Increase inside MPA,Significant increase
 South Point SMR,M. franciscanus,KFM,Den,0.6094,0.097,0.4037,0.8152,Mean,TRUE,Increase inside MPA,Significant increase
 Abalone Cove SMCA,M. pyrifera,PISCO,Bio,0.0929,0.4395,-0.8646,1.0504,Mean,FALSE,Increase inside MPA,Not significant
+Abalone Cove SMCA,M. pyrifera,Landsat,Bio,3.0387,0.7799,1.4538,4.6236,Linear,TRUE,Increase inside MPA,Significant increase
 Anacapa Island SMR 2003,M. pyrifera,PISCO,Bio,1.536,0.4059,0.6708,2.4012,Mean,TRUE,Increase inside MPA,Significant increase
 Anacapa Island SMR 2003,M. pyrifera,KFM,Bio,0.8022,1.1392,-1.5155,3.1199,Mean,FALSE,Increase inside MPA,Not significant
-Campus Point SMCA,M. pyrifera,LTER,Bio,1.6513,0.4911,0.6301,2.6725,Linear,TRUE,Increase inside MPA,Significant increase
+Cabrillo SMR,M. pyrifera,Landsat,Bio,-0.1213,1.8258,-3.8405,3.5978,Linear,FALSE,Decrease inside MPA,Not significant
+Campus Point SMCA,M. pyrifera,LTER,Bio,1.7789,0.5273,0.6822,2.8755,Linear,TRUE,Increase inside MPA,Significant increase
 Campus Point SMCA,M. pyrifera,PISCO,Bio,1.6169,0.6343,0.2348,2.9989,Linear,TRUE,Increase inside MPA,Significant increase
-Gull Island SMR,M. pyrifera,PISCO,Bio,3.0467,0.9288,1.0545,5.0388,Linear,TRUE,Increase inside MPA,Significant increase
-Gull Island SMR,M. pyrifera,KFM,Bio,8.057,1.6934,4.6634,11.4505,Linear,TRUE,Increase inside MPA,Significant increase
+Campus Point SMCA,M. pyrifera,Landsat,Bio,0.4308,0.4877,-0.5593,1.4209,Linear,FALSE,Increase inside MPA,Not significant
+Carrington Pt SMR,M. pyrifera,Landsat,Bio,2.5496,0.6268,1.2771,3.8222,Linear,TRUE,Increase inside MPA,Significant increase
+Farnsworth Onshore SMCA,M. pyrifera,Landsat,Bio,-1.9067,0.9737,-3.9261,0.1127,Linear,FALSE,Decrease inside MPA,Not significant
+Gull Island SMR,M. pyrifera,PISCO,Bio,1.6757,0.5108,0.58,2.7713,Linear,TRUE,Increase inside MPA,Significant increase
+Gull Island SMR,M. pyrifera,KFM,Bio,2.5322,0.5322,1.4656,3.5987,Linear,TRUE,Increase inside MPA,Significant increase
+Gull Island SMR,M. pyrifera,Landsat,Bio,0.8811,0.2825,0.3076,1.4546,Linear,TRUE,Increase inside MPA,Significant increase
 Harris Point SMR,M. pyrifera,PISCO,Bio,-0.5664,0.3456,-1.2991,0.1663,Mean,FALSE,Decrease inside MPA,Not significant
+Harris Point SMR,M. pyrifera,Landsat,Bio,0.7468,0.5278,-0.3259,1.8194,Linear,FALSE,Increase inside MPA,Not significant
 Matlahuayl SMR,M. pyrifera,PISCO,Bio,1.962,0.5776,0.5487,3.3754,Mean,TRUE,Increase inside MPA,Significant increase
-Naples SMCA,M. pyrifera,LTER,Bio,2.4141,0.6413,1.0804,3.7479,Linear,TRUE,Increase inside MPA,Significant increase
+Naples SMCA,M. pyrifera,LTER,Bio,3.7129,1.0927,1.4405,5.9854,Linear,TRUE,Increase inside MPA,Significant increase
+Naples SMCA,M. pyrifera,Landsat,Bio,-0.0922,0.7464,-1.6074,1.423,Linear,FALSE,Decrease inside MPA,Not significant
 Naples SMCA,M. pyrifera,PISCO,Bio,-0.7152,0.2081,-1.1647,-0.2656,Mean,TRUE,Decrease inside MPA,Significant decrease
+Point Dume SMCA,M. pyrifera,Landsat,Bio,0.2394,0.4933,-0.762,1.2408,Linear,FALSE,Increase inside MPA,Not significant
+Point Dume SMR,M. pyrifera,Landsat,Bio,1.0933,1.0334,-1.0046,3.1913,Linear,FALSE,Increase inside MPA,Not significant
+Point Vicente SMCA,M. pyrifera,Landsat,Bio,1.8299,0.7655,0.2725,3.3873,Linear,TRUE,Increase inside MPA,Significant increase
 Point Vicente SMCA,M. pyrifera,PISCO,Bio,-0.5287,0.3316,-1.2399,0.1826,Mean,FALSE,Decrease inside MPA,Not significant
-Santa Barbara Island SMR,M. pyrifera,KFM,Bio,5.6408,1.4108,2.8167,8.4649,Linear,TRUE,Increase inside MPA,Significant increase
-Scorpion SMR,M. pyrifera,PISCO,Bio,4.6692,1.1124,2.3322,7.0061,Linear,TRUE,Increase inside MPA,Significant increase
+Santa Barbara Island SMR,M. pyrifera,KFM,Bio,3.1025,0.776,1.5492,4.6557,Linear,TRUE,Increase inside MPA,Significant increase
+Santa Barbara Island SMR,M. pyrifera,Landsat,Bio,2.0391,0.4963,1.0316,3.0466,Linear,TRUE,Increase inside MPA,Significant increase
+Scorpion SMR,M. pyrifera,PISCO,Bio,2.568,0.6118,1.2827,3.8534,Linear,TRUE,Increase inside MPA,Significant increase
+Skunk Pt SMR,M. pyrifera,Landsat,Bio,0.7773,0.611,-0.4644,2.0191,Linear,FALSE,Increase inside MPA,Not significant
+South La Jolla SMR,M. pyrifera,Landsat,Bio,3.0581,1.4819,0.0466,6.0697,Linear,TRUE,Increase inside MPA,Significant increase
 South Point SMR,M. pyrifera,PISCO,Bio,0.5977,0.2879,-0.016,1.2113,Mean,FALSE,Increase inside MPA,Not significant
-South Point SMR,M. pyrifera,KFM,Bio,5.1853,1.5645,1.9986,8.372,Linear,TRUE,Increase inside MPA,Significant increase
+South Point SMR,M. pyrifera,KFM,Bio,3.002,0.9057,1.1571,4.8469,Linear,TRUE,Increase inside MPA,Significant increase
+South Point SMR,M. pyrifera,Landsat,Bio,0.0178,0.2574,-0.5048,0.5403,Linear,FALSE,Increase inside MPA,Not significant
+Swamis SMCA,M. pyrifera,Landsat,Bio,-1.8229,1.0917,-4.0391,0.3933,Linear,FALSE,Decrease inside MPA,Not significant
 Abalone Cove SMCA,P. interruptus,PISCO,Bio,-1.674,0.5994,-2.9933,-0.3547,Mean,TRUE,Decrease inside MPA,Significant decrease
 Campus Point SMCA,P. interruptus,PISCO,Bio,2.9683,0.9072,0.9917,4.945,Linear,TRUE,Increase inside MPA,Significant increase
-Campus Point SMCA,P. interruptus,LTER,Bio,1.6356,0.6913,0.0952,3.1759,Linear,TRUE,Increase inside MPA,Significant increase
+Campus Point SMCA,P. interruptus,LTER,Bio,1.6562,0.7007,0.095,3.2174,Linear,TRUE,Increase inside MPA,Significant increase
 Matlahuayl SMR,P. interruptus,PISCO,Bio,0.2317,0.6473,-1.3521,1.8155,Mean,FALSE,Increase inside MPA,Not significant
-Naples SMCA,P. interruptus,LTER,Bio,0.8439,0.3065,0.1694,1.5185,Mean,TRUE,Increase inside MPA,Significant increase
+Naples SMCA,P. interruptus,LTER,Bio,0.8481,0.3136,0.1578,1.5383,Mean,TRUE,Increase inside MPA,Significant increase
 Naples SMCA,P. interruptus,PISCO,Bio,1.1476,0.4302,0.2183,2.0769,Mean,TRUE,Increase inside MPA,Significant increase
 Point Vicente SMCA,P. interruptus,PISCO,Bio,0.3924,0.4786,-0.661,1.4459,Mean,FALSE,Increase inside MPA,Not significant
 Abalone Cove SMCA,P. interruptus,PISCO,Den,-0.8885,0.4568,-1.8838,0.1068,Mean,FALSE,Decrease inside MPA,Not significant
 Anacapa Island SMR 2003,P. interruptus,KFM,Den,3.3458,0.3004,2.7089,3.9827,Mean,TRUE,Increase inside MPA,Significant increase
 Anacapa Island SMR 2003,P. interruptus,PISCO,Den,2.0849,0.2378,1.578,2.5918,Mean,TRUE,Increase inside MPA,Significant increase
 Campus Point SMCA,P. interruptus,PISCO,Den,2.3747,0.7748,0.6865,4.0629,Linear,TRUE,Increase inside MPA,Significant increase
-Campus Point SMCA,P. interruptus,LTER,Den,-0.0602,0.2368,-0.5815,0.4611,Mean,FALSE,Decrease inside MPA,Not significant
+Campus Point SMCA,P. interruptus,LTER,Den,-0.0553,0.2314,-0.5645,0.454,Mean,FALSE,Decrease inside MPA,Not significant
 Gull Island SMR,P. interruptus,PISCO,Den,2.1034,0.3673,1.3206,2.8862,Mean,TRUE,Increase inside MPA,Significant increase
-Harris Point SMR,P. interruptus,PISCO,Den,1.2611,0.4802,0.2377,2.2846,Linear,TRUE,Increase inside MPA,Significant increase
+Harris Point SMR,P. interruptus,PISCO,Den,0.6936,0.2641,0.1307,1.2565,Linear,TRUE,Increase inside MPA,Significant increase
 Matlahuayl SMR,P. interruptus,PISCO,Den,-0.1091,0.3758,-1.0287,0.8105,Mean,FALSE,Decrease inside MPA,Not significant
-Naples SMCA,P. interruptus,LTER,Den,0.5587,0.2988,-0.0989,1.2163,Mean,FALSE,Increase inside MPA,Not significant
+Naples SMCA,P. interruptus,LTER,Den,0.5586,0.2986,-0.0986,1.2158,Mean,FALSE,Increase inside MPA,Not significant
 Naples SMCA,P. interruptus,PISCO,Den,0.6104,0.2984,-0.0342,1.255,Mean,FALSE,Increase inside MPA,Not significant
 Point Vicente SMCA,P. interruptus,PISCO,Den,-0.288,0.3857,-1.1154,0.5393,Mean,FALSE,Decrease inside MPA,Not significant
-Santa Barbara Island SMR,P. interruptus,KFM,Den,3.2591,0.5574,2.1307,4.3875,Linear,TRUE,Increase inside MPA,Significant increase
+Santa Barbara Island SMR,P. interruptus,KFM,Den,1.9917,0.3406,1.3021,2.6812,Linear,TRUE,Increase inside MPA,Significant increase
 Scorpion SMR,P. interruptus,PISCO,Den,2.6353,0.256,2.0995,3.1712,Mean,TRUE,Increase inside MPA,Significant increase
-Scorpion SMR,P. interruptus,KFM,Den,4.0137,0.4748,3.0518,4.9757,Linear,TRUE,Increase inside MPA,Significant increase
-South Point SMR,P. interruptus,PISCO,Den,4.683,0.7639,3.0445,6.3214,Linear,TRUE,Increase inside MPA,Significant increase
+Scorpion SMR,P. interruptus,KFM,Den,2.5971,0.3072,1.9747,3.2196,Linear,TRUE,Increase inside MPA,Significant increase
+South Point SMR,P. interruptus,PISCO,Den,2.5756,0.4202,1.6745,3.4768,Linear,TRUE,Increase inside MPA,Significant increase
 South Point SMR,P. interruptus,KFM,Den,0.8924,0.2611,0.3388,1.446,Mean,TRUE,Increase inside MPA,Significant increase
 Abalone Cove SMCA,S. pulcher,PISCO,Bio,2.3533,0.9139,0.362,4.3446,Linear,TRUE,Increase inside MPA,Significant increase
 Anacapa Island SMR 2003,S. pulcher,PISCO,Bio,0.3783,0.1302,0.1047,0.6518,Mean,TRUE,Increase inside MPA,Significant increase
 Blue Cavern Onshore SMCA,S. pulcher,PISCO,Bio,1.6715,0.5452,0.3822,2.9608,Mean,TRUE,Increase inside MPA,Significant increase
-Campus Point SMCA,S. pulcher,LTER,Bio,-2.0123,1.424,-4.9827,0.9581,Linear,FALSE,Decrease inside MPA,Not significant
+Campus Point SMCA,S. pulcher,LTER,Bio,-2.2354,1.6333,-5.6423,1.1716,Linear,FALSE,Decrease inside MPA,Not significant
 Campus Point SMCA,S. pulcher,PISCO,Bio,0.0886,0.2769,-0.5052,0.6824,Mean,FALSE,Increase inside MPA,Not significant
 Cat Harbor SMCA,S. pulcher,PISCO,Bio,0.663,0.1526,0.3023,1.0238,Mean,TRUE,Increase inside MPA,Significant increase
 Dana Point SMCA,S. pulcher,PISCO,Bio,-0.1,0.7991,-2.0554,1.8554,Mean,FALSE,Decrease inside MPA,Not significant
 Farnsworth Onshore SMCA,S. pulcher,PISCO,Bio,0.3805,0.2431,-0.2443,1.0053,Mean,FALSE,Increase inside MPA,Not significant
-Gull Island SMR,S. pulcher,PISCO,Bio,1.1449,0.2591,0.6006,1.6891,Linear,TRUE,Increase inside MPA,Significant increase
+Gull Island SMR,S. pulcher,PISCO,Bio,0.6297,0.1425,0.3303,0.929,Linear,TRUE,Increase inside MPA,Significant increase
 Harris Point SMR,S. pulcher,PISCO,Bio,2.5255,0.6108,1.2307,3.8203,Mean,TRUE,Increase inside MPA,Significant increase
 Long Point SMR,S. pulcher,PISCO,Bio,1.5277,0.3739,0.6436,2.4119,Mean,TRUE,Increase inside MPA,Significant increase
 Matlahuayl SMR,S. pulcher,PISCO,Bio,0.3191,0.4515,-0.7856,1.4239,Mean,FALSE,Increase inside MPA,Not significant
 Naples SMCA,S. pulcher,PISCO,Bio,2.0512,0.2049,1.6118,2.4906,Mean,TRUE,Increase inside MPA,Significant increase
 Point Vicente SMCA,S. pulcher,PISCO,Bio,1.2727,0.38,0.4673,2.0782,Linear,TRUE,Increase inside MPA,Significant increase
-Santa Barbara Island SMR,S. pulcher,PISCO,Bio,1.0291,0.2368,0.4831,1.5751,Linear,TRUE,Increase inside MPA,Significant increase
+Santa Barbara Island SMR,S. pulcher,PISCO,Bio,0.566,0.1302,0.2657,0.8663,Linear,TRUE,Increase inside MPA,Significant increase
 Scorpion SMR,S. pulcher,PISCO,Bio,0.5102,0.0681,0.3676,0.6529,Mean,TRUE,Increase inside MPA,Significant increase
 South Point SMR,S. pulcher,PISCO,Bio,0.8413,0.1074,0.6165,1.0662,Mean,TRUE,Increase inside MPA,Significant increase
 Swamis SMCA,S. pulcher,PISCO,Bio,3.0836,0.7764,1.1839,4.9834,Mean,TRUE,Increase inside MPA,Significant increase
 Abalone Cove SMCA,S. pulcher,PISCO,Den,1.4808,0.5818,0.2131,2.7485,Linear,TRUE,Increase inside MPA,Significant increase
-Anacapa Island SMR 2003,S. pulcher,PISCO,Den,-1.2323,0.4859,-2.2575,-0.207,Linear,TRUE,Decrease inside MPA,Significant decrease
-Anacapa Island SMR 2003,S. pulcher,KFM,Den,2.3138,0.8026,0.6031,4.0245,Linear,TRUE,Increase inside MPA,Significant increase
+Anacapa Island SMR 2003,S. pulcher,KFM,Den,1.2379,0.4273,0.327,2.1487,Linear,TRUE,Increase inside MPA,Significant increase
+Anacapa Island SMR 2003,S. pulcher,PISCO,Den,-0.6778,0.2673,-1.2417,-0.1139,Linear,TRUE,Decrease inside MPA,Significant decrease
 Blue Cavern Onshore SMCA,S. pulcher,PISCO,Den,-1.8543,0.7458,-3.6793,-0.0293,Linear,TRUE,Decrease inside MPA,Significant decrease
-Campus Point SMCA,S. pulcher,LTER,Den,-0.629,1.2576,-3.2522,1.9943,Linear,FALSE,Decrease inside MPA,Not significant
+Campus Point SMCA,S. pulcher,LTER,Den,-0.5359,0.6937,-1.983,0.9111,Linear,FALSE,Decrease inside MPA,Not significant
 Campus Point SMCA,S. pulcher,PISCO,Den,-0.0571,0.2412,-0.5745,0.4602,Mean,FALSE,Decrease inside MPA,Not significant
 Cat Harbor SMCA,S. pulcher,PISCO,Den,0.4123,0.1889,-0.0342,0.8589,Mean,FALSE,Increase inside MPA,Not significant
 Dana Point SMCA,S. pulcher,PISCO,Den,-0.3392,0.5732,-1.7417,1.0633,Mean,FALSE,Decrease inside MPA,Not significant
 Farnsworth Onshore SMCA,S. pulcher,PISCO,Den,0.0311,0.0948,-0.2125,0.2748,Mean,FALSE,Increase inside MPA,Not significant
-Gull Island SMR,S. pulcher,PISCO,Den,0.579,0.1744,0.2127,0.9453,Linear,TRUE,Increase inside MPA,Significant increase
+Gull Island SMR,S. pulcher,PISCO,Den,0.3184,0.0959,0.117,0.5199,Linear,TRUE,Increase inside MPA,Significant increase
 Harris Point SMR,S. pulcher,PISCO,Den,1.5312,0.2686,0.9619,2.1005,Mean,TRUE,Increase inside MPA,Significant increase
-Harris Point SMR,S. pulcher,KFM,Den,-2.1865,0.9622,-4.1399,-0.233,Linear,TRUE,Decrease inside MPA,Significant decrease
+Harris Point SMR,S. pulcher,KFM,Den,-1.1723,0.5113,-2.2103,-0.1343,Linear,TRUE,Decrease inside MPA,Significant decrease
 Long Point SMR,S. pulcher,PISCO,Den,0.6287,0.2231,0.1013,1.1562,Mean,TRUE,Increase inside MPA,Significant increase
 Matlahuayl SMR,S. pulcher,PISCO,Den,0.1079,0.3409,-0.7263,0.9421,Mean,FALSE,Increase inside MPA,Not significant
 Naples SMCA,S. pulcher,PISCO,Den,1.6366,0.157,1.2999,1.9734,Mean,TRUE,Increase inside MPA,Significant increase
 Point Vicente SMCA,S. pulcher,PISCO,Den,0.3289,0.1083,0.1003,0.5575,Mean,TRUE,Increase inside MPA,Significant increase
 Santa Barbara Island SMR,S. pulcher,PISCO,Den,-0.1035,0.1049,-0.3409,0.1339,Mean,FALSE,Decrease inside MPA,Not significant
 Scorpion SMR,S. pulcher,PISCO,Den,0.0884,0.0683,-0.0546,0.2315,Mean,FALSE,Increase inside MPA,Not significant
-South Point SMR,S. pulcher,KFM,Den,0.2573,0.1196,0.0038,0.5109,Mean,TRUE,Increase inside MPA,Significant increase
+South Point SMR,S. pulcher,KFM,Den,0.2348,0.1109,-2e-4,0.4699,Mean,FALSE,Increase inside MPA,Not significant
 South Point SMR,S. pulcher,PISCO,Den,0.5243,0.0896,0.3368,0.7119,Mean,TRUE,Increase inside MPA,Significant increase
 Swamis SMCA,S. pulcher,PISCO,Den,2.139,0.6512,0.5457,3.7323,Mean,TRUE,Increase inside MPA,Significant increase

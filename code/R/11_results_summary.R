@@ -345,7 +345,154 @@ writeLines(md_lines, md_path)
 cat("  Wrote:", md_path, "\n")
 
 # =============================================================================
-# 4. SUMMARY
+# 4. COMBINED DATA FLOW SUMMARY
+# =============================================================================
+
+cat("\n--- Building Combined Data Flow Summary ---\n")
+
+# Read filter audit files if they exist
+filter_audit_file <- here::here("outputs", "filter_audit_effect_sizes.csv")
+meta_audit_file <- here::here("outputs", "filter_audit_meta_analysis.csv")
+
+if (file.exists(filter_audit_file) && file.exists(meta_audit_file)) {
+
+  # Read audits
+  effect_audit <- read.csv(filter_audit_file, stringsAsFactors = FALSE)
+  meta_audit <- read.csv(meta_audit_file, stringsAsFactors = FALSE)
+
+  # Create comprehensive data flow table
+  cat("\n")
+  cat("============================================\n")
+  cat("COMPLETE DATA FLOW: Effect Size Generation\n")
+  cat("============================================\n")
+
+  # Stage 1: Effect sizes generated
+  stage1 <- effect_audit %>%
+    dplyr::group_by(Taxa, Resp) %>%
+    dplyr::summarise(
+      Stage1_Generated = dplyr::n(),
+      .groups = "drop"
+    )
+
+  # Stage 2: Pass site merge
+  stage2 <- effect_audit %>%
+    dplyr::filter(Step1_SiteMerge) %>%
+    dplyr::group_by(Taxa, Resp) %>%
+    dplyr::summarise(
+      Stage2_SiteMerge = dplyr::n(),
+      .groups = "drop"
+    )
+
+  # Stage 3: Pass type filter (pBACIPS or CI+Primary)
+  stage3 <- effect_audit %>%
+    dplyr::filter(Step2_TypeFilter) %>%
+    dplyr::group_by(Taxa, Resp) %>%
+    dplyr::summarise(
+      Stage3_TypeFilter = dplyr::n(),
+      .groups = "drop"
+    )
+
+  # Stage 4: Pass MPA exclusion filter
+  stage4 <- effect_audit %>%
+    dplyr::filter(Passes_All) %>%
+    dplyr::group_by(Taxa, Resp) %>%
+    dplyr::summarise(
+      Stage4_SumStatsFinal = dplyr::n(),
+      .groups = "drop"
+    )
+
+  # Stage 5: Enter meta-analysis (same as Stage 4)
+  # Stage 6: Pass outlier filter (in meta_audit)
+  stage6 <- meta_audit %>%
+    dplyr::filter(In_Final_Analysis) %>%
+    dplyr::group_by(Taxa, Response) %>%
+    dplyr::summarise(
+      Stage6_FinalK = dplyr::n(),
+      .groups = "drop"
+    ) %>%
+    dplyr::rename(Resp = Response) %>%
+    dplyr::mutate(Resp = ifelse(Resp == "Biomass", "Bio", "Den"))
+
+  # Merge all stages
+  data_flow <- stage1 %>%
+    dplyr::left_join(stage2, by = c("Taxa", "Resp")) %>%
+    dplyr::left_join(stage3, by = c("Taxa", "Resp")) %>%
+    dplyr::left_join(stage4, by = c("Taxa", "Resp")) %>%
+    dplyr::left_join(stage6, by = c("Taxa", "Resp")) %>%
+    dplyr::mutate(dplyr::across(dplyr::everything(), ~replace(., is.na(.), 0))) %>%
+    dplyr::arrange(Taxa, Resp)
+
+  # Print data flow table
+  cat("\nData Flow by Taxa and Response:\n")
+  cat("  Stage 1: Effect sizes generated (08_effect_sizes.R)\n")
+  cat("  Stage 2: Pass Site metadata merge\n")
+  cat("  Stage 3: Pass Type filter (pBACIPS or CI+Primary)\n")
+  cat("  Stage 4: Pass MPA exclusion filter -> SumStats.Final\n")
+  cat("  Stage 5: Enter meta-analysis\n")
+  cat("  Stage 6: Pass outlier filter -> Final k\n")
+  cat("\n")
+
+  # Print as formatted table
+  cat(sprintf("%-20s %-5s %8s %8s %8s %8s %8s\n",
+              "Taxa", "Resp", "Stage1", "Stage2", "Stage3", "Stage4", "Final_k"))
+  cat(paste(rep("-", 75), collapse = ""), "\n")
+
+  for (i in seq_len(nrow(data_flow))) {
+    row <- data_flow[i, ]
+    cat(sprintf("%-20s %-5s %8d %8d %8d %8d %8d\n",
+                row$Taxa, row$Resp,
+                row$Stage1_Generated, row$Stage2_SiteMerge,
+                row$Stage3_TypeFilter, row$Stage4_SumStatsFinal,
+                row$Stage6_FinalK))
+  }
+
+  # Write data flow summary
+  data_flow_file <- here::here("outputs", "data_flow_summary.csv")
+  write.csv(data_flow, data_flow_file, row.names = FALSE)
+  cat("\nData flow summary written to:", data_flow_file, "\n")
+
+  # Identify attrition points
+  cat("\n--- Major Attrition Points ---\n")
+
+  for (i in seq_len(nrow(data_flow))) {
+    row <- data_flow[i, ]
+    attrition <- c()
+
+    if (row$Stage2_SiteMerge < row$Stage1_Generated) {
+      lost <- row$Stage1_Generated - row$Stage2_SiteMerge
+      attrition <- c(attrition, sprintf("Site merge: -%d", lost))
+    }
+    if (row$Stage3_TypeFilter < row$Stage2_SiteMerge) {
+      lost <- row$Stage2_SiteMerge - row$Stage3_TypeFilter
+      attrition <- c(attrition, sprintf("Type filter: -%d", lost))
+    }
+    if (row$Stage4_SumStatsFinal < row$Stage3_TypeFilter) {
+      lost <- row$Stage3_TypeFilter - row$Stage4_SumStatsFinal
+      attrition <- c(attrition, sprintf("MPA exclusion: -%d", lost))
+    }
+    if (row$Stage6_FinalK < row$Stage4_SumStatsFinal) {
+      lost <- row$Stage4_SumStatsFinal - row$Stage6_FinalK
+      attrition <- c(attrition, sprintf("Outlier removal: -%d", lost))
+    }
+
+    if (length(attrition) > 0) {
+      cat(sprintf("%s (%s): %s\n", row$Taxa, row$Resp, paste(attrition, collapse = ", ")))
+    }
+  }
+
+  # Detailed exclusion reasons
+  cat("\n--- Exclusion Reason Summary ---\n")
+  reason_counts <- table(effect_audit$Exclusion_Reason)
+  for (reason in names(sort(reason_counts, decreasing = TRUE))) {
+    cat(sprintf("  %s: %d\n", reason, reason_counts[reason]))
+  }
+
+} else {
+  cat("  Filter audit files not found - run 08_effect_sizes.R and 09_meta_analysis.R first\n")
+}
+
+# =============================================================================
+# 5. SUMMARY
 # =============================================================================
 
 cat("\n")
@@ -353,7 +500,11 @@ cat("====================================================================\n")
 cat("  Results Summary Complete\n")
 cat("====================================================================\n")
 cat("\nOutputs generated:\n")
-cat("  1. outputs/model_results_summary.csv - Meta-analysis test statistics\n")
-cat("  2. outputs/replicate_effects.csv    - Effect sizes by MPA-taxa\n")
-cat("  3. docs/RESULTS_SUMMARY.md          - Formatted markdown appendix\n")
+cat("  1. outputs/model_results_summary.csv    - Meta-analysis test statistics\n")
+cat("  2. outputs/replicate_effects.csv        - Effect sizes by MPA-taxa\n")
+cat("  3. outputs/filter_audit_effect_sizes.csv - Detailed filtering trace (08)\n")
+cat("  4. outputs/filter_audit_meta_analysis.csv - Meta-analysis outlier trace (09)\n")
+cat("  5. outputs/filter_summary_by_taxa.csv   - Taxa-level filtering summary\n")
+cat("  6. outputs/data_flow_summary.csv        - Complete data flow by stage\n")
+cat("  7. docs/RESULTS_SUMMARY.md              - Formatted markdown appendix\n")
 cat("\n")
