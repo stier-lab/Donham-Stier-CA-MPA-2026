@@ -462,11 +462,21 @@ calculate_log_response_ratio <- function(df) {
 #'   - SD: Pooled standard deviation (for legacy compatibility)
 #'   - CI: 95% confidence interval half-width (SE * 1.96)
 #'
-#' @note This function assumes independence between before and after estimates.
-#'   This is appropriate when estimates come from different models or datasets.
-#'   When estimates come from the same model, consider using
-#'   calculate_effect_size_from_contrast() instead.
+#' @note DEPRECATED (2026-02-06): This function assumes independence between
+#'   before and after estimates, which is incorrect when they come from the same
+#'   model. Use calculate_effect_size_from_contrast() instead, which properly
+#'   handles covariance via emmeans::pairs().
 calculate_effect_size <- function(before_emmeans, after_emmeans) {
+  # DEPRECATION WARNING (2026-02-06)
+  stop(
+    "calculate_effect_size() is deprecated and should not be used.\n",
+    "This function incorrectly assumes independence between before/after estimates.\n",
+    "Use calculate_effect_size_from_contrast() instead, which properly handles ",
+    "covariance via emmeans::pairs().\n",
+    "See code review (2026-02-06) for rationale.",
+    call. = FALSE
+  )
+
   # Effect size is simply the difference in estimates
   mean_es <- after_emmeans$estimate[1] - before_emmeans$estimate[1]
 

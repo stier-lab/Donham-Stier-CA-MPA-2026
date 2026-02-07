@@ -94,9 +94,9 @@ library(metafor)
 # nlstools: Tools for nonlinear regression (confidence intervals, diagnostics) (not currently used)
 # investr: Inverse estimation and calibration (predFit for prediction intervals)
 
-require(minpack.lm)
-require(nls2)
-require(AICcmodavg)
+library(minpack.lm)
+library(nls2)
+library(AICcmodavg)
 # library(nlstools)  # Not currently used - uncomment if needed
 library(investr)
 

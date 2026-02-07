@@ -158,11 +158,10 @@ Swath.ave.site <- merge(Swath.ave, sites.short, by.x = c("site"), by.y = c("site
 # complete.cases() returns TRUE for rows with no NA values in specified column
 Swath.ave.site <- Swath.ave.site[complete.cases(Swath.ave.site$CA_MPA_Name_Short), ]
 
-# Keep only needed columns using column indices
-# Columns selected: site, year, y, count, CA_MPA_Name_Short, site_designation, site_status, BaselineRegion
-# NOTE: Column indices are fragile - if merge order changes, indices may be wrong.
-# TODO: Convert to dplyr::select(site, year, y, count, CA_MPA_Name_Short, site_designation, site_status, BaselineRegion)
-Swath.ave.site.sub <- Swath.ave.site[, colnames(Swath.ave.site)[c(1:4, 6, 11:13, 16)]]
+# Keep only needed columns using dplyr::select for robust column selection
+# FIXED (2026-02-06): Converted from fragile column indices to explicit column names
+Swath.ave.site.sub <- Swath.ave.site %>%
+  dplyr::select(site, year, y, count, CA_MPA_Name_Short, site_designation, site_status, BaselineRegion)
 
 # Only Southern California (our study region)
 # BaselineRegion categorizes sites by MLPA planning region

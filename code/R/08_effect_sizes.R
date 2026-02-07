@@ -1004,23 +1004,44 @@ if (nrow(KFM.mfran.harris) >= 5) {
     }
   )
   if (!is.null(sigmoid.Model)) {
-    # Use confidence interval (not prediction interval) for effect sizes
+    # STATISTICAL FIX (2026-02-06): Extract effect size at standardized time point (t=11)
+    # rather than at maximum observed time to ensure comparability across MPAs.
+    # Create prediction data at time.model = 0 (before) and time.model = 11 (after)
+    n_obs_original <- nrow(KFM.mfran.harris)
+    time.model.of.impact_original <- max(which(KFM.mfran.harris$time.model == 0))
+
+    # Create standardized prediction points: time 0 (before) and time 11 (after)
+    pred_data <- data.frame(
+      time.model = c(0, EFFECT_SIZE_TIME_YEARS),
+      time.true = c(time.model.of.impact_original, time.model.of.impact_original + EFFECT_SIZE_TIME_YEARS)
+    )
+
+    # Get predictions at standardized times with confidence intervals
     interval <- tryCatch({
-      data.frame(predFit(sigmoid.Model, newdata = KFM.mfran.harris, interval = "confidence"))
+      data.frame(predFit(sigmoid.Model, newdata = pred_data, interval = "confidence"))
     }, error = function(e) NULL)
 
-    if (!is.null(interval)) {
-      interval$se <- abs((interval$lwr - interval$fit) / 1.96)
-      n_obs <- nrow(interval)
-      n_params <- length(coef(sigmoid.Model))
-      n_df <- n_obs - n_params
-      interval$stdev <- interval$se * sqrt(n_obs)
-      pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) + ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
-      pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
+    if (!is.null(interval) && nrow(interval) == 2) {
+      # Calculate effect size as difference between t=11 and t=0
+      mean_es <- interval$fit[2] - interval$fit[1]
+
+      # Calculate SE from confidence interval width (95% CI)
+      se_before <- abs((interval$lwr[1] - interval$fit[1]) / 1.96)
+      se_after <- abs((interval$lwr[2] - interval$fit[2]) / 1.96)
+
+      # Pooled SE for the difference (conservative: assumes independence)
+      # Note: This may slightly overestimate SE but is conservative
+      pSE <- sqrt(se_before^2 + se_after^2)
       pCI <- pSE * 1.96
-      mean_es <- interval$fit[n_obs] - interval$fit[1]
+
+      # Approximate SD from SE (for backward compatibility with meta-analysis)
+      # Use original sample size for df approximation
+      n_params <- length(coef(sigmoid.Model))
+      df_approx <- n_obs_original - n_params
+      pSD <- pSE * sqrt(df_approx + 1)
+
       SumStats[nrow(SumStats) + 1, ] <- c("M. franciscanus", "Harris Point SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N")
+                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original)
     }
   }
 }
@@ -1067,22 +1088,41 @@ if (nrow(KFM.macro.stipe) >= 5) {
     }
   )
   if (!is.null(sigmoid.Model)) {
+    # STATISTICAL FIX (2026-02-06): Extract effect size at standardized time point (t=11)
+    # rather than at maximum observed time to ensure comparability across MPAs.
+    n_obs_original <- nrow(KFM.macro.stipe)
+    time.model.of.impact_original <- max(which(KFM.macro.stipe$time.model == 0))
+
+    # Create standardized prediction points: time 0 (before) and time 11 (after)
+    pred_data <- data.frame(
+      time.model = c(0, EFFECT_SIZE_TIME_YEARS),
+      time.true = c(time.model.of.impact_original, time.model.of.impact_original + EFFECT_SIZE_TIME_YEARS)
+    )
+
+    # Get predictions at standardized times with confidence intervals
     interval <- tryCatch({
-      data.frame(predFit(sigmoid.Model, newdata = KFM.macro.stipe, interval = "confidence"))
+      data.frame(predFit(sigmoid.Model, newdata = pred_data, interval = "confidence"))
     }, error = function(e) NULL)
 
-    if (!is.null(interval)) {
-      interval$se <- abs((interval$lwr - interval$fit) / 1.96)
-      n_obs <- nrow(interval)
-      n_params <- length(coef(sigmoid.Model))
-      n_df <- n_obs - n_params
-      interval$stdev <- interval$se * sqrt(n_obs)
-      pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) + ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
-      pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
+    if (!is.null(interval) && nrow(interval) == 2) {
+      # Calculate effect size as difference between t=11 and t=0
+      mean_es <- interval$fit[2] - interval$fit[1]
+
+      # Calculate SE from confidence interval width
+      se_before <- abs((interval$lwr[1] - interval$fit[1]) / 1.96)
+      se_after <- abs((interval$lwr[2] - interval$fit[2]) / 1.96)
+
+      # Pooled SE for the difference (conservative: assumes independence)
+      pSE <- sqrt(se_before^2 + se_after^2)
       pCI <- pSE * 1.96
-      mean_es <- interval$fit[n_obs] - interval$fit[1]
+
+      # Approximate SD from SE (for backward compatibility)
+      n_params <- length(coef(sigmoid.Model))
+      df_approx <- n_obs_original - n_params
+      pSD <- pSE * sqrt(df_approx + 1)
+
       SumStats[nrow(SumStats) + 1, ] <- c("M. pyrifera", "Scorpion SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N")
+                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original)
     }
   }
 }
@@ -1126,23 +1166,41 @@ if (nrow(KFM.lob.gull) >= 5) {
     }
   )
   if (!is.null(sigmoid.Model)) {
+    # STATISTICAL FIX (2026-02-06): Extract effect size at standardized time point (t=11)
+    # rather than at maximum observed time to ensure comparability across MPAs.
+    n_obs_original <- nrow(KFM.lob.gull)
+    time.model.of.impact_original <- max(which(KFM.lob.gull$time == 0))
+
+    # Create standardized prediction points: time 0 (before) and time 11 (after)
+    pred_data <- data.frame(
+      time.model = c(0, EFFECT_SIZE_TIME_YEARS),
+      time.true = c(time.model.of.impact_original, time.model.of.impact_original + EFFECT_SIZE_TIME_YEARS)
+    )
+
+    # Get predictions at standardized times with confidence intervals
     interval <- tryCatch({
-      data.frame(predFit(sigmoid.Model, newdata = KFM.lob.gull, interval = "confidence"))
+      data.frame(predFit(sigmoid.Model, newdata = pred_data, interval = "confidence"))
     }, error = function(e) NULL)
 
-    if (!is.null(interval)) {
-      interval$se <- abs((interval$lwr - interval$fit) / 1.96)
-      n_obs <- nrow(interval)
-      n_params <- length(coef(sigmoid.Model))
-      n_df <- n_obs - n_params
-      interval$stdev <- interval$se * sqrt(n_obs)
-      pSD <- sqrt((((n_df) * (interval$stdev[1]^2)) +
-                     ((n_df) * (interval$stdev[n_obs]^2))) / (n_df + 1))
-      pSE <- pSD * sqrt((1 / n_obs) + (1 / n_obs))
+    if (!is.null(interval) && nrow(interval) == 2) {
+      # Calculate effect size as difference between t=11 and t=0
+      mean_es <- interval$fit[2] - interval$fit[1]
+
+      # Calculate SE from confidence interval width
+      se_before <- abs((interval$lwr[1] - interval$fit[1]) / 1.96)
+      se_after <- abs((interval$lwr[2] - interval$fit[2]) / 1.96)
+
+      # Pooled SE for the difference (conservative: assumes independence)
+      pSE <- sqrt(se_before^2 + se_after^2)
       pCI <- pSE * 1.96
-      mean_es <- interval$fit[n_obs] - interval$fit[1]
+
+      # Approximate SD from SE (for backward compatibility)
+      n_params <- length(coef(sigmoid.Model))
+      df_approx <- n_obs_original - n_params
+      pSD <- pSE * sqrt(df_approx + 1)
+
       SumStats[nrow(SumStats) + 1, ] <- c("P. interruptus", "Gull Island SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Den", "Y", "Y", "pBACIPS", "N")
+                                            "Sigmoid", "KFM", "Den", "Y", "Y", "pBACIPS", "N", n_obs_original)
     }
   }
 }

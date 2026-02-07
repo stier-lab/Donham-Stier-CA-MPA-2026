@@ -773,11 +773,57 @@ run_dharma_diagnostics <- function(model, plot = FALSE) {
 #' # result$best     # Index of best model
 ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
 
-  # Basic input validation
+  # Enhanced input validation (2026-02-06)
+  # Check vector lengths match
   if (length(control) != length(impact) || length(control) != length(time.model) || length(control) != length(time.true)) {
     stop("ProgressiveChangeBACIPS(): control, impact, time.true, and time.model must be the same length.",
          call. = FALSE)
   }
+
+  # Check for NA values
+  if (any(is.na(control))) {
+    stop("ProgressiveChangeBACIPS(): control vector contains NA values. Please remove or impute NAs before analysis.",
+         call. = FALSE)
+  }
+  if (any(is.na(impact))) {
+    stop("ProgressiveChangeBACIPS(): impact vector contains NA values. Please remove or impute NAs before analysis.",
+         call. = FALSE)
+  }
+  if (any(is.na(time.model))) {
+    stop("ProgressiveChangeBACIPS(): time.model vector contains NA values.",
+         call. = FALSE)
+  }
+  if (any(is.na(time.true))) {
+    stop("ProgressiveChangeBACIPS(): time.true vector contains NA values.",
+         call. = FALSE)
+  }
+
+  # Check for non-finite values (Inf, -Inf, NaN)
+  if (!all(is.finite(control))) {
+    stop("ProgressiveChangeBACIPS(): control vector contains non-finite values (Inf, -Inf, or NaN).",
+         call. = FALSE)
+  }
+  if (!all(is.finite(impact))) {
+    stop("ProgressiveChangeBACIPS(): impact vector contains non-finite values (Inf, -Inf, or NaN).",
+         call. = FALSE)
+  }
+  if (!all(is.finite(time.model))) {
+    stop("ProgressiveChangeBACIPS(): time.model vector contains non-finite values.",
+         call. = FALSE)
+  }
+  if (!all(is.finite(time.true))) {
+    stop("ProgressiveChangeBACIPS(): time.true vector contains non-finite values.",
+         call. = FALSE)
+  }
+
+  # Check sufficient data
+  n <- length(control)
+  if (n < 5) {
+    stop("ProgressiveChangeBACIPS(): insufficient data (n=", n, "). Need at least 5 observations for pBACIPS analysis.",
+         call. = FALSE)
+  }
+
+  # Check before/after periods exist
   if (!any(time.model == 0, na.rm = TRUE)) {
     stop("ProgressiveChangeBACIPS(): time.model must include at least one 0 (Before period).",
          call. = FALSE)
@@ -785,6 +831,18 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
   if (!any(time.model > 0, na.rm = TRUE)) {
     stop("ProgressiveChangeBACIPS(): time.model must include at least one value > 0 (After period).",
          call. = FALSE)
+  }
+
+  # Check sufficient observations in each period
+  n_before <- sum(time.model == 0)
+  n_after <- sum(time.model > 0)
+  if (n_before < 2) {
+    warning("ProgressiveChangeBACIPS(): only ", n_before, " Before observation(s). Results may be unstable.",
+            call. = FALSE, immediate. = TRUE)
+  }
+  if (n_after < 2) {
+    warning("ProgressiveChangeBACIPS(): only ", n_after, " After observation(s). Results may be unstable.",
+            call. = FALSE, immediate. = TRUE)
   }
 
   # ---------------------------------------------------------------------------

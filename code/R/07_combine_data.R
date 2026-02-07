@@ -118,10 +118,17 @@ n_dups <- sum(dup_check)
 
 if (n_dups > 0) {
   warning("Found ", n_dups, " duplicate rows in All.RR.sub (by MPA/year/taxa/resp/source). ",
-          "Review data processing pipeline for overlapping records.")
+          "Removing duplicates, keeping first occurrence.", call. = FALSE, immediate. = TRUE)
   cat("\nDuplicate rows detected in All.RR.sub:", n_dups, "\n")
-  cat("First 5 duplicates:\n")
+  cat("First 5 duplicates (before removal):\n")
   print(head(All.RR.sub[dup_check, dup_key_cols], 5))
+
+  # FIXED (2026-02-06): Remove duplicates to prevent bias in meta-analysis
+  # Keep first occurrence of each unique MPA/year/taxa/resp/source combination
+  n_before <- nrow(All.RR.sub)
+  All.RR.sub <- All.RR.sub[!duplicated(All.RR.sub[, dup_key_cols]), ]
+  n_after <- nrow(All.RR.sub)
+  cat("Removed", n_before - n_after, "duplicate rows. Rows remaining:", n_after, "\n")
 } else {
   cat("Duplicate check passed: No duplicate MPA/year/taxa/resp/source combinations in All.RR.sub.\n")
 }

@@ -1,6 +1,6 @@
 # Results Summary: CA MPA Kelp Forest Analysis
 
-**Generated:** 2026-02-06 08:43:40
+**Generated:** 2026-02-07 09:12:12
 **Pipeline version:** Modular pBACIPS v2.0
 
 ---
@@ -24,11 +24,11 @@ at t=11 years post-MPA implementation.
 
 | Taxa | k | Estimate | SE | t | p-value | 95% CI | Effect |
 |------|---|----------|----|----|---------|--------|--------|
-| S. purpuratus | 3 | -0.5337 | 0.4002 | -1.3335 | 0.1924 | [-1.3511, 0.2837] | negative |
-| M. franciscanus | 3 | 0.8648 | 0.3309 | 2.6131 | 0.0139* | [0.1889, 1.5407] | positive |
-| M. pyrifera | 17 | 0.674 | 0.298 | 2.2616 | 0.0311* | [0.0654, 1.2827] | positive |
-| P. interruptus | 2 | 0.6566 | 0.524 | 1.2532 | 0.2198 | [-0.4135, 1.7268] | positive |
-| S. pulcher | 10 | 1.2334 | 0.3082 | 4.0019 | 0.0004*** | [0.604, 1.8629] | positive |
+| S. purpuratus | 3 | -0.5161 | 0.4426 | -1.1662 | 0.2530 | [-1.4213, 0.389] | negative |
+| M. franciscanus | 2 | 0.4807 | 0.475 | 1.0121 | 0.3198 | [-0.4907, 1.4521] | positive |
+| M. pyrifera | 17 | 0.543 | 0.3721 | 1.4592 | 0.1552 | [-0.2181, 1.3041] | positive |
+| P. interruptus | 2 | 0.5861 | 0.5633 | 1.0404 | 0.3067 | [-0.566, 1.7382] | positive |
+| S. pulcher | 10 | 1.1657 | 0.3738 | 3.1182 | 0.0041** | [0.4011, 1.9302] | positive |
 
 ### Density
 
@@ -45,7 +45,7 @@ at t=11 years post-MPA implementation.
 
 | Response | tau2 (MPA) | tau2 (Source) |
 |----------|------------|---------------|
-| Biomass | 0.1657 | 0.121 |
+| Biomass | 0.1416 | 0.2388 |
 | Density | 0.0742 | 0.5131 |
 
 ---
@@ -118,7 +118,7 @@ Effect sizes for each MPA-taxa-response combination.
 | Abalone Cove SMCA | Bio | PISCO | 0.0929 | 0.4395 | [-0.8646, 1.0504] | Not significant |
 | Abalone Cove SMCA | Bio | Landsat | 3.0387 | 0.7799 | [1.4538, 4.6236] | Significant increase |
 | Anacapa Island SMR 2003 | Bio | PISCO | 1.536 | 0.4059 | [0.6708, 2.4012] | Significant increase |
-| Anacapa Island SMR 2003 | Bio | KFM | 0.8022 | 1.1392 | [-1.5155, 3.1199] | Not significant |
+| Anacapa Island SMR 2003 | Bio | KFM | 0.1113 | 1.8342 | [-3.777, 3.9995] | Not significant |
 | Cabrillo SMR | Bio | Landsat | -0.1213 | 1.8258 | [-3.8405, 3.5978] | Not significant |
 | Campus Point SMCA | Bio | LTER | 1.7789 | 0.5273 | [0.6822, 2.8755] | Significant increase |
 | Campus Point SMCA | Bio | PISCO | 1.6169 | 0.6343 | [0.2348, 2.9989] | Significant increase |
@@ -126,7 +126,7 @@ Effect sizes for each MPA-taxa-response combination.
 | Carrington Pt SMR | Bio | Landsat | 2.5496 | 0.6268 | [1.2771, 3.8222] | Significant increase |
 | Farnsworth Onshore SMCA | Bio | Landsat | -1.9067 | 0.9737 | [-3.9261, 0.1127] | Not significant |
 | Gull Island SMR | Bio | PISCO | 1.6757 | 0.5108 | [0.58, 2.7713] | Significant increase |
-| Gull Island SMR | Bio | KFM | 2.5322 | 0.5322 | [1.4656, 3.5987] | Significant increase |
+| Gull Island SMR | Bio | KFM | 5.2348 | 1.385 | [2.41, 8.0596] | Significant increase |
 | Gull Island SMR | Bio | Landsat | 0.8811 | 0.2825 | [0.3076, 1.4546] | Significant increase |
 | Harris Point SMR | Bio | PISCO | -0.5664 | 0.3456 | [-1.2991, 0.1663] | Not significant |
 | Harris Point SMR | Bio | Landsat | 0.7468 | 0.5278 | [-0.3259, 1.8194] | Not significant |
@@ -138,13 +138,13 @@ Effect sizes for each MPA-taxa-response combination.
 | Point Dume SMR | Bio | Landsat | 1.0933 | 1.0334 | [-1.0046, 3.1913] | Not significant |
 | Point Vicente SMCA | Bio | Landsat | 1.8299 | 0.7655 | [0.2725, 3.3873] | Significant increase |
 | Point Vicente SMCA | Bio | PISCO | -0.5287 | 0.3316 | [-1.2399, 0.1826] | Not significant |
-| Santa Barbara Island SMR | Bio | KFM | 3.1025 | 0.776 | [1.5492, 4.6557] | Significant increase |
+| Santa Barbara Island SMR | Bio | KFM | 3.9147 | 1.1253 | [1.6302, 6.1991] | Significant increase |
 | Santa Barbara Island SMR | Bio | Landsat | 2.0391 | 0.4963 | [1.0316, 3.0466] | Significant increase |
 | Scorpion SMR | Bio | PISCO | 2.568 | 0.6118 | [1.2827, 3.8534] | Significant increase |
 | Skunk Pt SMR | Bio | Landsat | 0.7773 | 0.611 | [-0.4644, 2.0191] | Not significant |
 | South La Jolla SMR | Bio | Landsat | 3.0581 | 1.4819 | [0.0466, 6.0697] | Significant increase |
 | South Point SMR | Bio | PISCO | 0.5977 | 0.2879 | [-0.016, 1.2113] | Not significant |
-| South Point SMR | Bio | KFM | 3.002 | 0.9057 | [1.1571, 4.8469] | Significant increase |
+| South Point SMR | Bio | KFM | 3.7711 | 1.475 | [0.6272, 6.9149] | Significant increase |
 | South Point SMR | Bio | Landsat | 0.0178 | 0.2574 | [-0.5048, 0.5403] | Not significant |
 | Swamis SMCA | Bio | Landsat | -1.8229 | 1.0917 | [-4.0391, 0.3933] | Not significant |
 
@@ -237,7 +237,7 @@ Effect sizes for each MPA-taxa-response combination.
 |------|---|-------------|-------------|
 | S. purpuratus | 22 | 18 (82%) | -1.394 |
 | M. franciscanus | 25 | 18 (72%) | -0.428 |
-| M. pyrifera | 32 | 17 (53%) | 1.123 |
+| M. pyrifera | 32 | 17 (53%) | 1.235 |
 | P. interruptus | 23 | 15 (65%) | 1.161 |
 | S. pulcher | 39 | 25 (64%) | 0.577 |
 

@@ -91,11 +91,11 @@ FIG_WIDTH_SUPP   <- 22   # cm, for supplemental figures with legends
 
 # Figure-specific dimensions (width, height in cm)
 # Note: Figure 1 dimensions are defined in analysis/R/fig01_map.R
-FIG2_DIMS <- c(w = 18, h = 7)    # Data processing pipeline
-FIG3_DIMS <- c(w = 16, h = 11)   # Mean effects
-FIG4_DIMS <- c(w = 14, h = 12)   # Urchin-kelp scatter
-FIG_S1_DIMS <- c(w = 22, h = 26) # Forest plot (supplemental)
-FIG_S2_DIMS <- c(w = 20, h = 26) # All taxa time series (supplemental) - wider for legend, taller for title
+FIG2_DIMS <- c(w = 17, h = 7.5)  # Data processing pipeline — double-column width
+FIG3_DIMS <- c(w = 14, h = 10)   # Mean effects — single-column+
+FIG4_DIMS <- c(w = 17, h = 9)    # Trophic cascade scatters (2-panel: pred→urchin | urchin→kelp)
+FIG_S1_DIMS <- c(w = 18, h = 22) # Forest plot (supplemental)
+FIG_S2_DIMS <- c(w = 17, h = 22) # All taxa time series (supplemental)
 
 cat("=== Starting figure generation ===\n")
 
@@ -226,21 +226,97 @@ cat("  Input data validation passed\n")
 
 # =============================================================================
 # Simple save function - PDF and PNG
-save_fig <- function(plot, name, w, h) {
+save_fig <- function(plot, name, w, h, dpi = 300) {
   pdf_path <- here::here("plots", paste0(name, ".pdf"))
   png_path <- here::here("plots", paste0(name, ".png"))
 
-  # Prefer cairo for cleaner text rendering when available.
-  if (capabilities("cairo")) {
-    ggsave(pdf_path, plot, width = w, height = h, units = "cm",
-           device = cairo_pdf, bg = "white", limitsize = FALSE)
-  } else {
-    ggsave(pdf_path, plot, width = w, height = h, units = "cm",
-           device = "pdf", bg = "white", limitsize = FALSE)
+  # Detect if this is a patchwork plot (complex multi-panel)
+  is_patchwork <- inherits(plot, "patchwork") || inherits(plot, "gg") && !is.null(plot$patches)
+
+  # Save PDF with error handling and fallback strategies
+  pdf_success <- FALSE
+
+  # Strategy 1: For patchwork plots, use pdf() device (most reliable)
+  if (is_patchwork && !pdf_success) {
+    pdf_success <- tryCatch({
+      pdf(pdf_path, width = w / 2.54, height = h / 2.54, bg = "white")
+      print(plot)
+      dev.off()
+      TRUE
+    }, error = function(e) {
+      if (dev.cur() > 1) dev.off()  # Close any open devices
+      FALSE
+    })
   }
-  ggsave(png_path, plot, width = w, height = h, units = "cm",
-         dpi = 300, bg = "white", limitsize = FALSE)
-  cat("  Saved:", name, "\n")
+
+  # Strategy 2: Try cairo_pdf via ggsave
+  if (!pdf_success && capabilities("cairo")) {
+    pdf_success <- tryCatch({
+      ggsave(pdf_path, plot, width = w, height = h, units = "cm",
+             device = cairo_pdf, bg = "white", limitsize = FALSE)
+      TRUE
+    }, error = function(e) { FALSE })
+  }
+
+  # Strategy 3: Try standard pdf device via ggsave
+  if (!pdf_success) {
+    pdf_success <- tryCatch({
+      ggsave(pdf_path, plot, width = w, height = h, units = "cm",
+             device = "pdf", bg = "white", limitsize = FALSE)
+      TRUE
+    }, error = function(e) { FALSE })
+  }
+
+  # Strategy 4: Last resort - use pdf() device directly
+  if (!pdf_success) {
+    pdf_success <- tryCatch({
+      pdf(pdf_path, width = w / 2.54, height = h / 2.54, bg = "white")
+      print(plot)
+      dev.off()
+      TRUE
+    }, error = function(e) {
+      if (dev.cur() > 1) dev.off()
+      warning("All PDF save strategies failed for ", name, ": ", e$message)
+      FALSE
+    })
+  }
+
+  # Save PNG with error handling
+  png_success <- tryCatch({
+    ggsave(png_path, plot, width = w, height = h, units = "cm",
+           dpi = dpi, bg = "white", limitsize = FALSE)
+    TRUE
+  }, error = function(e) {
+    warning("Failed to save PNG for ", name, ": ", e$message)
+    FALSE
+  })
+
+  # Verify files were created successfully
+  pdf_exists <- file.exists(pdf_path) && file.size(pdf_path) > 0
+  png_exists <- file.exists(png_path) && file.size(png_path) > 0
+
+  # Report results
+  if (pdf_exists && png_exists) {
+    pdf_size <- format(file.size(pdf_path) / 1024, digits = 1, nsmall = 1)
+    png_size <- format(file.size(png_path) / 1024, digits = 1, nsmall = 1)
+    cat(sprintf("  ✓ Saved: %s (PDF: %s KB, PNG: %s KB @ %d DPI)\n",
+                name, pdf_size, png_size, dpi))
+  } else if (!png_exists) {
+    # PNG is critical - always fail if PNG doesn't exist
+    stop("CRITICAL: Failed to create PNG for ", name,
+         " at ", png_path, "\n",
+         "  Check disk space and write permissions.")
+  } else if (!pdf_exists) {
+    # PDF failed but PNG succeeded - log warning and continue
+    png_size <- format(file.size(png_path) / 1024, digits = 1, nsmall = 1)
+    cat(sprintf("  ⚠ Saved: %s (PNG: %s KB @ %d DPI) - PDF generation failed\n",
+                name, png_size, dpi))
+    warning("PDF generation failed for ", name, " but PNG was created successfully. ",
+            "This is a known issue with some complex ggplot2 figures. ",
+            "PNG can be converted to PDF externally if needed.")
+  }
+
+  invisible(list(pdf = pdf_path, png = png_path))
 }
 
 # =============================================================================
@@ -361,7 +437,7 @@ if (has_fig1_pkgs) {
 
   # Figure 1 specific constants
   FIG1_PLOT_MARGIN <- ggplot2::margin(2, 2, 2, 2)
-  FIG1_DIMS <- c(w = 40, h = 32)  # cm (taller to accommodate panels below map)
+  FIG1_DIMS <- c(w = 17, h = 16)  # cm — Conservation Letters double-column max (17cm)
 
   # --- 1. Define Study Region ---
   BBOX_LONLAT <- c(xmin = -120.75, ymin = 33.42, xmax = -117.65, ymax = 34.50)
@@ -616,27 +692,35 @@ if (has_fig1_pkgs) {
       summarise(mean_value = mean(value, na.rm = TRUE), .groups = "drop")
 
     if (nrow(site_data) == 0) {
-      return(ggplot() + theme_void() + labs(title = paste0("(", letter, ") ", short_name)))
+      return(ggplot() + theme_void() +
+        labs(tag = paste0("(", letter, ")")))
     }
 
     ggplot(site_data, aes(x = year, y = mean_value, color = Status)) +
-      geom_vline(xintercept = mpa_year, linetype = "dashed", color = "grey50", linewidth = 0.5) +
-      geom_line(linewidth = 0.9) +
-      geom_point(size = 2, shape = 21, fill = "white", stroke = 0.8) +
-      scale_color_manual(values = TS_COLORS) +
+      geom_vline(xintercept = mpa_year, linetype = "dashed", color = "grey50", linewidth = 0.4) +
+      geom_line(linewidth = 0.8) +
+      geom_point(size = 1.5, shape = 21, fill = "white", stroke = 0.6) +
+      scale_color_manual(values = TS_COLORS, name = NULL) +
       scale_x_continuous(breaks = seq(1990, 2020, by = 10), limits = c(1988, 2024)) +
       scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.1))) +
-      labs(title = paste0("(", letter, ") ", short_name), x = NULL,
+      labs(tag = paste0("(", letter, ")"),
+           title = short_name, x = NULL,
            y = expression(Kelp~biomass~(g~m^{-2}))) +
-      theme_mpa(base_size = 10) +
+      theme_mpa(base_size = 8) +
       theme(panel.grid.major.x = element_blank(),
-            panel.grid.major.y = element_line(color = "grey92", linewidth = 0.25),
-            plot.title = element_text(size = 11, face = "bold", hjust = 0, margin = margin(t = 6, b = 4)),
-            axis.title = element_text(size = 9, color = "grey20"),
-            axis.title.y = element_text(margin = margin(r = 6)),
-            axis.text = element_text(size = 8, color = "grey30"),
-            legend.position = "none",
-            plot.margin = FIG1_PLOT_MARGIN)
+            panel.grid.major.y = element_line(color = "grey92", linewidth = 0.2),
+            plot.title = element_text(size = 8, face = "bold", hjust = 0.5,
+                                      margin = margin(b = 2)),
+            plot.tag = element_text(size = 9, face = "bold"),
+            plot.tag.position = c(0.02, 0.98),
+            axis.title = element_text(size = 7.5, color = "grey20"),
+            axis.title.y = element_text(margin = margin(r = 3)),
+            axis.text = element_text(size = 6.5, color = "grey30"),
+            legend.position = "bottom",
+            legend.text = element_text(size = 7),
+            legend.key.width = unit(0.5, "cm"),
+            legend.margin = margin(0, 0, 0, 0),
+            plot.margin = margin(2, 3, 2, 3))
   }
 
   # Build panels
@@ -650,29 +734,23 @@ if (has_fig1_pkgs) {
 
   # --- 11. Combine Map + Panels (panels in row below map, same width) ---
   if (length(fig1_panels) == 4) {
-    # Style time series panels for consistency, with reduced top margin
-    for (letter in names(fig1_panels)) {
-      fig1_panels[[letter]] <- fig1_panels[[letter]] +
-        theme(legend.position = "none",
-              panel.background = element_rect(fill = "white", color = "grey50", linewidth = 0.4),
-              plot.margin = margin(2, 4, 4, 4))  # Reduced top margin
-    }
-
     # Reduce bottom margin of main map
-    main_map <- main_map + theme(plot.margin = margin(2, 2, 2, 2))
+    main_map <- main_map + theme(plot.margin = margin(2, 2, 0, 2))
 
-    # Create row of panels using patchwork
-    panels_row <- fig1_panels$a + fig1_panels$b + fig1_panels$c + fig1_panels$d +
-      plot_layout(nrow = 1)
+    # Create row of panels using patchwork with collected legend
+    panels_row <- (fig1_panels$a + fig1_panels$b + fig1_panels$c + fig1_panels$d) +
+      plot_layout(nrow = 1, guides = "collect") &
+      theme(legend.position = "bottom",
+            legend.justification = "center")
 
-    # Stack map on top, panels below (map takes ~70% height, panels ~30%)
+    # Stack map on top, panels below — give panels more vertical space
     fig1 <- main_map / panels_row +
-      plot_layout(heights = c(2.5, 1))
+      plot_layout(heights = c(2, 1.1))
   } else {
     fig1 <- main_map
   }
 
-  fig1 <- fig1 + plot_annotation(theme = theme(plot.margin = margin(4, 8, 8, 8)))
+  fig1 <- fig1 + plot_annotation(theme = theme(plot.margin = margin(2, 4, 4, 4)))
 
   # --- 12. Save Figure 1 ---
   save_fig(fig1, "fig_01_mpa_map", FIG1_DIMS["w"], FIG1_DIMS["h"])
@@ -747,7 +825,6 @@ if (length(unique(fig2_raw$status)) < 2) {
        "Found only: ", paste(unique(fig2_raw$status), collapse = ", "))
 }
 
-# Debug: Check status values
 cat("  Figure 2 - Status values:", paste(unique(fig2_raw$status), collapse = ", "), "\n")
 cat("  Figure 2 - Year range:", min(fig2_raw$year, na.rm = TRUE), "-", max(fig2_raw$year, na.rm = TRUE), "\n")
 
@@ -860,40 +937,24 @@ p2d <- ggplot(fig2_lnrr, aes(x = year, y = lnDiff, shape = BA)) +
   scale_x_continuous(breaks = fig2_x_breaks, limits = fig2_x_limits) +
   fig2_theme
 
-# FIX: Use patchwork to collect legends into single unified row
-# Enable legends on first panel of each type (Site from p2a, Period from p2c)
+# Enable legends on first panel of each type for collection
 p2a <- p2a + theme(legend.position = "bottom")
 p2c <- p2c + theme(legend.position = "bottom")
 
-# Combine panels using patchwork with collected guides
-arrow <- fig2_arrow_panel()
-fig2_panels <- (p2a + arrow + p2b + arrow + p2c + arrow + p2d) +
-  plot_layout(
-    ncol = 7,
-    widths = c(1, 0.08, 1, 0.08, 1, 0.08, 1),
-    guides = "collect"
-  ) &
+# Combine 4 data panels directly — no arrow spacers
+fig2_final <- (p2a + p2b + p2c + p2d) +
+  plot_layout(ncol = 4, guides = "collect") &
   theme(
     legend.position = "bottom",
     legend.box = "horizontal",
-    legend.title = element_text(face = "bold", size = 10, color = "black"),
-    legend.text = element_text(size = 9, color = "black"),
-    legend.spacing.x = unit(8, "mm")
-  )
-
-# TUFTE: Add declarative overall title using patchwork annotation
-# States the key finding rather than just describing what's shown
-fig2_titled <- fig2_panels +
-  plot_annotation(
-    title = expression("Purple urchin density declined after MPA protection at Scorpion SMR"),
-    theme = theme(
-      plot.title = element_text(face = "bold", size = 11, hjust = 0.5,
-                                margin = margin(b = 8))
-    )
+    legend.title = element_text(face = "bold", size = 9, color = "black"),
+    legend.text = element_text(size = 8, color = "black"),
+    legend.spacing.x = unit(6, "mm"),
+    legend.margin = margin(t = 2)
   )
 
 # Conservation Letters: max 170mm double-column width
-save_fig(fig2_titled, "fig_02_data_processing", FIG2_DIMS["w"], FIG2_DIMS["h"])
+save_fig(fig2_final, "fig_02_data_processing", FIG2_DIMS["w"], FIG2_DIMS["h"])
 
 # =============================================================================
 # Figure S1 (Supplemental): Forest plot of effect sizes by MPA and taxa
@@ -907,7 +968,6 @@ excluded_mpas <- c("Painted Cave SMCA", "San Miguel Island SC",
                    "Arrow Point to Lion Head Point SMCA",
                    "Judith Rk SMR", "Point Conception SMR")
 
-# Debug: Check input data structure
 cat("  Figure S1 - Input SumStats.Final MPA column class:", class(SumStats.Final$MPA), "\n")
 cat("  Figure S1 - Input MPA levels (if factor):",
     if(is.factor(SumStats.Final$MPA)) paste(head(levels(SumStats.Final$MPA), 5), collapse = ", ") else "N/A", "\n")
@@ -928,7 +988,6 @@ fig_s1_data <- SumStats.Final %>%
 # Convert MPA to character (as.character() on a factor returns level labels, not codes)
 fig_s1_data$MPA <- as.character(fig_s1_data$MPA)
 
-# Debug: Check MPA values after conversion
 cat("  Figure S1 - Unique MPAs after conversion:",
     paste(head(unique(fig_s1_data$MPA), 8), collapse = ", "), "\n")
 cat("  Figure S1 - Total rows:", nrow(fig_s1_data), "\n")
@@ -937,7 +996,6 @@ cat("  Figure S1 - Total rows:", nrow(fig_s1_data), "\n")
 fig_s1_data <- fig_s1_data %>%
   dplyr::mutate(MPA_short = shorten_mpa_name(MPA))
 
-# Debug: Check MPA_short values
 cat("  Figure S1 - MPA_short values:", paste(head(unique(fig_s1_data$MPA_short), 8), collapse = ", "), "\n")
 
 # Order MPAs by mean effect size within each taxa for better visual hierarchy
@@ -959,55 +1017,44 @@ x_breaks <- x_breaks[abs(x_breaks) <= x_limit]
 fig_s1 <- ggplot(fig_s1_data,
                aes(x = MPA_order, y = Mean, ymin = Mean - CI, ymax = Mean + CI,
                    color = Resp, shape = Source)) +
-  # Reference line at zero (no effect)
+  # Reference line at zero
   geom_hline(yintercept = 0, linetype = "solid", color = "grey40",
-             linewidth = 0.6) +
-  # Confidence intervals (inherits ymin/ymax from main aes)
-  geom_linerange(linewidth = 0.7, position = position_dodge(width = 0.6)) +
-  # Points with shape/color encoding
-  geom_point(size = 2.8, position = position_dodge(width = 0.6)) +
-  # Free the discrete MPA axis within each taxa panel, keep effect-size axis comparable.
+             linewidth = 0.4) +
+  # 95% CIs
+  geom_linerange(linewidth = 0.6, position = position_dodge(width = 0.55)) +
+  # Effect size points
+  geom_point(size = 2.5, position = position_dodge(width = 0.55)) +
   facet_wrap(~ Taxa, ncol = 2, scales = "free_x") +
   scale_color_response(name = "Response",
                        labels = c("Den" = "Density", "Bio" = "Biomass")) +
   scale_shape_source(name = "Source") +
   scale_y_continuous(breaks = x_breaks) +
   coord_flip(ylim = c(-x_limit, x_limit), clip = "off") +
-  # TUFTE: Declarative title and informative subtitle
-  labs(title = "MPA effects vary across sites but show consistent patterns by taxa",
-       subtitle = "Urchins generally decline while predators increase across California MPAs",
-       x = NULL, y = "Effect Size (lnRR)",
-       caption = "Error bars: 95% CI. Horizontal line at zero indicates no MPA effect.") +
-  theme_mpa(base_size = 10) +
+  labs(x = NULL, y = "Effect size (lnRR)") +
+  theme_mpa(base_size = 9) +
   theme(
-    # TUFTE: Title and subtitle styling
-    plot.title = element_text(face = "bold", size = 12, hjust = 0,
-                              margin = margin(b = 4)),
-    plot.subtitle = element_text(size = 10, hjust = 0, color = "grey40",
-                                 margin = margin(b = 12)),
-    # FIX: Consistent strip background across all panels
-    strip.text = element_text(face = "italic", size = 11, margin = margin(4, 0, 4, 0)),
-    strip.background = element_rect(fill = "grey95", color = "grey70", linewidth = 0.4),
-    axis.text.y = element_text(size = 7.5, color = "grey20", hjust = 1),
-    axis.text.x = element_text(size = 9),
-    axis.title.x = element_text(size = 10, margin = margin(t = 8)),
+    strip.text = element_text(face = "italic", size = 10,
+                              margin = margin(3, 0, 3, 0)),
+    strip.background = element_rect(fill = "grey95", color = "grey70",
+                                    linewidth = 0.3),
+    # Larger MPA name font for readability
+    axis.text.y = element_text(size = 8, color = "grey15", hjust = 1),
+    axis.text.x = element_text(size = 8),
+    axis.title.x = element_text(size = 9, margin = margin(t = 6)),
     legend.position = "bottom",
     legend.box = "horizontal",
-    legend.box.spacing = unit(0.8, "cm"),
-    legend.spacing.x = unit(0.4, "cm"),
-    legend.title = element_text(face = "bold", size = 9),
-    legend.text = element_text(size = 8.5),
-    legend.margin = margin(t = 8, b = 5),
-    legend.key.width = unit(0.8, "cm"),
-    panel.spacing.x = unit(1.2, "lines"),
-    panel.spacing.y = unit(0.8, "lines"),
-    # FIX: Consistent panel backgrounds
+    legend.box.spacing = unit(0.5, "cm"),
+    legend.spacing.x = unit(0.3, "cm"),
+    legend.title = element_text(face = "bold", size = 8.5),
+    legend.text = element_text(size = 8),
+    legend.margin = margin(t = 4, b = 2),
+    legend.key.width = unit(0.7, "cm"),
+    panel.spacing.x = unit(1, "lines"),
+    panel.spacing.y = unit(0.6, "lines"),
     panel.background = element_rect(fill = "white", color = NA),
     panel.grid.major.y = element_blank(),
-    panel.grid.major.x = element_line(color = "grey92", linewidth = 0.25),
-    plot.caption = element_text(size = 7.5, color = "grey50", hjust = 1,
-                                 margin = margin(t = 10)),
-    plot.margin = margin(8, 12, 8, 8)
+    panel.grid.major.x = element_line(color = "grey92", linewidth = 0.2),
+    plot.margin = margin(6, 10, 6, 6)
   )
 
 # Conservation Letters: Supplemental figures - slightly wider to fit MPA names
@@ -1067,77 +1114,197 @@ fig3_pad <- 0.6
 fig3_label_y <- fig3_y_min - fig3_pad
 
 fig3 <- ggplot() +
-  # Reference line at zero (no effect) - lighter dotted line
-  geom_hline(yintercept = 0, color = "grey60", linewidth = 0.4, linetype = "dashed") +
-  # Layer 1: Raw data points (circles) - FIX: more jitter to reduce overlap
+  # Reference line at zero (no effect)
+  geom_hline(yintercept = 0, color = "grey50", linewidth = 0.3, linetype = "dashed") +
+  # Layer 1: Individual MPA effect sizes (background)
   geom_point(data = fig3_individual,
              aes(x = Taxa, y = Mean, color = Response),
-             position = position_jitterdodge(jitter.width = 0.22,
+             position = position_jitterdodge(jitter.width = 0.2,
                                               dodge.width = 0.6,
                                               seed = 42),
-             size = 1.7, alpha = 0.28, shape = 16) +
-  # Layer 2: White outline behind diamonds for better visibility
+             size = 1.5, alpha = 0.35, shape = 16) +
+  # Layer 2: White halo behind diamonds
   geom_point(data = fig3_meta,
              aes(x = Taxa, y = Estimate),
-             position = pd, size = 8, shape = 18, color = "white") +
-  # Layer 3: Confidence intervals (error bars) - FIX: thicker lines
+             position = pd, size = 7, shape = 18, color = "white") +
+  # Layer 3: 95% CIs
   geom_errorbar(data = fig3_meta,
                 aes(x = Taxa, ymin = CI_lower, ymax = CI_upper, color = Response),
-                position = pd, width = 0.15, linewidth = 1.0) +
-  # Layer 4: Meta-analytic means (diamonds) - FIX: LARGER diamonds
+                position = pd, width = 0.12, linewidth = 0.8) +
+  # Layer 4: Meta-analytic means (diamonds)
   geom_point(data = fig3_meta,
              aes(x = Taxa, y = Estimate, color = Response),
-             position = pd, size = 6.5, shape = 18) +
-  # FIX: Add sample size labels below x-axis
+             position = pd, size = 5.5, shape = 18) +
+  # Sample size labels below x-axis
   geom_text(data = fig3_meta,
             aes(x = Taxa, y = fig3_label_y, label = paste0("n=", n), color = Response),
-            position = pd, size = 2.8, show.legend = FALSE) +
-  scale_color_manual(name = "Response", values = col_response_long) +
+            position = pd, size = 2.5, show.legend = FALSE) +
+  scale_color_manual(name = NULL, values = col_response_long,
+                     guide = guide_legend(override.aes = list(size = 3, alpha = 1))) +
   coord_cartesian(ylim = c(fig3_y_min - 1.2, fig3_y_max + 0.6)) +
-  # TUFTE: Declarative title - states the key finding
-  labs(title = "Urchins decreased while kelp and predators increased in MPAs",
-       x = NULL, y = "Effect Size (lnRR)",
-       caption = "Diamonds = meta-analytic means; circles = individual MPA estimates") +
-  theme_mpa(base_size = 11) +
+  labs(x = NULL, y = "Effect size (lnRR)") +
+  theme_mpa(base_size = 10) +
   theme(
-    # TUFTE: Bold, centered title
-    plot.title = element_text(face = "bold", size = 11, hjust = 0.5,
-                              margin = margin(b = 10)),
-    axis.text.x = element_text(face = "italic", size = 10),
+    axis.text.x = element_text(face = "italic", size = 9),
+    axis.title.y = element_text(size = 10),
     legend.position = "bottom",
-    legend.title = element_text(face = "bold", size = 10),
-    legend.text = element_text(size = 10),
-    legend.key.width = unit(1.2, "cm"),
+    legend.text = element_text(size = 9),
+    legend.key.width = unit(0.8, "cm"),
+    legend.margin = margin(t = 2),
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank(),
-    panel.grid.major.y = element_line(color = "grey92", linewidth = 0.25)
+    panel.grid.major.y = element_line(color = "grey92", linewidth = 0.2),
+    plot.margin = margin(8, 8, 6, 6)
   )
 
 save_fig(fig3, "fig_03_mean_effects", FIG3_DIMS["w"], FIG3_DIMS["h"])
 
 # =============================================================================
-# Figure 4: Urchin density vs Kelp BIOMASS scatterplot
-# Manuscript: Main Text Figure 4
-# =============================================================================
-# FIX #5: The original code filtered kelp as "density" but the figure title and
-# comments said "biomass". This fix implements option A: use kelp BIOMASS.
-# If biomass data is unavailable, fall back to density with updated labels.
+# Figure 4: Trophic cascade scatterplots (4-panel: biomass top, density bottom)
+# Raw annual data (background) + MPA-level meta-analytic means (foreground)
+# Top row (biomass): (a) Predator → Urchin  (b) Urchin → Kelp
+# Bottom row (density): (c) Predator → Urchin  (d) Urchin → Kelp
 # =============================================================================
 
-cat("Building Figure 4: Urchin density vs Kelp biomass scatterplot...\n")
+cat("Building Figure 4: Trophic cascade scatterplots (4-panel)...\n")
 
-# Prepare data for urchin vs kelp scatterplot
-# Urchin: always use density
-fig4_urchin <- All.RR.sub.trans %>%
+# ---------------------------------------------------------------------------
+# Prepare MPA-level summary data from SumStats.Final (for foreground overlay)
+# ---------------------------------------------------------------------------
+
+# BIOMASS panels (top row)
+# Panel A: Predator biomass → Urchin biomass
+fig4_mpa_pred_bio <- SumStats.Final %>%
   dplyr::filter(
-    y %in% c("Strongylocentrotus purpuratus", "S. purpuratus", "STRPURAD"),
-    resp %in% c("Den", "Density")
+    Taxa %in% c("Panulirus interruptus", "P. interruptus",
+                "Semicossyphus pulcher", "S. pulcher"),
+    Resp %in% c("Bio", "Biomass"),
+    AnalysisType %in% c("pBACIPS", "CI")
+  ) %>%
+  dplyr::mutate(Mean = as.numeric(Mean), SE = as.numeric(SE)) %>%
+  dplyr::group_by(MPA) %>%
+  dplyr::summarise(
+    lnRR_predator = mean(Mean, na.rm = TRUE),
+    SE_predator   = sqrt(sum(SE^2, na.rm = TRUE)) / dplyr::n(),
+    .groups = "drop"
+  )
+
+fig4_mpa_urch_bio <- SumStats.Final %>%
+  dplyr::filter(
+    Taxa %in% c("Strongylocentrotus purpuratus", "S. purpuratus",
+                "Mesocentrotus franciscanus", "M. franciscanus"),
+    Resp %in% c("Bio", "Biomass"),
+    AnalysisType %in% c("pBACIPS", "CI")
+  ) %>%
+  dplyr::mutate(Mean = as.numeric(Mean), SE = as.numeric(SE)) %>%
+  dplyr::group_by(MPA) %>%
+  dplyr::summarise(
+    lnRR_urchin = mean(Mean, na.rm = TRUE),
+    SE_urchin   = mean(SE, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+fig4_mpa_A <- dplyr::inner_join(fig4_mpa_pred_bio, fig4_mpa_urch_bio, by = "MPA")
+
+# Panel B: Urchin biomass → Kelp biomass
+fig4_mpa_kelp_bio <- SumStats.Final %>%
+  dplyr::filter(
+    Taxa %in% c("Macrocystis pyrifera", "M. pyrifera"),
+    Resp %in% c("Bio", "Biomass"),
+    AnalysisType %in% c("pBACIPS", "CI")
+  ) %>%
+  dplyr::mutate(Mean = as.numeric(Mean), SE = as.numeric(SE)) %>%
+  dplyr::group_by(MPA) %>%
+  dplyr::summarise(
+    lnRR_kelp = mean(Mean, na.rm = TRUE),
+    SE_kelp   = mean(SE, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+fig4_mpa_B <- dplyr::inner_join(fig4_mpa_urch_bio, fig4_mpa_kelp_bio, by = "MPA")
+
+# DENSITY panels (bottom row)
+# Panel C: predator and urchin density means per MPA
+fig4_mpa_pred <- SumStats.Final %>%
+  dplyr::filter(
+    Taxa %in% c("Panulirus interruptus", "P. interruptus",
+                "Semicossyphus pulcher", "S. pulcher"),
+    Resp %in% c("Den", "Density"),
+    AnalysisType %in% c("pBACIPS", "CI")
+  ) %>%
+  dplyr::mutate(Mean = as.numeric(Mean), SE = as.numeric(SE)) %>%
+  dplyr::group_by(MPA) %>%
+  dplyr::summarise(
+    lnRR_predator = mean(Mean, na.rm = TRUE),
+    SE_predator   = sqrt(sum(SE^2, na.rm = TRUE)) / dplyr::n(),
+    .groups = "drop"
+  )
+
+fig4_mpa_urch <- SumStats.Final %>%
+  dplyr::filter(
+    Taxa %in% c("Strongylocentrotus purpuratus", "S. purpuratus"),
+    Resp %in% c("Den", "Density"),
+    AnalysisType %in% c("pBACIPS", "CI")
+  ) %>%
+  dplyr::mutate(Mean = as.numeric(Mean), SE = as.numeric(SE)) %>%
+  dplyr::group_by(MPA) %>%
+  dplyr::summarise(
+    lnRR_urchin = mean(Mean, na.rm = TRUE),
+    SE_urchin   = mean(SE, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+fig4_mpa_C <- dplyr::inner_join(fig4_mpa_pred, fig4_mpa_urch, by = "MPA")
+
+# Panel D: urchin density and kelp biomass means per MPA
+# Note: Kelp has no density metric, so this uses biomass (same as panel B but with density urchins)
+fig4_mpa_D <- dplyr::inner_join(fig4_mpa_urch, fig4_mpa_kelp_bio, by = "MPA")
+
+cat("  MPA-level overlay: panel A =", nrow(fig4_mpa_A),
+    "MPAs, panel B =", nrow(fig4_mpa_B),
+    "MPAs, panel C =", nrow(fig4_mpa_C),
+    "MPAs, panel D =", nrow(fig4_mpa_D), "MPAs\n")
+
+# ---------------------------------------------------------------------------
+# Prepare raw annual data (for background points)
+# ---------------------------------------------------------------------------
+
+# BIOMASS raw data (top row)
+# Panel A raw: predator biomass
+figA_raw_pred <- All.RR.sub.trans %>%
+  dplyr::filter(
+    y %in% c("Panulirus interruptus", "P. interruptus",
+             "Semicossyphus pulcher", "S. pulcher"),
+    resp %in% c("Bio", "Biomass")
+  ) %>%
+  dplyr::group_by(CA_MPA_Name_Short, year, source) %>%
+  dplyr::summarise(lnRR_predator = mean(lnDiff, na.rm = TRUE), .groups = "drop")
+
+figA_raw_urch <- All.RR.sub.trans %>%
+  dplyr::filter(
+    y %in% c("Strongylocentrotus purpuratus", "S. purpuratus",
+             "Mesocentrotus franciscanus", "M. franciscanus"),
+    resp %in% c("Bio", "Biomass")
   ) %>%
   dplyr::select(CA_MPA_Name_Short, year, source, lnDiff) %>%
   dplyr::rename(lnRR_urchin = lnDiff)
 
-# FIX: Try BIOMASS first for kelp (to match figure description)
-fig4_kelp_bio <- All.RR.sub.trans %>%
+figA_raw <- dplyr::inner_join(
+  figA_raw_pred, figA_raw_urch,
+  by = c("CA_MPA_Name_Short", "year", "source")
+)
+
+# Panel B raw: urchin biomass vs kelp biomass
+figB_raw_urch <- All.RR.sub.trans %>%
+  dplyr::filter(
+    y %in% c("Strongylocentrotus purpuratus", "S. purpuratus",
+             "Mesocentrotus franciscanus", "M. franciscanus", "STRPURAD"),
+    resp %in% c("Bio", "Biomass")
+  ) %>%
+  dplyr::select(CA_MPA_Name_Short, year, source, lnDiff) %>%
+  dplyr::rename(lnRR_urchin = lnDiff)
+
+figB_raw_kelp <- All.RR.sub.trans %>%
   dplyr::filter(
     y %in% c("Macrocystis pyrifera", "M. pyrifera", "MACPYRAD"),
     resp %in% c("Bio", "Biomass")
@@ -1145,136 +1312,226 @@ fig4_kelp_bio <- All.RR.sub.trans %>%
   dplyr::select(CA_MPA_Name_Short, year, source, lnDiff) %>%
   dplyr::rename(lnRR_kelp = lnDiff)
 
-# Require biomass data for kelp (this figure is meant to show biomass relationship)
-# If biomass is unavailable, fail explicitly rather than silently falling back to density
-if (nrow(fig4_kelp_bio) == 0) {
-  stop(paste0(
-    "Figure 4 ERROR: Kelp biomass data is required but unavailable.\n",
-    "  This figure is designed to show the trophic cascade (urchin density vs kelp biomass).\n",
-    "  Check that kelp biomass response ('Bio' or 'Biomass') is present in All.RR.sub.trans.\n",
-    "  If density is acceptable, modify the figure code explicitly."
-  ))
-}
-fig4_kelp <- fig4_kelp_bio
-kelp_metric <- "biomass"
-kelp_y_label <- expression("MPA Effect on " * italic("M. pyrifera") * " biomass (lnRR)")
-cat("  Using kelp BIOMASS data (", nrow(fig4_kelp), " rows)\n")
-
-fig4_data <- dplyr::inner_join(
-  fig4_urchin, fig4_kelp,
+figB_raw <- dplyr::inner_join(
+  figB_raw_urch, figB_raw_kelp,
   by = c("CA_MPA_Name_Short", "year", "source")
 )
 
-# Debug output
-cat("  Figure 4 - Urchin rows:", nrow(fig4_urchin), ", Kelp rows:", nrow(fig4_kelp), "\n")
-cat("  Figure 4 - Joined data rows:", nrow(fig4_data), "\n")
+# DENSITY raw data (bottom row)
+# Panel C raw: predator density (lobster + sheephead combined per MPA-year)
+figC_raw_pred <- All.RR.sub.trans %>%
+  dplyr::filter(
+    y %in% c("Panulirus interruptus", "P. interruptus",
+             "Semicossyphus pulcher", "S. pulcher"),
+    resp %in% c("Den", "Density")
+  ) %>%
+  dplyr::group_by(CA_MPA_Name_Short, year, source) %>%
+  dplyr::summarise(lnRR_predator = mean(lnDiff, na.rm = TRUE), .groups = "drop")
 
-# Only create figure if we have data
-if (nrow(fig4_data) > 0) {
-  # Calculate correlation for annotation
-  cor_test <- cor.test(fig4_data$lnRR_urchin, fig4_data$lnRR_kelp, method = "pearson")
-  cor_label <- sprintf("r = %.2f, p %s",
+figC_raw_urch <- All.RR.sub.trans %>%
+  dplyr::filter(
+    y %in% c("Strongylocentrotus purpuratus", "S. purpuratus"),
+    resp %in% c("Den", "Density")
+  ) %>%
+  dplyr::select(CA_MPA_Name_Short, year, source, lnDiff) %>%
+  dplyr::rename(lnRR_urchin = lnDiff)
+
+figC_raw <- dplyr::inner_join(
+  figC_raw_pred, figC_raw_urch,
+  by = c("CA_MPA_Name_Short", "year", "source")
+)
+
+# Panel 4b raw: urchin density vs kelp biomass
+figD_raw_urch <- All.RR.sub.trans %>%
+  dplyr::filter(
+    y %in% c("Strongylocentrotus purpuratus", "S. purpuratus", "STRPURAD"),
+    resp %in% c("Den", "Density")
+  ) %>%
+  dplyr::select(CA_MPA_Name_Short, year, source, lnDiff) %>%
+  dplyr::rename(lnRR_urchin = lnDiff)
+
+figD_raw_kelp <- All.RR.sub.trans %>%
+  dplyr::filter(
+    y %in% c("Macrocystis pyrifera", "M. pyrifera", "MACPYRAD"),
+    resp %in% c("Bio", "Biomass")
+  ) %>%
+  dplyr::select(CA_MPA_Name_Short, year, source, lnDiff) %>%
+  dplyr::rename(lnRR_kelp = lnDiff)
+
+if (nrow(figD_raw_kelp) == 0) {
+  stop("Figure 4b: Kelp biomass data required but unavailable in All.RR.sub.trans.")
+}
+
+figD_raw <- dplyr::inner_join(
+  figD_raw_urch, figD_raw_kelp,
+  by = c("CA_MPA_Name_Short", "year", "source")
+)
+
+cat("  Raw annual data: panel A (bio pred→urch) =", nrow(figA_raw),
+    "obs, panel B (bio urch→kelp) =", nrow(figB_raw),
+    "obs, panel C (den pred→urch) =", nrow(figC_raw),
+    "obs, panel D (den urch→kelp) =", nrow(figD_raw), "obs\n")
+
+# Diagnostic: Show data ranges for all 4 panels
+if (nrow(figA_raw) > 0) {
+  cat("    Panel A (biomass) ranges: Predator [",
+      paste(round(range(figA_raw$lnRR_predator, na.rm=TRUE), 1), collapse=" to "),
+      "], Urchin [",
+      paste(round(range(figA_raw$lnRR_urchin, na.rm=TRUE), 1), collapse=" to "),
+      "]\n", sep="")
+}
+if (nrow(figB_raw) > 0) {
+  cat("    Panel B (biomass) ranges: Urchin [",
+      paste(round(range(figB_raw$lnRR_urchin, na.rm=TRUE), 1), collapse=" to "),
+      "], Kelp [",
+      paste(round(range(figB_raw$lnRR_kelp, na.rm=TRUE), 1), collapse=" to "),
+      "]\n", sep="")
+}
+if (nrow(figC_raw) > 0) {
+  cat("    Panel C (density) ranges: Predator [",
+      paste(round(range(figC_raw$lnRR_predator, na.rm=TRUE), 1), collapse=" to "),
+      "], Urchin [",
+      paste(round(range(figC_raw$lnRR_urchin, na.rm=TRUE), 1), collapse=" to "),
+      "]\n", sep="")
+}
+if (nrow(figD_raw) > 0) {
+  cat("    Panel D (density) ranges: Urchin [",
+      paste(round(range(figD_raw$lnRR_urchin, na.rm=TRUE), 1), collapse=" to "),
+      "], Kelp [",
+      paste(round(range(figD_raw$lnRR_kelp, na.rm=TRUE), 1), collapse=" to "),
+      "]\n", sep="")
+}
+
+# ---------------------------------------------------------------------------
+# Helper function to create a trophic cascade panel
+# ---------------------------------------------------------------------------
+create_cascade_panel <- function(raw_data, mpa_data,
+                                  x_var, y_var, x_lab, y_lab,
+                                  point_color, panel_label) {
+  # Check if sufficient data
+  if (nrow(raw_data) < 5 || nrow(mpa_data) < 3) {
+    return(ggplot() + theme_void() +
+      annotate("text", x = 0.5, y = 0.5, label = "Insufficient data", size = 4))
+  }
+
+  # Correlation on MPA-level means
+  cor_test <- cor.test(mpa_data[[x_var]], mpa_data[[y_var]], method = "pearson")
+  cor_label <- sprintf("r = %.2f, p %s\nn = %d MPAs",
                        cor_test$estimate,
                        ifelse(cor_test$p.value < 0.001, "< 0.001",
-                              sprintf("= %.3f", cor_test$p.value)))
+                              sprintf("= %.3f", cor_test$p.value)),
+                       nrow(mpa_data))
 
-  # Calculate sample size for annotation
-  n_points <- nrow(fig4_data)
+  # Symmetric axis limits based on raw data range with 15% buffer
+  max_abs_x <- max(abs(raw_data[[x_var]]), na.rm = TRUE) * 1.15
+  max_abs_y <- max(abs(raw_data[[y_var]]), na.rm = TRUE) * 1.15
+  lim_x <- c(-max_abs_x, max_abs_x)
+  lim_y <- c(-max_abs_y, max_abs_y)
 
-  # Build scatterplot showing relationship between urchin and kelp lnRR
-
-  # Symmetric limits centered on 0 so quadrants are visually balanced.
-  max_abs <- max(abs(c(fig4_data$lnRR_urchin, fig4_data$lnRR_kelp)), na.rm = TRUE)
-  max_abs <- max(6, ceiling(max_abs))
-  x_lim <- c(-max_abs, max_abs)
-  y_lim <- c(-max_abs, max_abs)
-
-  # Quadrant label positions (slightly inside plot area)
-  q_x_left <- x_lim[1] + 0.3
-  q_x_right <- x_lim[2] - 0.3
-  q_y_top <- y_lim[2] - 0.5
-  q_y_bot <- y_lim[1] + 0.5
-
-  fig4 <- ggplot(fig4_data, aes(x = lnRR_urchin, y = lnRR_kelp)) +
-    # Reference lines at zero (drawn first, underneath everything)
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
-    # Quadrant labels - subtle, positioned dynamically in corners
-    annotate("text", x = q_x_left, y = q_y_top,
-             label = "Urchin \u2193  Kelp \u2191", size = 2.5,
-             color = "grey45", fontface = "italic", hjust = 0, vjust = 1) +
-    annotate("text", x = q_x_right, y = q_y_top,
-             label = "Urchin \u2191  Kelp \u2191", size = 2.5,
-             color = "grey45", fontface = "italic", hjust = 1, vjust = 1) +
-    annotate("text", x = q_x_left, y = q_y_bot,
-             label = "Urchin \u2193  Kelp \u2193", size = 2.5,
-             color = "grey45", fontface = "italic", hjust = 0, vjust = 0) +
-    annotate("text", x = q_x_right, y = q_y_bot,
-             label = "Urchin \u2191  Kelp \u2193", size = 2.5,
-             color = "grey45", fontface = "italic", hjust = 1, vjust = 0) +
-    # Layer 1: Contour lines for point-density structure
-    geom_density_2d(
-      color = "grey35",
-      linewidth = 0.35,
-      alpha = 0.45,
-      bins = 6
-    ) +
-    # Layer 2: Data points - FIX: more alpha transparency to reduce overplotting
-    geom_point(
-      position = position_jitter(width = 0.12, height = 0.12, seed = 42),
-      size = 1.9,
-      alpha = 0.28,
-      color = col_taxa["S. purpuratus"],
-      stroke = 0
-    ) +
-    # Layer 3: Linear regression line with confidence band
-    geom_smooth(
-      method = "lm",
-      se = TRUE,
-      color = col_response["Bio"],
-      fill = col_response["Bio"],
-      linewidth = 1.0,
-      alpha = 0.20,
-      linetype = "solid"
-    ) +
-    # Correlation and sample size annotation - positioned in top-right
-    annotate(
-      "label",
-      x = x_lim[2],
-      y = y_lim[2],
-      label = paste0(cor_label, "\nn = ", n_points),
-      hjust = 1.05,
-      vjust = 1.1,
-      size = 3.2,
-      fontface = "plain",
-      fill = "white",
-      alpha = 0.85,
-      label.size = 0.3,
-      label.padding = unit(0.2, "lines")
-    ) +
-    # TUFTE: Declarative title - states the trophic cascade finding
-    labs(
-      title = "MPA protection reduces urchins and increases kelp biomass",
-      x = expression("MPA Effect on " * italic("S. purpuratus") * " density (lnRR)"),
-      y = kelp_y_label  # Uses biomass or density depending on data availability
-    ) +
-    coord_fixed(ratio = 1, xlim = x_lim, ylim = y_lim, expand = FALSE) +
-    theme_mpa(base_size = 11) +
+  # Create plot
+  ggplot() +
+    # Reference lines
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey55", linewidth = 0.3) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey55", linewidth = 0.3) +
+    # Background: raw annual observations
+    geom_point(data = raw_data, aes(x = .data[[x_var]], y = .data[[y_var]]),
+               position = position_jitter(width = 0.08, height = 0.08, seed = 42),
+               size = 1.5, alpha = 0.35, color = point_color, stroke = 0) +
+    # Foreground: MPA-level means with error bars
+    geom_errorbar(data = mpa_data,
+                  aes(x = .data[[x_var]],
+                      ymin = .data[[y_var]] - .data[[paste0("SE_", sub("lnRR_", "", y_var))]],
+                      ymax = .data[[y_var]] + .data[[paste0("SE_", sub("lnRR_", "", y_var))]]),
+                  width = 0, linewidth = 0.4, color = "grey30", alpha = 0.6) +
+    geom_errorbarh(data = mpa_data,
+                   aes(y = .data[[y_var]],
+                       xmin = .data[[x_var]] - .data[[paste0("SE_", sub("lnRR_", "", x_var))]],
+                       xmax = .data[[x_var]] + .data[[paste0("SE_", sub("lnRR_", "", x_var))]]),
+                   height = 0, linewidth = 0.4, color = "grey30", alpha = 0.6) +
+    geom_point(data = mpa_data, aes(x = .data[[x_var]], y = .data[[y_var]]),
+               size = 3, alpha = 0.85, color = point_color, shape = 16) +
+    # Regression
+    geom_smooth(data = mpa_data, aes(x = .data[[x_var]], y = .data[[y_var]]),
+                method = "lm", se = TRUE, color = point_color, fill = point_color,
+                linewidth = 0.9, alpha = 0.18) +
+    # Correlation label
+    annotate("label", x = lim_x[2], y = lim_y[2], label = cor_label,
+             hjust = 1.05, vjust = 1.1, size = 2.5, fill = "white", alpha = 0.85,
+             label.size = 0.25, label.padding = unit(0.15, "lines")) +
+    labs(x = x_lab, y = y_lab) +
+    coord_fixed(ratio = 1, xlim = lim_x, ylim = lim_y, expand = FALSE) +
+    theme_mpa(base_size = 9) +
     theme(
-      # TUFTE: Bold, centered title
-      plot.title = element_text(face = "bold", size = 11, hjust = 0.5,
-                                margin = margin(b = 10)),
       panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "grey92", linewidth = 0.25),
-      axis.title = element_text(size = 10),
-      axis.text = element_text(size = 9),
-      plot.margin = margin(12, 12, 8, 8)
+      panel.grid.major = element_line(color = "grey92", linewidth = 0.2),
+      axis.title = element_text(size = 8),
+      axis.text = element_text(size = 7),
+      plot.margin = margin(4, 6, 2, 6)
     )
-
-  save_fig(fig4, "fig_04_urchin_kelp_scatter", FIG4_DIMS["w"], FIG4_DIMS["h"])
-} else {
-  cat("  WARNING: No overlapping urchin/kelp data found for Figure 4\n")
 }
+
+# ---------------------------------------------------------------------------
+# Build all 4 panels
+# ---------------------------------------------------------------------------
+
+cat("  Building Panel A (biomass): Predator vs Urchin...\n")
+panel_A <- create_cascade_panel(
+  figA_raw, fig4_mpa_A,
+  "lnRR_predator", "lnRR_urchin",
+  "Predator biomass effect (lnRR)",
+  "Urchin biomass effect (lnRR)",
+  col_taxa["P. interruptus"],
+  "A"
+)
+
+cat("  Building Panel B (biomass): Urchin vs Kelp...\n")
+panel_B <- create_cascade_panel(
+  figB_raw, fig4_mpa_B,
+  "lnRR_urchin", "lnRR_kelp",
+  "Urchin biomass effect (lnRR)",
+  "Kelp biomass effect (lnRR)",
+  col_taxa["S. purpuratus"],
+  "B"
+)
+
+cat("  Building Panel C (density): Predator vs Urchin...\n")
+panel_C <- create_cascade_panel(
+  figC_raw, fig4_mpa_C,
+  "lnRR_predator", "lnRR_urchin",
+  "Predator density effect (lnRR)",
+  expression(italic("S. purpuratus") * " density effect (lnRR)"),
+  col_taxa["P. interruptus"],
+  "C"
+)
+
+cat("  Building Panel D (density): Urchin vs Kelp...\n")
+panel_D <- create_cascade_panel(
+  figD_raw, fig4_mpa_D,
+  "lnRR_urchin", "lnRR_kelp",
+  expression(italic("S. purpuratus") * " density effect (lnRR)"),
+  "Kelp biomass effect (lnRR)",
+  col_taxa["S. purpuratus"],
+  "D"
+)
+
+# ---------------------------------------------------------------------------
+# Old Panel 4a code - DELETE THIS SECTION
+# ---------------------------------------------------------------------------
+
+
+# =============================================================================
+# Assemble Figure 4: 4-panel trophic cascade (biomass top, density bottom)
+# =============================================================================
+
+cat("Assembling Figure 4 (4-panel trophic cascade)...\n")
+
+fig4 <- (panel_A | panel_B) / (panel_C | panel_D) +
+  plot_annotation(tag_levels = "a") +
+  plot_layout(heights = c(1, 1))  # Equal height for both rows
+
+# Update dimensions for 4-panel figure
+FIG4_NEW_DIMS <- c(w = 17, h = 17)  # Square-ish for 2x2 layout
+save_fig(fig4, "fig_04_trophic_scatter", FIG4_NEW_DIMS["w"], FIG4_NEW_DIMS["h"])
 
 # =============================================================================
 # Figure S2 (Supplemental): All taxa log response ratios at example MPAs
@@ -1356,19 +1613,19 @@ build_s2_panel <- function(mpa_name, data, mpa_starts) {
                 color = species_short, shape = source)) +
     # Reference line at zero
     geom_hline(yintercept = 0, linetype = "solid", color = "grey50",
-               linewidth = 0.5) +
-    # MPA implementation vertical line (using standardized style)
+               linewidth = 0.4) +
+    # MPA implementation vertical line
     add_mpa_vline(mpa_start_yr) +
-    # Add MPA label (using standardized style)
     annotate("text", x = mpa_start_yr + 0.5, y = y_annot,
-             label = "MPA\nStart", hjust = 0, size = MPA_LABEL_SIZE, color = MPA_LABEL_COLOR) +
-    # LOESS smoothers for each species (after MPA only)
+             label = "MPA\nStart", hjust = 0, size = 2.3, color = MPA_LABEL_COLOR,
+             lineheight = 0.9) +
+    # LOESS smoothers (post-MPA only)
     geom_smooth(data = dplyr::filter(d, year >= mpa_start_yr),
                 aes(group = species_short),
                 method = "loess", se = FALSE, span = 0.75,
-                linewidth = 0.8, alpha = 0.6) +
+                linewidth = 0.7, alpha = 0.55) +
     # Data points
-    geom_point(size = 2.1, alpha = 0.65) +
+    geom_point(size = 1.8, alpha = 0.6) +
     scale_color_taxa(name = "Species") +
     scale_shape_source(name = "Source") +
     scale_x_continuous(breaks = year_breaks) +
@@ -1380,16 +1637,16 @@ build_s2_panel <- function(mpa_name, data, mpa_starts) {
     ) +
     theme_mpa(base_size = 9) +
     theme(
-      plot.title = element_text(size = 11, face = "bold", hjust = 0,
-                                 margin = margin(b = 6)),
-      legend.text = element_text(face = "italic", size = 8.5),
-      legend.title = element_text(face = "bold", size = 9),
-      legend.key.height = unit(0.5, "cm"),  # More space between legend items
-      axis.title = element_text(size = 9),
-      axis.text = element_text(size = 8),
+      plot.title = element_text(size = 10, face = "bold", hjust = 0,
+                                 margin = margin(b = 4)),
+      legend.text = element_text(face = "italic", size = 8),
+      legend.title = element_text(face = "bold", size = 8.5),
+      legend.key.height = unit(0.45, "cm"),
+      axis.title = element_text(size = 8.5),
+      axis.text = element_text(size = 7.5),
       panel.grid.major.x = element_blank(),
-      panel.grid.major.y = element_line(color = "grey92", linewidth = 0.25),
-      plot.margin = margin(6, 8, 6, 6)
+      panel.grid.major.y = element_line(color = "grey92", linewidth = 0.2),
+      plot.margin = margin(4, 6, 4, 4)
     )
 }
 
@@ -1398,238 +1655,39 @@ fig_s2_panels <- purrr::map(fig_s2_mpas, build_s2_panel,
                              data = fig_s2_data,
                              mpa_starts = fig_s2_starts)
 
-# TUFTE: Use patchwork for better title control (preferred over ggpubr)
+# Combine panels with collected legend — no embedded title
 if (has_patchwork) {
   fig_s2 <- (fig_s2_panels[[1]] / fig_s2_panels[[2]] / fig_s2_panels[[3]]) +
-    plot_layout(guides = "collect") +
-    plot_annotation(
-      title = "Trophic cascade: urchins decline, kelp and predators increase post-MPA",
-      theme = theme(
-        plot.title = element_text(face = "bold", size = 11, hjust = 0.5,
-                                  margin = margin(b = 10))
-      )
-    ) &
+    plot_layout(guides = "collect") &
     theme(
       legend.position = "bottom",
       legend.direction = "horizontal",
       legend.box = "horizontal",
-      legend.title = element_text(face = "bold", size = 9),
-      legend.text = element_text(size = 8.5, face = "italic"),
-      legend.key.width = unit(0.9, "cm"),
-      legend.spacing.x = unit(0.35, "cm")
+      legend.title = element_text(face = "bold", size = 8.5),
+      legend.text = element_text(size = 8, face = "italic"),
+      legend.key.width = unit(0.8, "cm"),
+      legend.spacing.x = unit(0.3, "cm"),
+      legend.margin = margin(t = 2)
     )
 } else if (has_ggpubr) {
   fig_s2 <- ggpubr::ggarrange(
     plotlist = fig_s2_panels,
     ncol = 1, nrow = 3,
     labels = c("a", "b", "c"),
-    font.label = list(size = 11, face = "bold"),
+    font.label = list(size = 10, face = "bold"),
     label.x = 0.02, label.y = 0.98,
     common.legend = TRUE,
-    legend = "right"
+    legend = "bottom"
   )
 } else {
-  # Basic fallback
   fig_s2 <- fig_s2_panels[[1]] / fig_s2_panels[[2]] / fig_s2_panels[[3]]
 }
 
 # Slightly wider to accommodate right legend
 save_fig(fig_s2, "fig_s02_all_taxa_timeseries", FIG_S2_DIMS["w"], FIG_S2_DIMS["h"])
 
-# =============================================================================
-# All required manuscript figures complete
-# =============================================================================
-cat("\n")
-cat("========================================================================\n")
-cat("  ALL MANUSCRIPT FIGURES GENERATED SUCCESSFULLY\n")
-cat("  Main text: Fig 1-4\n")
-cat("  Supplemental: Fig S1-S2\n")
-cat("========================================================================\n")
-cat("\n")
-
-# Exit successfully - remaining figures are exploratory only
-if (FALSE) {
-  # NOTE: The code below (Figures 5-6) is retained for reference but not
-  # included in the manuscript. Set if(FALSE) to if(TRUE) to generate.
-
-# =============================================================================
-# Figure 5: Trophic Cascade Pathway (Path Analysis)
-# =============================================================================
-# Shows the complete causal chain: Predators -> Urchins -> Kelp
-# Three panels: (a) Pred vs Urch, (b) Urch vs Kelp, (c) Path diagram
-
-cat("\n--- Figure 5: Trophic Cascade Pathway ---\n")
-
-FIG5_DIMS <- c(w = 18, h = 16)
-
-# Prepare cascade data: pivot to wide format with one row per MPA
-cascade_data <- SumStats.Final %>%
-  filter(AnalysisType %in% c("pBACIPS", "CI")) %>%
-  mutate(
-    Taxa_Resp = paste(Taxa, Resp, sep = "_"),
-    Mean = as.numeric(Mean),
-    SE = as.numeric(SE)
-  ) %>%
-  dplyr::select(MPA, Taxa_Resp, Mean) %>%
-  tidyr::pivot_wider(names_from = Taxa_Resp, values_from = Mean, values_fn = mean)
-
-# Clean column names for formula use
-names(cascade_data) <- gsub(" ", "_", names(cascade_data))
-names(cascade_data) <- gsub("\\.", "_", names(cascade_data))
-
-# Calculate predator and urchin indices (mean of species within trophic level)
-cascade_data <- cascade_data %>%
-  rowwise() %>%
-  mutate(
-    Predator_Den = mean(c_across(any_of(c("P_interruptus_Den", "S_pulcher_Den"))), na.rm = TRUE),
-    Urchin_Den = mean(c_across(any_of(c("S_purpuratus_Den", "M_franciscanus_Den"))), na.rm = TRUE)
-  ) %>%
-  ungroup()
-
-# Filter to MPAs with complete cascade data
-cascade_complete <- cascade_data %>%
-  filter(
-    is.finite(Predator_Den),
-    is.finite(Urchin_Den),
-    is.finite(M_pyrifera_Bio)
-  )
-
-cat("  MPAs with complete cascade data:", nrow(cascade_complete), "\n")
-
-# Only build figure if we have enough data
-if (nrow(cascade_complete) >= 5) {
-
-  # Panel A: Predators predict Urchins
-  cor_pred_urch <- cor.test(cascade_complete$Predator_Den,
-                             cascade_complete$Urchin_Den,
-                             method = "pearson")
-  cor_label_A <- sprintf("r = %.2f, p = %.3f",
-                          cor_pred_urch$estimate,
-                          cor_pred_urch$p.value)
-
-  panel_5A <- ggplot(cascade_complete,
-                      aes(x = Predator_Den, y = Urchin_Den)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
-    annotate("text", x = Inf, y = -Inf, label = "Predators up\nUrchins down",
-             hjust = 1.1, vjust = -0.1, size = 2.5, color = "grey50", fontface = "italic") +
-    geom_point(size = 3.5, alpha = 0.7, color = col_taxa["P. interruptus"]) +
-    geom_smooth(method = "lm", se = TRUE, color = col_taxa["P. interruptus"],
-                fill = col_taxa["P. interruptus"], alpha = 0.2, linewidth = 1) +
-    annotate("label", x = Inf, y = Inf, label = cor_label_A,
-             hjust = 1.1, vjust = 1.3, size = 3, fill = "white", alpha = 0.9,
-             label.size = 0.3) +
-    labs(
-      title = "(a) Predator recovery predicts urchin decline",
-      x = "Predator effect (lnRR)",
-      y = "Urchin effect (lnRR)"
-    ) +
-    coord_cartesian(clip = "off") +
-    theme_mpa(base_size = 10) +
-    theme(
-      plot.title = element_text(size = 10, face = "bold", hjust = 0),
-      panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
-    )
-
-  # Panel B: Urchins predict Kelp
-  cor_urch_kelp <- cor.test(cascade_complete$Urchin_Den,
-                             cascade_complete$M_pyrifera_Bio,
-                             method = "pearson")
-  cor_label_B <- sprintf("r = %.2f, p = %.3f",
-                          cor_urch_kelp$estimate,
-                          cor_urch_kelp$p.value)
-
-  panel_5B <- ggplot(cascade_complete,
-                      aes(x = Urchin_Den, y = M_pyrifera_Bio)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "grey60", linewidth = 0.4) +
-    annotate("text", x = -Inf, y = Inf, label = "Urchins down\nKelp up",
-             hjust = -0.1, vjust = 1.2, size = 2.5, color = "grey50", fontface = "italic") +
-    geom_point(size = 3.5, alpha = 0.7, color = col_taxa["S. purpuratus"]) +
-    geom_smooth(method = "lm", se = TRUE, color = col_taxa["M. pyrifera"],
-                fill = col_taxa["M. pyrifera"], alpha = 0.2, linewidth = 1) +
-    annotate("label", x = Inf, y = Inf, label = cor_label_B,
-             hjust = 1.1, vjust = 1.3, size = 3, fill = "white", alpha = 0.9,
-             label.size = 0.3) +
-    labs(
-      title = "(b) Urchin decline predicts kelp recovery",
-      x = "Urchin effect (lnRR)",
-      y = "Kelp biomass effect (lnRR)"
-    ) +
-    coord_cartesian(clip = "off") +
-    theme_mpa(base_size = 10) +
-    theme(
-      plot.title = element_text(size = 10, face = "bold", hjust = 0),
-      panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
-    )
-
-  # Panel C: Path diagram summary
-  lm_pred_urch <- lm(Urchin_Den ~ Predator_Den, data = cascade_complete)
-  lm_urch_kelp <- lm(M_pyrifera_Bio ~ Urchin_Den, data = cascade_complete)
-
-  path_a <- coef(lm_pred_urch)[2]
-  path_b <- coef(lm_urch_kelp)[2]
-  indirect_effect <- path_a * path_b
-
-  # Node positions for path diagram
-  nodes_df <- tibble(
-    label = c("PREDATORS\n(lobster,\nsheephead)", "URCHINS\n(purple, red)", "KELP\n(M. pyrifera)"),
-    x = c(0, 1, 2),
-    y = c(0, 0, 0),
-    color = c(col_taxa["P. interruptus"], col_taxa["S. purpuratus"], col_taxa["M. pyrifera"])
-  )
-
-  panel_5C <- ggplot() +
-    # Arrows between nodes
-    annotate("segment", x = 0.22, xend = 0.78, y = 0, yend = 0,
-             arrow = arrow(length = unit(4, "mm"), type = "closed"),
-             linewidth = 2, color = "grey30") +
-    annotate("segment", x = 1.22, xend = 1.78, y = 0, yend = 0,
-             arrow = arrow(length = unit(4, "mm"), type = "closed"),
-             linewidth = 2, color = "grey30") +
-    # Path coefficients on arrows
-    annotate("label", x = 0.5, y = 0.18,
-             label = sprintf("β = %.2f", path_a),
-             size = 4, fill = "white", label.size = 0.3, fontface = "bold") +
-    annotate("label", x = 1.5, y = 0.18,
-             label = sprintf("β = %.2f", path_b),
-             size = 4, fill = "white", label.size = 0.3, fontface = "bold") +
-    # Nodes as large colored circles
-    geom_point(data = nodes_df, aes(x = x, y = y),
-               size = 22, color = nodes_df$color, fill = nodes_df$color, shape = 21) +
-    # Node labels
-    geom_text(data = nodes_df, aes(x = x, y = y, label = label),
-              size = 2.8, color = "white", fontface = "bold", lineheight = 0.9) +
-    # Indirect effect annotation
-    annotate("text", x = 1, y = -0.38,
-             label = sprintf("Indirect effect: %.2f × %.2f = %.2f", path_a, path_b, indirect_effect),
-             size = 4, fontface = "bold") +
-    annotate("text", x = 1, y = -0.55,
-             label = "MPA protection restores top-down control of kelp forests",
-             size = 3.5, color = "grey40", fontface = "italic") +
-    coord_cartesian(xlim = c(-0.4, 2.4), ylim = c(-0.7, 0.4)) +
-    labs(title = "(c) Trophic cascade pathway with effect sizes") +
-    theme_void(base_size = 10) +
-    theme(
-      plot.title = element_text(size = 10, face = "bold", hjust = 0.5,
-                                margin = margin(b = 10))
-    )
-
-  # Combine panels
-  fig5 <- (panel_5A | panel_5B) / panel_5C +
-    plot_layout(heights = c(1, 0.65)) +
-    plot_annotation(
-      title = "MPA protection restores trophic cascades through predator recovery",
-      theme = theme(
-        plot.title = element_text(face = "bold", size = 12, hjust = 0.5)
-      )
-    )
-
-  save_fig(fig5, "fig_05_trophic_cascade_pathway", FIG5_DIMS["w"], FIG5_DIMS["h"])
-
-} else {
-  cat("  WARNING: Not enough MPAs with complete cascade data for Figure 5\n")
-}
+# (Figure 5 removed — trophic cascade now shown in Figure 4 with dual layers)
+# The following block is commented out but preserved for reference.
 
 
 # =============================================================================
@@ -1639,7 +1697,7 @@ if (nrow(cascade_complete) >= 5) {
 
 cat("\n--- Figure S3: Temporal Dynamics ---\n")
 
-FIG_S3_DIMS <- c(w = 18, h = 18)
+FIG_S3_DIMS <- c(w = 17, h = 17)  # Conservation Letters max width
 
 # Assign trophic levels to taxa
 trophic_assignment <- c(
@@ -1712,13 +1770,11 @@ if (nrow(temporal_data) >= 10) {
     scale_fill_manual(values = trophic_colors, name = "Trophic Level") +
     scale_x_continuous(breaks = seq(0, 20, by = 5)) +
     labs(
-      title = "(a) Effect sizes over time since MPA implementation",
       x = "Years since MPA implementation",
       y = "Mean log response ratio (lnRR)"
     ) +
     theme_mpa(base_size = 10) +
     theme(
-      plot.title = element_text(size = 10, face = "bold", hjust = 0),
       legend.position = "bottom",
       legend.title = element_text(face = "bold"),
       panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
@@ -1752,13 +1808,11 @@ if (nrow(temporal_data) >= 10) {
     scale_color_manual(values = trophic_colors, name = "Trophic Level") +
     scale_x_continuous(breaks = seq(0, 20, by = 5)) +
     labs(
-      title = "(b) Cumulative mean effect stabilizes over time",
       x = "Years since MPA implementation",
       y = "Cumulative mean lnRR"
     ) +
     theme_mpa(base_size = 10) +
     theme(
-      plot.title = element_text(size = 10, face = "bold", hjust = 0),
       legend.position = "none",
       panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
     )
@@ -1806,13 +1860,11 @@ if (nrow(temporal_data) >= 10) {
     ) +
     scale_color_manual(values = trophic_colors) +
     labs(
-      title = "(c) Rate of effect change by trophic level",
       x = "Trophic Level",
       y = expression("Effect trajectory slope (lnRR" ~ yr^{-1} * ")")
     ) +
     theme_mpa(base_size = 10) +
     theme(
-      plot.title = element_text(size = 10, face = "bold", hjust = 0),
       legend.position = "none",
       axis.text.x = element_text(face = "bold")
     )
@@ -1820,14 +1872,7 @@ if (nrow(temporal_data) >= 10) {
   # Combine panels
   fig_s3 <- panel_S3A / (panel_S3B | panel_S3C) +
     plot_layout(heights = c(1.2, 1)) +
-    plot_annotation(
-      title = "Temporal dynamics of trophic cascade recovery",
-      subtitle = "Predator effects emerge first, followed by urchin decline, then kelp recovery",
-      theme = theme(
-        plot.title = element_text(face = "bold", size = 12, hjust = 0.5),
-        plot.subtitle = element_text(size = 10, color = "grey40", hjust = 0.5)
-      )
-    )
+    plot_annotation(tag_levels = "a")
 
   save_fig(fig_s3, "fig_s03_temporal_dynamics", FIG_S3_DIMS["w"], FIG_S3_DIMS["h"])
 
@@ -1843,13 +1888,13 @@ if (nrow(temporal_data) >= 10) {
 
 cat("\n--- Figure S4: Space-Time Heatmap ---\n")
 
-FIG_S4_DIMS <- c(w = 20, h = 16)
+FIG_S4_DIMS <- c(w = 17, h = 14)  # Conservation Letters max width (adjusted height to maintain aspect)
 
 # Get MPA implementation years
 mpa_years <- Site %>%
-  dplyr::select(CA_MPA_Name_Short, MPA_Start_Year) %>%
+  dplyr::select(CA_MPA_Name_Short, MPA_Start) %>%
   distinct() %>%
-  filter(!is.na(MPA_Start_Year))
+  filter(!is.na(MPA_Start))
 
 # Prepare heatmap data for urchins
 heatmap_data <- All.RR.sub.trans %>%
@@ -1862,12 +1907,12 @@ heatmap_data <- All.RR.sub.trans %>%
   group_by(CA_MPA_Name_Short, time) %>%
   summarise(mean_lnRR = mean(lnDiff, na.rm = TRUE), .groups = "drop") %>%
   left_join(mpa_years, by = "CA_MPA_Name_Short") %>%
-  filter(!is.na(MPA_Start_Year))
+  filter(!is.na(MPA_Start))
 
 # Order MPAs by implementation year (newer at bottom)
 mpa_order <- heatmap_data %>%
-  distinct(CA_MPA_Name_Short, MPA_Start_Year) %>%
-  arrange(desc(MPA_Start_Year)) %>%
+  distinct(CA_MPA_Name_Short, MPA_Start) %>%
+  arrange(desc(MPA_Start)) %>%
   pull(CA_MPA_Name_Short)
 
 heatmap_data$CA_MPA_Name_Short <- factor(heatmap_data$CA_MPA_Name_Short, levels = mpa_order)
@@ -1887,15 +1932,11 @@ if (nrow(heatmap_data) >= 20) {
     ) +
     scale_x_continuous(breaks = seq(0, 15, by = 3), expand = c(0, 0)) +
     labs(
-      title = "Urchin response to MPA protection over time",
-      subtitle = "Negative values (green) = urchin decline inside MPA relative to reference",
       x = "Years since MPA implementation",
       y = "MPA (ordered by implementation year)"
     ) +
     theme_mpa(base_size = 10) +
     theme(
-      plot.title = element_text(face = "bold", size = 12),
-      plot.subtitle = element_text(size = 9, color = "grey40"),
       axis.text.y = element_text(size = 8),
       legend.position = "right",
       panel.grid = element_blank()
@@ -1915,7 +1956,7 @@ if (nrow(heatmap_data) >= 20) {
 
 cat("\n--- Figure S5: Statistical Transparency ---\n")
 
-FIG_S5_DIMS <- c(w = 18, h = 12)
+FIG_S5_DIMS <- c(w = 17, h = 11)  # Conservation Letters max width (adjusted height to maintain aspect)
 
 # Panel A: Model selection distribution by taxa
 model_dist <- SumStats.Final %>%
@@ -1941,15 +1982,11 @@ panel_S5A <- ggplot(model_dist, aes(x = Taxa, y = prop, fill = Model)) +
   scale_fill_manual(values = col_model, name = "Best Model") +
   scale_y_continuous(labels = scales::percent_format(), expand = c(0, 0)) +
   labs(
-    title = "(a) Model selection distribution by taxa",
-    subtitle = "Proportion of MPAs selecting each pBACIPS model form",
     x = NULL,
     y = "Proportion of MPAs"
   ) +
   theme_mpa(base_size = 10) +
   theme(
-    plot.title = element_text(face = "bold", size = 10),
-    plot.subtitle = element_text(size = 8, color = "grey40"),
     axis.text.x = element_text(face = "italic", angle = 25, hjust = 1),
     legend.position = "right"
   )
@@ -1974,144 +2011,196 @@ if (exists("meta_biomass") && exists("meta_density")) {
     ) +
     scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
     labs(
-      title = "(b) Meta-analysis variance components",
-      subtitle = expression("Between-group heterogeneity ("*tau^2*")"),
       x = expression(tau^2),
       y = NULL
     ) +
     theme_mpa(base_size = 10) +
     theme(
-      plot.title = element_text(face = "bold", size = 10),
-      plot.subtitle = element_text(size = 8, color = "grey40"),
       legend.position = "right"
     )
 
   fig_s5 <- panel_S5A / panel_S5B +
     plot_layout(heights = c(1, 0.8)) +
-    plot_annotation(
-      title = "Statistical transparency: Model selection and heterogeneity",
-      theme = theme(
-        plot.title = element_text(face = "bold", size = 12, hjust = 0.5)
-      )
-    )
+    plot_annotation(tag_levels = "a")
 
 } else {
   fig_s5 <- panel_S5A +
-    plot_annotation(
-      title = "Model selection distribution across taxa",
-      theme = theme(
-        plot.title = element_text(face = "bold", size = 12, hjust = 0.5)
-      )
-    )
+    plot_annotation(tag_levels = "a")
 }
 
 save_fig(fig_s5, "fig_s05_statistical_transparency", FIG_S5_DIMS["w"], FIG_S5_DIMS["h"])
 
 
 # =============================================================================
-# Figure 6: Trophic Cascade Flow Diagram (Conceptual)
+# Figure S6: Comprehensive Site-Level Appendix
 # =============================================================================
-# Sankey-style visualization showing effect flow through food web
+# Individual lnRR time series for ALL taxa at ALL sites, including sites
+# excluded from the final analysis. Provides transparency and allows readers
+# to inspect site-level variation underlying the meta-analytic summaries.
 
-cat("\n--- Figure 6: Trophic Cascade Flow ---\n")
+cat("\n--- Figure S6: Site-Level Appendix ---\n")
 
-FIG6_DIMS <- c(w = 18, h = 10)
+# Determine which MPAs are in the final analysis
+final_mpas <- if (exists("SumStats.Final")) unique(SumStats.Final$MPA) else character(0)
 
-# Get meta-analytic means for each taxa from Table2
-if (exists("Table2")) {
+# Map full scientific names to abbreviations used in color palette
+taxa_name_map <- c(
+  "Strongylocentrotus purpuratus" = "S. purpuratus",
+  "Mesocentrotus franciscanus" = "M. franciscanus",
+  "Macrocystis pyrifera" = "M. pyrifera",
+  "Panulirus interruptus" = "P. interruptus",
+  "Semicossyphus pulcher" = "S. pulcher"
+)
 
-  # Extract density effects for the flow diagram
-  meta_means <- Table2 %>%
-    filter(Response == "Density") %>%
-    dplyr::select(Taxa, Estimate, CI_lower, CI_upper) %>%
-    mutate(
-      Trophic = case_when(
-        Taxa %in% c("P. interruptus", "S. pulcher") ~ "Predators",
-        Taxa %in% c("S. purpuratus", "M. franciscanus") ~ "Urchins",
-        Taxa == "M. pyrifera" ~ "Kelp",
-        TRUE ~ NA_character_
-      ),
-      Direction = ifelse(Estimate > 0, "Increase", "Decrease"),
-      Significant = (CI_lower > 0) | (CI_upper < 0)
-    )
+# Trophic ordering for consistent plotting
+taxa_plot_order <- c("P. interruptus", "S. pulcher",
+                     "S. purpuratus", "M. franciscanus",
+                     "M. pyrifera")
 
-  # Create conceptual flow diagram
-  # Layer 1: Trophic levels as colored bars
-  # Layer 2: Arrows showing direction of effects
+# Use All.RR.sub.trans — the combined response ratio dataset with all sites
+appendix_data <- All.RR.sub.trans %>%
+  mutate(
+    Taxa_Short = ifelse(y %in% names(taxa_name_map),
+                        taxa_name_map[y], y),
+    year_num = as.numeric(year)
+  ) %>%
+  filter(Taxa_Short %in% taxa_plot_order)
 
-  trophic_summary <- meta_means %>%
-    group_by(Trophic) %>%
-    summarise(
-      mean_effect = mean(Estimate, na.rm = TRUE),
-      n_taxa = n(),
-      .groups = "drop"
-    ) %>%
-    mutate(
-      x = case_when(Trophic == "Predators" ~ 1, Trophic == "Urchins" ~ 2, Trophic == "Kelp" ~ 3),
-      direction_label = ifelse(mean_effect > 0, "↑ INCREASE", "↓ DECREASE"),
-      y = 0
-    )
-
-  # Arrow data
-  arrows_df <- data.frame(
-    x_start = c(1.3, 2.3),
-    x_end = c(1.7, 2.7),
-    y = c(0, 0),
-    label = c("Predation\npressure", "Grazing\nrelease")
-  )
-
-  fig6 <- ggplot() +
-    # Background rectangles for trophic levels
-    annotate("rect", xmin = 0.5, xmax = 1.5, ymin = -0.5, ymax = 0.5,
-             fill = col_taxa["P. interruptus"], alpha = 0.3) +
-    annotate("rect", xmin = 1.5, xmax = 2.5, ymin = -0.5, ymax = 0.5,
-             fill = col_taxa["S. purpuratus"], alpha = 0.3) +
-    annotate("rect", xmin = 2.5, xmax = 3.5, ymin = -0.5, ymax = 0.5,
-             fill = col_taxa["M. pyrifera"], alpha = 0.3) +
-    # Arrows between levels
-    geom_segment(data = arrows_df,
-                 aes(x = x_start, xend = x_end, y = y, yend = y),
-                 arrow = arrow(length = unit(5, "mm"), type = "closed"),
-                 linewidth = 3, color = "grey30") +
-    # Arrow labels
-    geom_text(data = arrows_df, aes(x = (x_start + x_end)/2, y = 0.3, label = label),
-              size = 3, fontface = "italic", color = "grey30", lineheight = 0.9) +
-    # Trophic level labels
-    annotate("text", x = 1, y = 0.15, label = "PREDATORS", fontface = "bold", size = 4) +
-    annotate("text", x = 1, y = -0.05, label = "(lobster, sheephead)", size = 3, color = "grey40") +
-    annotate("text", x = 1, y = -0.25, label = "↑ INCREASE", size = 4, fontface = "bold",
-             color = col_taxa["P. interruptus"]) +
-    annotate("text", x = 2, y = 0.15, label = "URCHINS", fontface = "bold", size = 4) +
-    annotate("text", x = 2, y = -0.05, label = "(purple, red)", size = 3, color = "grey40") +
-    annotate("text", x = 2, y = -0.25, label = "↓ DECREASE", size = 4, fontface = "bold",
-             color = col_taxa["S. purpuratus"]) +
-    annotate("text", x = 3, y = 0.15, label = "KELP", fontface = "bold", size = 4) +
-    annotate("text", x = 3, y = -0.05, label = "(M. pyrifera)", size = 3, color = "grey40", fontface = "italic") +
-    annotate("text", x = 3, y = -0.25, label = "↑ INCREASE", size = 4, fontface = "bold",
-             color = col_taxa["M. pyrifera"]) +
-    # MPA protection arrow at left
-    annotate("segment", x = 0.3, xend = 0.3, y = -0.4, yend = 0.4,
-             arrow = arrow(length = unit(4, "mm"), type = "closed", ends = "first"),
-             linewidth = 2, color = col_site["Inside"]) +
-    annotate("text", x = 0.15, y = 0, label = "MPA\nPROTECTION",
-             size = 3, fontface = "bold", color = col_site["Inside"], angle = 90) +
-    coord_cartesian(xlim = c(0, 3.7), ylim = c(-0.6, 0.5)) +
-    labs(
-      title = "Trophic cascade mechanism in California MPA kelp forests",
-      subtitle = "MPA protection triggers a three-level cascade: predator recovery → urchin decline → kelp recovery"
-    ) +
-    theme_void(base_size = 10) +
-    theme(
-      plot.title = element_text(face = "bold", size = 12, hjust = 0.5, margin = margin(b = 5)),
-      plot.subtitle = element_text(size = 10, color = "grey40", hjust = 0.5, margin = margin(b = 10))
-    )
-
-  save_fig(fig6, "fig_06_trophic_flow", FIG6_DIMS["w"], FIG6_DIMS["h"])
-
+# Get MPA implementation years from Site metadata
+if (exists("Site")) {
+  mpa_impl <- Site %>%
+    dplyr::select(CA_MPA_Name_Short, MPA_Start) %>%
+    distinct()
 } else {
-  cat("  WARNING: Table2 not found - skipping Figure 6\n")
+  mpa_impl <- data.frame(CA_MPA_Name_Short = character(0),
+                          MPA_Start = numeric(0))
 }
 
-} # End if(FALSE) - exploratory figures not included in manuscript
+# Build one figure per taxa
+for (taxa_i in taxa_plot_order) {
 
-cat("\n=== All required manuscript figures saved to:", here::here("plots"), "===\n")
+  cat("  Building appendix for:", taxa_i, "\n")
+
+  taxa_dat <- appendix_data %>%
+    filter(Taxa_Short == taxa_i) %>%
+    left_join(mpa_impl, by = "CA_MPA_Name_Short") %>%
+    mutate(
+      In_Final = CA_MPA_Name_Short %in% final_mpas,
+      Status = ifelse(In_Final, "Included in analysis", "Excluded from analysis")
+    )
+
+  if (nrow(taxa_dat) < 5) {
+    cat("    Skipping", taxa_i, "- insufficient data\n")
+    next
+  }
+
+  # Order MPAs: included first, then excluded, alphabetically within each
+  mpa_levels <- taxa_dat %>%
+    distinct(CA_MPA_Name_Short, In_Final) %>%
+    arrange(desc(In_Final), CA_MPA_Name_Short) %>%
+    pull(CA_MPA_Name_Short)
+
+  taxa_dat$CA_MPA_Name_Short <- factor(taxa_dat$CA_MPA_Name_Short,
+                                         levels = mpa_levels)
+
+  n_mpas <- length(mpa_levels)
+  n_cols <- 4
+  n_rows <- ceiling(n_mpas / n_cols)
+
+  # Compute annual means per MPA (aggregate across response types within this taxa)
+  annual_means <- taxa_dat %>%
+    group_by(CA_MPA_Name_Short, year_num, resp, Status, MPA_Start) %>%
+    summarise(
+      mean_lnRR = mean(lnDiff, na.rm = TRUE),
+      se_lnRR = sd(lnDiff, na.rm = TRUE) / sqrt(n()),
+      n = n(),
+      .groups = "drop"
+    ) %>%
+    filter(is.finite(mean_lnRR))
+
+  # Use density as primary response where available; fall back to biomass
+  primary_resp <- if (taxa_i == "M. pyrifera") "Bio" else "Den"
+  plot_dat <- annual_means %>% filter(resp == primary_resp)
+  # If no data for primary response, try the other
+
+  if (nrow(plot_dat) < 5) {
+    alt_resp <- ifelse(primary_resp == "Den", "Bio", "Den")
+    plot_dat <- annual_means %>% filter(resp == alt_resp)
+    resp_label <- ifelse(alt_resp == "Bio", "Biomass lnRR", "Density lnRR")
+  } else {
+    resp_label <- ifelse(primary_resp == "Bio", "Biomass lnRR", "Density lnRR")
+  }
+
+  if (nrow(plot_dat) < 5) {
+    cat("    Skipping", taxa_i, "- insufficient plot data\n")
+    next
+  }
+
+  # Get the taxa color
+  taxa_color <- col_taxa[taxa_i]
+
+  fig_appendix <- ggplot(plot_dat,
+                          aes(x = year_num, y = mean_lnRR)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50",
+               linewidth = 0.3) +
+    # MPA implementation year (vertical line)
+    geom_vline(aes(xintercept = MPA_Start),
+               linetype = "dotted", color = "grey40", linewidth = 0.4) +
+    # Ribbon for SE
+    geom_ribbon(aes(ymin = mean_lnRR - se_lnRR,
+                    ymax = mean_lnRR + se_lnRR),
+                fill = taxa_color, alpha = 0.15) +
+    geom_line(color = taxa_color, linewidth = 0.6, alpha = 0.8) +
+    geom_point(color = taxa_color, size = 1, alpha = 0.7) +
+    facet_wrap(~ CA_MPA_Name_Short, ncol = n_cols, scales = "free_x") +
+    labs(
+      x = "Year",
+      y = resp_label
+    ) +
+    theme_mpa(base_size = 8) +
+    theme(
+      strip.text = element_text(size = 7, face = "bold"),
+      strip.background = element_rect(fill = "grey95", color = NA),
+      axis.text = element_text(size = 6),
+      panel.grid.major = element_line(color = "grey95", linewidth = 0.2),
+      panel.spacing = unit(0.4, "lines")
+    )
+
+  # Mark excluded sites with a subtle indicator in the strip
+  # (ggplot2 doesn't natively support per-facet strip styling, so we add
+  # a small annotation instead)
+  excluded_sites <- mpa_levels[!mpa_levels %in% final_mpas]
+  if (length(excluded_sites) > 0) {
+    # Add a dagger symbol to excluded MPA names in the factor labels
+    new_labels <- setNames(
+      ifelse(mpa_levels %in% final_mpas,
+             as.character(mpa_levels),
+             paste0(as.character(mpa_levels), " \u2020")),
+      mpa_levels
+    )
+    fig_appendix <- fig_appendix +
+      facet_wrap(~ CA_MPA_Name_Short, ncol = n_cols, scales = "free_x",
+                 labeller = labeller(CA_MPA_Name_Short = new_labels))
+  }
+
+  # Dimensions scale with number of MPAs (capped at Conservation Letters max)
+  fig_w <- min(17, n_cols * 4)  # Conservation Letters max width: 17cm
+  fig_h <- max(10, n_rows * 4)
+
+  # Create clean filename from taxa name
+  taxa_filename <- tolower(gsub("\\. ", "", taxa_i))
+  save_fig(fig_appendix,
+           paste0("fig_s06_appendix_", taxa_filename),
+           fig_w, fig_h)
+}
+
+cat("  Site-level appendix complete. Dagger (\u2020) marks sites excluded from analysis.\n")
+
+
+cat("\n")
+cat("========================================================================\n")
+cat("  ALL MANUSCRIPT FIGURES GENERATED SUCCESSFULLY\n")
+cat("  Main text: Fig 1-5\n")
+cat("  Supplemental: Fig S1-S6\n")
+cat("========================================================================\n")
+cat("\n=== All figures saved to:", here::here("plots"), "===\n")

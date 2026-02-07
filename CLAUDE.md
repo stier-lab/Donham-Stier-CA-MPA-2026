@@ -33,8 +33,8 @@ Donham-Stier-CA-MPA-2026/
 |-----------|-------------|------------------|--------|
 | Figure 1 | Map of MPAs with Channel Islands + inset kelp time series | `fig_01_mpa_map.pdf` | 10_figures.R |
 | Figure 2 | Data processing pipeline (raw → proportion → lnRR) | `fig_02_data_processing.pdf` | 10_figures.R |
-| Figure 3 | Mean effect sizes by taxa (meta-analysis) | `fig_03_mean_effects.pdf` | 10_figures.R |
-| Figure 4 | Urchin vs kelp lnRR scatterplot | `fig_04_urchin_kelp_scatter.pdf` | 10_figures.R |
+| Figure 3 | Meta-analytic mean effect sizes by taxa | `fig_03_mean_effects.pdf` | 10_figures.R |
+| Figure 4 | Trophic cascade: raw annual data (background) + MPA-level means w/ SE (foreground). (a) predator→urchin, (b) urchin→kelp | `fig_04_trophic_scatter.pdf` | 10_figures.R |
 
 **Figure 1 Details:**
 - Base map: Southern California coastline with Channel Islands
@@ -47,6 +47,10 @@ Donham-Stier-CA-MPA-2026/
 |-----------|-------------|------------------|--------|
 | Figure S1 | Forest plot: effect sizes by MPA for each taxa | `fig_s01_forest_plot.pdf` | 10_figures.R |
 | Figure S2 | All taxa time series at example MPAs | `fig_s02_all_taxa_timeseries.pdf` | 10_figures.R |
+| Figure S3 | Temporal dynamics of trophic cascade recovery | `fig_s03_temporal_dynamics.pdf` | 10_figures.R |
+| Figure S4 | Space-time heatmap of urchin response across MPAs | `fig_s04_spacetime_heatmap.pdf` | 10_figures.R |
+| Figure S5 | Model selection distribution and variance components | `fig_s05_statistical_transparency.pdf` | 10_figures.R |
+| Figure S6 | Site-level appendix: lnRR time series per taxa (5 files) | `fig_s06_appendix_*.pdf` | 10_figures.R |
 
 ### Tables
 

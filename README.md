@@ -253,7 +253,7 @@ source(here::here("code", "R", "run_all.R"))
 | **Figure 1** | Map of MPAs with Channel Islands + kelp time series insets | `plots/fig_01_mpa_map.pdf` |
 | **Figure 2** | Data processing pipeline visualization | `plots/fig_02_data_processing.pdf` |
 | **Figure 3** | Mean effect sizes by taxa (meta-analysis) | `plots/fig_03_mean_effects.pdf` |
-| **Figure 4** | Urchin vs kelp effect size relationship | `plots/fig_04_urchin_kelp_scatter.pdf` |
+| **Figure 4** | Trophic cascade scatterplots (4-panel: biomass top row, density bottom row) | `plots/fig_04_trophic_scatter.pdf` |
 
 ### Supplemental Figures
 
@@ -261,6 +261,10 @@ source(here::here("code", "R", "run_all.R"))
 |--------|-------------|-------------|
 | **Figure S1** | Forest plot: effect sizes by MPA | `plots/fig_s01_forest_plot.pdf` |
 | **Figure S2** | All taxa time series at example MPAs | `plots/fig_s02_all_taxa_timeseries.pdf` |
+| **Figure S3** | Temporal dynamics of trophic cascade | `plots/fig_s03_temporal_dynamics.png` |
+| **Figure S4** | Space-time effect heatmap across MPAs | `plots/fig_s04_spacetime_heatmap.png` |
+| **Figure S5** | Model selection and heterogeneity | `plots/fig_s05_statistical_transparency.png` |
+| **Figure S6** | Site-level appendix (5 taxa-specific panels) | `plots/fig_s06_appendix_*.png` |
 
 ### Tables
 
