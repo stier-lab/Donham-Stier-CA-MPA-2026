@@ -98,6 +98,20 @@ if (exists("meta_density")) {
   model_results$tau2_Source[model_results$response == "Density"] <- round(meta_density$sigma2[2], 4)
 }
 
+# Merge FDR p-values and low-k flags from Table2 into model_results CSV
+if (exists("Table2") && "pval_fdr" %in% names(Table2)) {
+  model_results$pval_fdr <- NA_real_
+  model_results$flag <- ""
+  for (i in seq_len(nrow(model_results))) {
+    match_idx <- which(Table2$Taxa == model_results$taxa[i] &
+                       Table2$Response == model_results$response[i])
+    if (length(match_idx) == 1) {
+      model_results$pval_fdr[i] <- Table2$pval_fdr[match_idx]
+      model_results$flag[i] <- Table2$Flag[match_idx]
+    }
+  }
+}
+
 # Write model results CSV
 model_results_path <- here::here("outputs", "model_results_summary.csv")
 write_csv(model_results, model_results_path)
@@ -187,9 +201,15 @@ if (nrow(model_results) > 0) {
     "",
     "### Biomass",
     "",
-    "| Taxa | k | Estimate | SE | t | p-value | 95% CI | Effect |",
-    "|------|---|----------|----|----|---------|--------|--------|"
+    "| Taxa | k | Estimate | SE | t | p-value | p (FDR) | 95% CI | Effect | Flag |",
+    "|------|---|----------|----|----|---------|---------|--------|--------|------|"
   )
+
+  # Ensure FDR p-values and flags exist on model_results (set earlier in CSV export)
+  if (!"pval_fdr" %in% names(model_results)) {
+    model_results$pval_fdr <- NA
+    model_results$flag <- ""
+  }
 
   bio_rows <- model_results[model_results$response == "Biomass", ]
   for (i in seq_len(nrow(bio_rows))) {
@@ -198,17 +218,21 @@ if (nrow(model_results) > 0) {
     sig_str <- ifelse(row$p_value < 0.001, "***",
                      ifelse(row$p_value < 0.01, "**",
                            ifelse(row$p_value < 0.05, "*", "")))
+    fdr_str <- ifelse(is.na(row$pval_fdr), "—",
+                     formatC(row$pval_fdr, format = "f", digits = 4))
+    flag_str <- ifelse(is.na(row$flag) | row$flag == "", "", row$flag)
     md_lines <- c(md_lines, paste0(
       "| ", row$taxa, " | ", row$n_effects, " | ", row$estimate, " | ",
       row$std_error, " | ", row$test_statistic, " | ",
       formatC(row$p_value, format = "f", digits = 4), sig_str, " | ",
-      ci_str, " | ", row$direction, " |"
+      fdr_str, " | ",
+      ci_str, " | ", row$direction, " | ", flag_str, " |"
     ))
   }
 
   md_lines <- c(md_lines, "", "### Density", "",
-    "| Taxa | k | Estimate | SE | t | p-value | 95% CI | Effect |",
-    "|------|---|----------|----|----|---------|--------|--------|"
+    "| Taxa | k | Estimate | SE | t | p-value | p (FDR) | 95% CI | Effect | Flag |",
+    "|------|---|----------|----|----|---------|---------|--------|--------|------|"
   )
 
   den_rows <- model_results[model_results$response == "Density", ]
@@ -218,16 +242,20 @@ if (nrow(model_results) > 0) {
     sig_str <- ifelse(row$p_value < 0.001, "***",
                      ifelse(row$p_value < 0.01, "**",
                            ifelse(row$p_value < 0.05, "*", "")))
+    fdr_str <- ifelse(is.na(row$pval_fdr), "—",
+                     formatC(row$pval_fdr, format = "f", digits = 4))
+    flag_str <- ifelse(is.na(row$flag) | row$flag == "", "", row$flag)
     md_lines <- c(md_lines, paste0(
       "| ", row$taxa, " | ", row$n_effects, " | ", row$estimate, " | ",
       row$std_error, " | ", row$test_statistic, " | ",
       formatC(row$p_value, format = "f", digits = 4), sig_str, " | ",
-      ci_str, " | ", row$direction, " |"
+      fdr_str, " | ",
+      ci_str, " | ", row$direction, " | ", flag_str, " |"
     ))
   }
 
   md_lines <- c(md_lines, "",
-    "*Significance: \\*p<0.05, \\*\\*p<0.01, \\*\\*\\*p<0.001*",
+    "*Significance: \\*p<0.05, \\*\\*p<0.01, \\*\\*\\*p<0.001 (uncorrected). p (FDR) = Benjamini-Hochberg adjusted p-values.*",
     ""
   )
 

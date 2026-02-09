@@ -12,7 +12,7 @@ This project analyzes the effects of California Marine Protected Areas (MPAs) on
 ```
 Donham-Stier-CA-MPA-2026/
 ├── code/
-│   └── R/                    # R scripts (numbered 00-10)
+│   └── R/                    # R scripts (numbered 00-11)
 ├── data/
 │   ├── cache/                # Bootstrap and intermediate results (.rds)
 │   ├── LANDSAT/              # Satellite kelp canopy data
@@ -34,12 +34,12 @@ Donham-Stier-CA-MPA-2026/
 | Figure 1 | Map of MPAs with Channel Islands + inset kelp time series | `fig_01_mpa_map.pdf` | 10_figures.R |
 | Figure 2 | Data processing pipeline (raw → proportion → lnRR) | `fig_02_data_processing.pdf` | 10_figures.R |
 | Figure 3 | Meta-analytic mean effect sizes by taxa | `fig_03_mean_effects.pdf` | 10_figures.R |
-| Figure 4 | Trophic cascade: raw annual data (background) + MPA-level means w/ SE (foreground). (a) predator→urchin, (b) urchin→kelp | `fig_04_trophic_scatter.pdf` | 10_figures.R |
+| Figure 4 | Trophic cascade scatter: 4-panel (a) predator biomass vs urchin biomass, (b) urchin biomass vs kelp biomass, (c) predator density vs urchin density, (d) urchin density vs kelp biomass | `fig_04_trophic_scatter.pdf` | 10_figures.R |
 
 **Figure 1 Details:**
 - Base map: Southern California coastline with Channel Islands
 - Site markers: Shape indicates data source (square=NPS-KFM, circle=LTER, triangle=PISCO)
-- Inset panels (a-f): Kelp biomass time series at Campus Point, Point Vicente, Harris Point, South Point, Gull Island, Santa Barbara Island
+- Inset panels (a-d): Kelp biomass time series at Campus Point, Harris Point, South Point, Santa Barbara Island
 
 ### Supplemental Figures
 
@@ -125,7 +125,7 @@ Pipeline order:
 07_combine_data.R        - Combine all sources
 08_effect_sizes.R        - Calculate effect sizes
 09_meta_analysis.R       - Multilevel meta-analysis
-10_figures.R             - Publication figures (Figs 1-4, S1-S2)
+10_figures.R             - Publication figures (Figs 1-4, S1-S6)
 11_results_summary.R     - Generate results CSVs and markdown summary
 run_all.R                - Pipeline orchestration
 ```
@@ -225,7 +225,7 @@ When adding new figures or outputs:
 ## Documentation
 
 - `docs/MPA_Kelp_MS_V5.pdf` - Current manuscript draft
-- `outputs/statistical_review_20260206.md` - Comprehensive statistical validation (agent review, Grade: A+)
+- `docs/statistical_review_20260206.md` - Comprehensive statistical validation (agent review, Grade: A+)
 - `docs/methodology_review.md` - Historical issue tracking and fixes
 - This file (`CLAUDE.md`) - Project conventions for AI assistants
 
@@ -233,3 +233,13 @@ When adding new figures or outputs:
 
 Authors: Emily Donham & Adrian Stier
 Project: Conservation Letters manuscript on MPA effects on kelp forest trophic cascades
+
+---
+
+## File Ownership (parallel work)
+- `code/` — R analysis scripts, each can be edited independently
+- `data/` — READ ONLY
+- `docs/` — documentation, independent
+- `outputs/` — generated results, safe to regenerate
+- `plots/` — generated figures, safe to regenerate
+- `logs/` — processing logs, reference only

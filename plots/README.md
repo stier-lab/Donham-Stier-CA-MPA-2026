@@ -14,14 +14,14 @@ plots/
 │   ├── fig_01_mpa_map.{pdf,png}
 │   ├── fig_02_data_processing.{pdf,png}
 │   ├── fig_03_mean_effects.{pdf,png}
-│   └── fig_04_trophic_scatter.png
+│   └── fig_04_trophic_scatter.{pdf,png}
 │
 └── Supplemental Figures:
     ├── fig_s01_forest_plot.{pdf,png}
     ├── fig_s02_all_taxa_timeseries.{pdf,png}
-    ├── fig_s03_temporal_dynamics.png
+    ├── fig_s03_temporal_dynamics.{pdf,png}
     ├── fig_s04_spacetime_heatmap.png
-    ├── fig_s05_statistical_transparency.png
+    ├── fig_s05_statistical_transparency.{pdf,png}
     └── fig_s06_appendix_{taxa}.png (5 files, one per taxa)
 ```
 
@@ -32,7 +32,7 @@ plots/
 | **Figure 1** | MPA map with Channel Islands insets and kelp time series | `fig_01_mpa_map.{pdf,png}` | 10_figures.R |
 | **Figure 2** | Data processing pipeline (raw → proportion → lnRR → model fit) | `fig_02_data_processing.{pdf,png}` | 10_figures.R |
 | **Figure 3** | Mean effect sizes by taxa from meta-analysis | `fig_03_mean_effects.{pdf,png}` | 10_figures.R |
-| **Figure 4** | Trophic cascade scatterplots: (a) predator→urchin, (b) urchin→kelp | `fig_04_trophic_scatter.png` | 10_figures.R |
+| **Figure 4** | Trophic cascade scatterplots: 4-panel (a) predator→urchin biomass, (b) urchin→kelp biomass, (c) predator→urchin density, (d) urchin→kelp density | `fig_04_trophic_scatter.{pdf,png}` | 10_figures.R |
 
 ## Supplemental Figures
 
@@ -40,9 +40,9 @@ plots/
 |--------|-------------|-------|--------------|
 | **Figure S1** | Forest plot showing effect sizes by MPA and taxa | `fig_s01_forest_plot.{pdf,png}` | 10_figures.R |
 | **Figure S2** | All taxa time series at 3 example MPAs | `fig_s02_all_taxa_timeseries.{pdf,png}` | 10_figures.R |
-| **Figure S3** | Temporal dynamics: effect size accumulation over time | `fig_s03_temporal_dynamics.png` | 10_figures.R |
+| **Figure S3** | Temporal dynamics: effect size accumulation over time | `fig_s03_temporal_dynamics.{pdf,png}` | 10_figures.R |
 | **Figure S4** | Space-time heatmap: effects across MPAs and years | `fig_s04_spacetime_heatmap.png` | 10_figures.R |
-| **Figure S5** | Statistical transparency: model selection and heterogeneity | `fig_s05_statistical_transparency.png` | 10_figures.R |
+| **Figure S5** | Statistical transparency: model selection and heterogeneity | `fig_s05_statistical_transparency.{pdf,png}` | 10_figures.R |
 | **Figure S6** | Site-level appendix: individual lnRR time series for all taxa | `fig_s06_appendix_*.png` (5 files) | 10_figures.R |
 
 ### Figure S6 Taxa-Specific Files
@@ -72,7 +72,7 @@ The `archive/` subdirectory contains outdated figures from earlier analyses:
 | File | Date | Reason for Archival |
 |------|------|---------------------|
 | `fig_03_mean_effects_cascade.png` | 2026-02-06 09:46 | Superseded by current `fig_03_mean_effects.*` |
-| `fig_04_urchin_kelp_scatter.*` | 2026-02-05/06 | Renamed to `fig_04_trophic_scatter.png` to reflect 2-panel design |
+| `fig_04_urchin_kelp_scatter.*` | 2026-02-05/06 | Renamed to `fig_04_trophic_scatter` (now 4-panel: biomass + density) |
 | `fig_05_trophic_cascade_pathway.png` | 2026-02-06 09:50 | From deprecated code block (if(FALSE) in 10_figures.R) |
 
 ## Figure Generation
@@ -92,8 +92,8 @@ source(here::here("code", "R", "run_all.R"))
 ### Export Formats
 
 - **Main text figures**: Exported as both PDF (vector) and PNG (300 DPI raster)
-- **Supplemental figures S1-S2**: Exported as both PDF and PNG
-- **Supplemental figures S3-S6**: Exported as PNG only (complex multi-panel figures)
+- **Supplemental figures S1-S3, S5**: Exported as both PDF and PNG
+- **Supplemental figures S4, S6**: Exported as PNG only
 
 ### Figure Dimensions
 

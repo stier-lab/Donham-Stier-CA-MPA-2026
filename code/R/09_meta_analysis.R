@@ -568,6 +568,25 @@ Table2$Taxa <- factor(Table2$Taxa, levels = taxa_order)
 Table2 <- Table2[order(Table2$Response, Table2$Taxa), ]
 rownames(Table2) <- NULL
 
+# Flag taxa with very few effect sizes (k < 5)
+Table2$Flag <- ifelse(Table2$k < 5, "preliminary (k<5)", "")
+
+low_k <- Table2[Table2$k < 5, ]
+if (nrow(low_k) > 0) {
+  cat("\nWARNING: The following taxa have k < 5 effect sizes (interpret with caution):\n")
+  print(low_k[, c("Taxa", "Response", "k", "Estimate", "pval")])
+}
+
+# FDR-corrected p-values for multiple testing across all taxa-response tests
+Table2$pval_fdr <- p.adjust(Table2$pval, method = "fdr")
+
+cat("\n--- Multiple Testing Correction (FDR) ---\n")
+cat("Tests conducted:", nrow(Table2), "\n")
+sig_uncorrected <- sum(Table2$pval < 0.05)
+sig_fdr <- sum(Table2$pval_fdr < 0.05)
+cat("Significant at p<0.05 (uncorrected):", sig_uncorrected, "\n")
+cat("Significant at p<0.05 (FDR-corrected):", sig_fdr, "\n")
+
 cat("\n============================\n")
 cat("TABLE 2: Meta-analysis results\n")
 cat("============================\n")
@@ -718,18 +737,21 @@ cat("  2. outputs/filter_audit_meta_analysis.csv (09_meta_analysis.R outlier rem
 cat("  3. outputs/filter_summary_by_taxa.csv (taxa-level summary)\n")
 
 ####################################################################################################
-## Table 3: Linear relationships between taxa (urchin density ~ kelp biomass) ######################
+## Table 3: Meta-regressions between taxa (trophic cascade relationships) ##########################
 ####################################################################################################
 
 # Table 3 tests the trophic cascade relationship: whether urchin density effect sizes
 # predict kelp biomass effect sizes across MPAs.
-# This uses simple linear regression on the MPA-level effect sizes.
+# Uses metafor::rma() meta-regression instead of OLS because:
+#   1. Both X and Y are estimated effect sizes with measurement error
+#   2. OLS biases slopes toward zero when the predictor has error (attenuation bias)
+#   3. rma() properly weights by the response's sampling variance (vi = SE^2)
 
 # Merge effect sizes by MPA to test cross-taxa relationships
 # We need MPA-level estimates for different taxa in the same row
 
 # Get primary effect sizes per MPA for each taxa x response combination
-# Pivot both Mean and SE so we can use inverse-variance weights in Table 3
+# Pivot both Mean and SE so we can use sampling variance in meta-regression
 es_wide_mean <- SumStats.Final %>%
   dplyr::select(Taxa, MPA, Mean, Resp) %>%
   dplyr::mutate(Mean = as.numeric(Mean)) %>%
@@ -749,82 +771,131 @@ names(es_wide) <- gsub(" ", "_", names(es_wide))
 names(es_wide) <- gsub("\\.", "_", names(es_wide))
 
 cat("\n============================\n")
-cat("TABLE 3: Cross-taxa linear models\n")
+cat("TABLE 3: Cross-taxa meta-regressions (metafor::rma)\n")
 cat("============================\n")
+
+#' Helper to print rma meta-regression results in a compact, readable format
+#' @param model An rma model object
+#' @param label Character string describing the model
+print_meta_reg <- function(model, label) {
+  cat("\n---", label, "---\n")
+  cat(sprintf("k = %d effect sizes\n", model$k))
+  # Moderator (slope) coefficient
+  coef_tbl <- coef(summary(model))
+  # Row 1 = intercept, Row 2 = moderator slope
+  cat(sprintf("Intercept:  estimate = %.4f, SE = %.4f, p = %.4f\n",
+              coef_tbl[1, "estimate"], coef_tbl[1, "se"], coef_tbl[1, "pval"]))
+  cat(sprintf("Slope:      estimate = %.4f, SE = %.4f, p = %.4f\n",
+              coef_tbl[2, "estimate"], coef_tbl[2, "se"], coef_tbl[2, "pval"]))
+  cat(sprintf("  95%% CI for slope: [%.4f, %.4f]\n",
+              coef_tbl[2, "ci.lb"], coef_tbl[2, "ci.ub"]))
+  # Model fit statistics
+  cat(sprintf("Test of moderator: QM(df=%d) = %.4f, p = %.4f\n",
+              model$m, model$QM, model$QMp))
+  cat(sprintf("Residual heterogeneity: QE(df=%d) = %.4f, p = %.4f\n",
+              model$k - model$p, model$QE, model$QEp))
+  cat(sprintf("tau² = %.4f, I² = %.1f%%\n", model$tau2, model$I2))
+  cat(sprintf("R² (variance explained by moderator) = %.1f%%\n",
+              ifelse(is.null(model$R2), NA, model$R2)))
+  cat("\n")
+}
 
 # Model 1: S. purpuratus density predicts M. pyrifera biomass
 # (urchin grazing hypothesis: more urchins -> less kelp)
 if (all(c("S_purpuratus_Den", "M_pyrifera_Bio") %in% names(es_wide))) {
-  es_purp_macro <- es_wide[complete.cases(es_wide[, c("S_purpuratus_Den", "M_pyrifera_Bio")]), ]
-  if (nrow(es_purp_macro) >= 3) {
-    # Inverse-variance weights from SE of the response variable
-    w_col <- "M_pyrifera_SE_Bio"
-    w <- if (w_col %in% names(es_purp_macro)) 1 / as.numeric(es_purp_macro[[w_col]])^2 else NULL
-    lm_purp_macro <- lm(M_pyrifera_Bio ~ S_purpuratus_Den, data = es_purp_macro, weights = w)
-    cat("\n--- S. purpuratus density -> M. pyrifera biomass ---\n")
-    print(summary(lm_purp_macro))
+  w_col <- "M_pyrifera_SE_Bio"
+  req_cols <- c("S_purpuratus_Den", "M_pyrifera_Bio", w_col)
+  if (w_col %in% names(es_wide)) {
+    es_purp_macro <- es_wide[complete.cases(es_wide[, req_cols]), ]
+    if (nrow(es_purp_macro) >= 3) {
+      meta_purp_macro <- rma(yi = es_purp_macro$M_pyrifera_Bio,
+                             vi = as.numeric(es_purp_macro[[w_col]])^2,
+                             mods = ~ S_purpuratus_Den,
+                             data = es_purp_macro, method = "REML")
+      print_meta_reg(meta_purp_macro, "S. purpuratus density -> M. pyrifera biomass")
+    }
   }
 }
 
 # Model 2: M. franciscanus density predicts M. pyrifera biomass
 if (all(c("M_franciscanus_Den", "M_pyrifera_Bio") %in% names(es_wide))) {
-  es_reds_macro <- es_wide[complete.cases(es_wide[, c("M_franciscanus_Den", "M_pyrifera_Bio")]), ]
-  if (nrow(es_reds_macro) >= 3) {
-    w_col <- "M_pyrifera_SE_Bio"
-    w <- if (w_col %in% names(es_reds_macro)) 1 / as.numeric(es_reds_macro[[w_col]])^2 else NULL
-    lm_reds_macro <- lm(M_pyrifera_Bio ~ M_franciscanus_Den, data = es_reds_macro, weights = w)
-    cat("\n--- M. franciscanus density -> M. pyrifera biomass ---\n")
-    print(summary(lm_reds_macro))
+  w_col <- "M_pyrifera_SE_Bio"
+  req_cols <- c("M_franciscanus_Den", "M_pyrifera_Bio", w_col)
+  if (w_col %in% names(es_wide)) {
+    es_reds_macro <- es_wide[complete.cases(es_wide[, req_cols]), ]
+    if (nrow(es_reds_macro) >= 3) {
+      meta_reds_macro <- rma(yi = es_reds_macro$M_pyrifera_Bio,
+                             vi = as.numeric(es_reds_macro[[w_col]])^2,
+                             mods = ~ M_franciscanus_Den,
+                             data = es_reds_macro, method = "REML")
+      print_meta_reg(meta_reds_macro, "M. franciscanus density -> M. pyrifera biomass")
+    }
   }
 }
 
 # Model 3: P. interruptus density predicts S. purpuratus density
 # (predator-prey: more lobsters -> fewer urchins)
 if (all(c("P_interruptus_Den", "S_purpuratus_Den") %in% names(es_wide))) {
-  es_lob_purp <- es_wide[complete.cases(es_wide[, c("P_interruptus_Den", "S_purpuratus_Den")]), ]
-  if (nrow(es_lob_purp) >= 3) {
-    w_col <- "S_purpuratus_SE_Den"
-    w <- if (w_col %in% names(es_lob_purp)) 1 / as.numeric(es_lob_purp[[w_col]])^2 else NULL
-    lm_lob_purp <- lm(S_purpuratus_Den ~ P_interruptus_Den, data = es_lob_purp, weights = w)
-    cat("\n--- P. interruptus density -> S. purpuratus density ---\n")
-    print(summary(lm_lob_purp))
+  w_col <- "S_purpuratus_SE_Den"
+  req_cols <- c("P_interruptus_Den", "S_purpuratus_Den", w_col)
+  if (w_col %in% names(es_wide)) {
+    es_lob_purp <- es_wide[complete.cases(es_wide[, req_cols]), ]
+    if (nrow(es_lob_purp) >= 3) {
+      meta_lob_purp <- rma(yi = es_lob_purp$S_purpuratus_Den,
+                           vi = as.numeric(es_lob_purp[[w_col]])^2,
+                           mods = ~ P_interruptus_Den,
+                           data = es_lob_purp, method = "REML")
+      print_meta_reg(meta_lob_purp, "P. interruptus density -> S. purpuratus density")
+    }
   }
 }
 
 # Model 4: S. pulcher density predicts S. purpuratus density
 # (predator-prey: more sheephead -> fewer urchins)
 if (all(c("S_pulcher_Den", "S_purpuratus_Den") %in% names(es_wide))) {
-  es_sheep_purp <- es_wide[complete.cases(es_wide[, c("S_pulcher_Den", "S_purpuratus_Den")]), ]
-  if (nrow(es_sheep_purp) >= 3) {
-    w_col <- "S_purpuratus_SE_Den"
-    w <- if (w_col %in% names(es_sheep_purp)) 1 / as.numeric(es_sheep_purp[[w_col]])^2 else NULL
-    lm_sheep_purp <- lm(S_purpuratus_Den ~ S_pulcher_Den, data = es_sheep_purp, weights = w)
-    cat("\n--- S. pulcher density -> S. purpuratus density ---\n")
-    print(summary(lm_sheep_purp))
+  w_col <- "S_purpuratus_SE_Den"
+  req_cols <- c("S_pulcher_Den", "S_purpuratus_Den", w_col)
+  if (w_col %in% names(es_wide)) {
+    es_sheep_purp <- es_wide[complete.cases(es_wide[, req_cols]), ]
+    if (nrow(es_sheep_purp) >= 3) {
+      meta_sheep_purp <- rma(yi = es_sheep_purp$S_purpuratus_Den,
+                             vi = as.numeric(es_sheep_purp[[w_col]])^2,
+                             mods = ~ S_pulcher_Den,
+                             data = es_sheep_purp, method = "REML")
+      print_meta_reg(meta_sheep_purp, "S. pulcher density -> S. purpuratus density")
+    }
   }
 }
 
 # Model 5: P. interruptus biomass predicts S. purpuratus biomass
 if (all(c("P_interruptus_Bio", "S_purpuratus_Bio") %in% names(es_wide))) {
-  es_lob_purp_bio <- es_wide[complete.cases(es_wide[, c("P_interruptus_Bio", "S_purpuratus_Bio")]), ]
-  if (nrow(es_lob_purp_bio) >= 3) {
-    w_col <- "S_purpuratus_SE_Bio"
-    w <- if (w_col %in% names(es_lob_purp_bio)) 1 / as.numeric(es_lob_purp_bio[[w_col]])^2 else NULL
-    lm_lob_purp_bio <- lm(S_purpuratus_Bio ~ P_interruptus_Bio, data = es_lob_purp_bio, weights = w)
-    cat("\n--- P. interruptus biomass -> S. purpuratus biomass ---\n")
-    print(summary(lm_lob_purp_bio))
+  w_col <- "S_purpuratus_SE_Bio"
+  req_cols <- c("P_interruptus_Bio", "S_purpuratus_Bio", w_col)
+  if (w_col %in% names(es_wide)) {
+    es_lob_purp_bio <- es_wide[complete.cases(es_wide[, req_cols]), ]
+    if (nrow(es_lob_purp_bio) >= 3) {
+      meta_lob_purp_bio <- rma(yi = es_lob_purp_bio$S_purpuratus_Bio,
+                               vi = as.numeric(es_lob_purp_bio[[w_col]])^2,
+                               mods = ~ P_interruptus_Bio,
+                               data = es_lob_purp_bio, method = "REML")
+      print_meta_reg(meta_lob_purp_bio, "P. interruptus biomass -> S. purpuratus biomass")
+    }
   }
 }
 
 # Model 6: S. pulcher biomass predicts S. purpuratus biomass
 if (all(c("S_pulcher_Bio", "S_purpuratus_Bio") %in% names(es_wide))) {
-  es_sheep_purp_bio <- es_wide[complete.cases(es_wide[, c("S_pulcher_Bio", "S_purpuratus_Bio")]), ]
-  if (nrow(es_sheep_purp_bio) >= 3) {
-    w_col <- "S_purpuratus_SE_Bio"
-    w <- if (w_col %in% names(es_sheep_purp_bio)) 1 / as.numeric(es_sheep_purp_bio[[w_col]])^2 else NULL
-    lm_sheep_purp_bio <- lm(S_purpuratus_Bio ~ S_pulcher_Bio, data = es_sheep_purp_bio, weights = w)
-    cat("\n--- S. pulcher biomass -> S. purpuratus biomass ---\n")
-    print(summary(lm_sheep_purp_bio))
+  w_col <- "S_purpuratus_SE_Bio"
+  req_cols <- c("S_pulcher_Bio", "S_purpuratus_Bio", w_col)
+  if (w_col %in% names(es_wide)) {
+    es_sheep_purp_bio <- es_wide[complete.cases(es_wide[, req_cols]), ]
+    if (nrow(es_sheep_purp_bio) >= 3) {
+      meta_sheep_purp_bio <- rma(yi = es_sheep_purp_bio$S_purpuratus_Bio,
+                                 vi = as.numeric(es_sheep_purp_bio[[w_col]])^2,
+                                 mods = ~ S_pulcher_Bio,
+                                 data = es_sheep_purp_bio, method = "REML")
+      print_meta_reg(meta_sheep_purp_bio, "S. pulcher biomass -> S. purpuratus biomass")
+    }
   }
 }
 

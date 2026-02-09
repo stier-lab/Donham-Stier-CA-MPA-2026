@@ -56,14 +56,14 @@
 
 These analysis artifacts were created during development:
 
-| File | Size | Purpose |
-|------|------|---------|
-| `crossed_structure_verification.md` | 7.3 KB | Random effects verification |
-| `data_flow_summary.csv` | 434 B | Data flow documentation |
-| `filter_audit_effect_sizes.csv` | 49 KB | Effect size filtering audit |
-| `filter_audit_meta_analysis.csv` | 26 KB | Meta-analysis filtering audit |
-| `filter_summary_by_taxa.csv` | 473 B | Taxa filter summary |
-| `random_effects_analysis.md` | 19 KB | Random effects justification |
+| File | Location | Size | Purpose |
+|------|----------|------|---------|
+| `crossed_structure_verification.md` | `docs/` | 7.3 KB | Random effects verification |
+| `random_effects_analysis.md` | `docs/` | 19 KB | Random effects justification |
+| `data_flow_summary.csv` | `outputs/` | 434 B | Data flow documentation |
+| `filter_audit_effect_sizes.csv` | `outputs/` | 49 KB | Effect size filtering audit |
+| `filter_audit_meta_analysis.csv` | `outputs/` | 26 KB | Meta-analysis filtering audit |
+| `filter_summary_by_taxa.csv` | `outputs/` | 473 B | Taxa filter summary |
 
 **Decision:** Keep these as supplementary documentation? They're referenced in CHANGELOG_FOR_EMILY.md.
 
@@ -155,11 +155,10 @@ Donham-Stier-CA-MPA-2026/
 ├── docs/
 │   ├── CHANGELOG_FOR_EMILY.md
 │   ├── RESULTS_SUMMARY.md
-│   ├── STATISTICAL_REVIEW.md
+│   ├── statistical_review_20260206.md
 │   └── ...
 ├── outputs/                  # Analysis artifacts
 │   ├── filter_audit_*.csv
-│   ├── random_effects_analysis.md
 │   └── ...
 ├── plots/
 │   ├── fig_*.pdf/png        # Publication figures only

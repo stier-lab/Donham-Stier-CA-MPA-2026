@@ -89,19 +89,8 @@ All.RR <- rbind(LTER.join.ave, Swath.join.sub, KFM.join.ave, LTER.lob,
 All.RR.sub <- subset(All.RR, !(CA_MPA_Name_Short %in% SHEEPHEAD_ONLY_MPAS))
 
 # Re-include sheephead-only MPAs for SPUL (sheephead) taxa only
-# SPUL = species code for Semicossyphus pulcher (California sheephead)
-# This selective re-inclusion lets us analyze sheephead at these MPAs without
-# biasing the multi-species summaries
-All.spul <- subset(All.RR,
-  (CA_MPA_Name_Short == "Blue Cavern Onshore SMCA" & y == "SPUL") |
-  (CA_MPA_Name_Short == "Dana Point SMCA" & y == "SPUL") |
-  (CA_MPA_Name_Short == "Farnsworth Onshore SMCA" & y == "SPUL") |
-  (CA_MPA_Name_Short == "Swamis SMCA" & y == "SPUL") |
-  (CA_MPA_Name_Short == "Cat Harbor SMCA" & y == "SPUL") |
-  (CA_MPA_Name_Short == "Long Point SMR" & y == "SPUL") |
-  (CA_MPA_Name_Short == "Santa Barbara Island SMR" & y == "SPUL" & source == "PISCO") |
-  (CA_MPA_Name_Short == "Santa Barbara Island SMR" & source == "KFM")
-)
+# Uses reinclude_sheephead_mpas() from 01_utils.R to avoid duplicating logic
+All.spul <- reinclude_sheephead_mpas(All.RR, taxon_col = "y", sheephead_value = "SPUL")
 
 # Add the sheephead-specific rows back to the main dataset
 All.RR.sub <- rbind(All.RR.sub, All.spul)
@@ -211,16 +200,9 @@ All.Resp <- rbind(KFM.fish.den.long.std, LTER.fish.resp.std, LTER.macro.resp.std
 All.Resp.sub <- subset(All.Resp, !(CA_MPA_Name_Short %in% SHEEPHEAD_ONLY_MPAS))
 
 # Re-include sheephead-only MPAs for Semicossyphus pulcher
-All.Resp.spul <- subset(All.Resp,
-  (CA_MPA_Name_Short == "Blue Cavern Onshore SMCA" & taxon_name == "Semicossyphus pulcher") |
-  (CA_MPA_Name_Short == "Dana Point SMCA" & taxon_name == "Semicossyphus pulcher") |
-  (CA_MPA_Name_Short == "Farnsworth Onshore SMCA" & taxon_name == "Semicossyphus pulcher") |
-  (CA_MPA_Name_Short == "Swamis SMCA" & taxon_name == "Semicossyphus pulcher") |
-  (CA_MPA_Name_Short == "Cat Harbor SMCA" & taxon_name == "Semicossyphus pulcher") |
-  (CA_MPA_Name_Short == "Long Point SMR" & taxon_name == "Semicossyphus pulcher") |
-  (CA_MPA_Name_Short == "Santa Barbara Island SMR" & taxon_name == "Semicossyphus pulcher" & source == "PISCO") |
-  (CA_MPA_Name_Short == "Santa Barbara Island SMR" & source == "KFM")
-)
+# Uses reinclude_sheephead_mpas() from 01_utils.R to avoid duplicating logic
+All.Resp.spul <- reinclude_sheephead_mpas(All.Resp, taxon_col = "taxon_name",
+                                           sheephead_value = "Semicossyphus pulcher")
 
 All.Resp.sub <- rbind(All.Resp.sub, All.Resp.spul)
 

@@ -48,12 +48,12 @@ A comprehensive review of the statistical pipeline was conducted, examining:
 
 | Finding | Old Value | Corrected Value |
 |---------|-----------|-----------------|
-| Purple urchin biomass | p = 0.027 | **p = 0.192 (not significant)** |
+| Purple urchin biomass | p = 0.027 | **p = 0.253 (not significant)** |
 | Purple urchin density | lnRR = -2.09 | **lnRR = -2.40** |
-| Lobster biomass | p = 0.021 | **p = 0.220 (not significant)** |
-| Sheephead biomass | lnRR = +1.20 | **lnRR = +1.23** |
-| Red urchin biomass | p = 0.003 | **p = 0.014** |
-| Kelp biomass | lnRR = +0.64 | **lnRR = +0.67** |
+| Lobster biomass | p = 0.021 | **p = 0.307 (not significant)** |
+| Sheephead biomass | lnRR = +1.20 | **lnRR = +1.17** |
+| Red urchin biomass | p = 0.003 | **p = 0.320 (not significant)** |
+| Kelp biomass | lnRR = +0.64 | **lnRR = +0.54** |
 
 **Narrative reframing:** Cascade story now emphasizes **density-mediated** urchin control (highly significant) rather than biomass effects (more variable).
 
@@ -90,22 +90,23 @@ The Cook's distance threshold (4/n = ~0.057) is standard meta-analytic practice 
 
 | Effect | Old p | New p | Sample Size | Narrative Impact |
 |--------|-------|-------|-------------|------------------|
-| S. purpuratus Biomass | 0.042 | 0.192 | k=3 | **Density still significant (p<0.001)** - cascade story intact |
-| P. interruptus Biomass | 0.047 | 0.220 | k=2 | **Small k limits power** - effect direction still correct |
+| S. purpuratus Biomass | 0.042 | 0.253 | k=3 | **Density still significant (p<0.001)** - cascade story intact |
+| M. franciscanus Biomass | 0.626 | 0.320 | k=2 | **Small k limits power** |
+| M. pyrifera Biomass | 0.028 | 0.155 | k=17 | **Positive trend (+54%) but no longer significant** |
+| P. interruptus Biomass | 0.047 | 0.307 | k=2 | **Small k limits power** - effect direction still correct |
 
 ### Effects That Gained Significance
 
 | Effect | Old p | New p | Sample Size | Narrative Impact |
 |--------|-------|-------|-------------|------------------|
-| M. franciscanus Biomass | 0.626 | 0.014 | k=3 | **Strengthens fishing vs predation distinction** |
-| S. pulcher Biomass | 0.558 | <0.001 | k=10 | **Provides robust predator recovery evidence** |
+| S. pulcher Biomass | 0.558 | 0.004 | k=10 | **Provides robust predator recovery evidence** |
 
 ### Overall Cascade Narrative
 
 **STILL STRONG because:**
 1. Purple urchin **density** (p<0.001, -91%) is the most direct measure of population control
-2. Sheephead predator recovery is now ironclad (p<0.001, +243%)
-3. Kelp recovery unchanged (p=0.031, +96%)
+2. Sheephead predator recovery is robust (p=0.004, +117%)
+3. Kelp shows positive trend (+54%) though not significant (p=0.155)
 4. All effects show expected directions
 
 **Recommended reframing:** Emphasize the density-mediated cascade mechanism rather than biomass effects.
@@ -135,7 +136,7 @@ The Cook's distance threshold (4/n = ~0.057) is standard meta-analytic practice 
 
 ### Suggested Results Text
 
-> "We detected strong evidence for trophic cascade restoration. Purple urchin populations declined dramatically in density (91% decrease, p<0.001, lnRR=-2.40), while giant kelp increased substantially in biomass (96% increase, p=0.031, lnRR=+0.67). This density-mediated urchin decline was accompanied by recovery of the primary predator: California sheephead biomass increased 243% (p<0.001, lnRR=+1.23). Lobster biomass showed substantial gains with high site-to-site variability (93% average increase, p=0.220, based on 2 MPAs)."
+> "We detected strong evidence for trophic cascade restoration. Purple urchin populations declined dramatically in density (91% decrease, p<0.001, lnRR=-2.40), while giant kelp showed a positive biomass trend (72% increase, p=0.155, lnRR=+0.54). This density-mediated urchin decline was accompanied by recovery of the primary predator: California sheephead biomass increased 221% (p=0.004, lnRR=+1.17). Lobster biomass showed positive trends with high site-to-site variability (80% average increase, p=0.307, based on 2 MPAs)."
 
 ### Methods Text Addition
 

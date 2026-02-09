@@ -83,19 +83,19 @@ source_levels <- c("KFM", "LTER", "PISCO", "Landsat")
 # =============================================================================
 # Figure dimension constants (Conservation Letters specifications)
 # =============================================================================
-# Journal max widths: single column = 80mm, double column = 170mm
+# Journal max widths: single column = 85mm, double column = 178mm
 FIG_WIDTH_SINGLE <- 12   # cm, for single-column figures
 FIG_WIDTH_DOUBLE <- 17   # cm, for double-column figures
 FIG_WIDTH_WIDE   <- 18   # cm, for figures needing extra width
-FIG_WIDTH_SUPP   <- 22   # cm, for supplemental figures with legends
+FIG_WIDTH_SUPP   <- 17.8 # cm, Conservation Letters max width for supplemental figures
 
 # Figure-specific dimensions (width, height in cm)
 # Note: Figure 1 dimensions are defined in analysis/R/fig01_map.R
 FIG2_DIMS <- c(w = 17, h = 7.5)  # Data processing pipeline — double-column width
 FIG3_DIMS <- c(w = 14, h = 10)   # Mean effects — single-column+
 FIG4_DIMS <- c(w = 17, h = 9)    # Trophic cascade scatters (2-panel: pred→urchin | urchin→kelp)
-FIG_S1_DIMS <- c(w = 18, h = 22) # Forest plot (supplemental)
-FIG_S2_DIMS <- c(w = 17, h = 22) # All taxa time series (supplemental)
+FIG_S1_DIMS <- c(w = 17.8, h = 22) # Forest plot (supplemental)
+FIG_S2_DIMS <- c(w = 17.8, h = 22) # All taxa time series (supplemental, max CL width)
 
 cat("=== Starting figure generation ===\n")
 
@@ -385,7 +385,7 @@ theme_legend_bottom <- function(title_size = 10, text_size = 9) {
   theme(
     legend.position = "bottom",
     legend.box = "horizontal",
-    legend.title = element_text(face = "bold", size = title_size),
+    legend.title = element_text(face = "plain", size = title_size),
     legend.text = element_text(size = text_size),
     legend.spacing.x = unit(0.4, "cm")
   )
@@ -395,7 +395,7 @@ theme_legend_bottom <- function(title_size = 10, text_size = 9) {
 theme_legend_right <- function(title_size = 9, text_size = 8.5, italic = TRUE) {
   theme(
     legend.position = "right",
-    legend.title = element_text(face = "bold", size = title_size),
+    legend.title = element_text(face = "plain", size = title_size),
     legend.text = element_text(
       size = text_size,
       face = if (italic) "italic" else "plain"
@@ -588,7 +588,7 @@ if (has_fig1_pkgs) {
   }
 
   # --- 7. Color Palettes ---
-  ocean_colors <- c("#08306B", "#2171B5", "#6BAED6", "#C6DBEF")
+  ocean_colors <- c("#1A4A7A", "#5A8DB8", "#8FBDD6", "#D6E8F0")
   fig1_status_colors <- c(
     "Inside MPA" = if (exists("col_site")) unname(col_site["Inside"]) else "#2A7B8E",
     "Outside MPA" = if (exists("col_site")) unname(col_site["Outside"]) else "#8C7B6A"
@@ -611,54 +611,74 @@ if (has_fig1_pkgs) {
       breaks = c(-1500, -1000, -500, -100),
       labels = c("1500", "1000", "500", "100"),
       limits = c(min(bathy_ocean$depth, na.rm = TRUE), 0),
-      guide = guide_colorbar(barwidth = 1.0, barheight = 6, title.position = "top",
-                             title.hjust = 0.5, frame.colour = "grey50", ticks.colour = "grey50")
+      guide = guide_colorbar(barwidth = 0.5, barheight = 3, title.position = "top",
+                             title.hjust = 0.5, frame.colour = "grey50", ticks.colour = "grey50",
+                             order = 3)
     ) +
     geom_contour(data = bathy_ocean, aes(x = lon, y = lat, z = depth),
                  breaks = c(-100, -200, -500, -1000), color = "white",
-                 linewidth = 0.15, alpha = 0.35) +
+                 linewidth = 0.12, alpha = 0.25) +
     geom_sf(data = mpa, fill = fig1_map_colors$mpa_fill, color = fig1_map_colors$mpa_border,
-            alpha = 0.30, linewidth = 0.5, inherit.aes = FALSE) +
+            alpha = 0.22, linewidth = 0.4, inherit.aes = FALSE) +
     new_scale_fill() +
     geom_spatraster(data = hillshade, maxcell = 5e5) +
     scale_fill_gradientn(colors = terrain_pal, na.value = NA, guide = "none") +
     geom_sf(data = coast, fill = alpha("#F5F0E1", 0.15), color = NA, inherit.aes = FALSE) +
     geom_sf(data = coast, fill = NA, color = fig1_map_colors$coastline,
-            linewidth = 0.5, inherit.aes = FALSE) +
+            linewidth = 0.4, inherit.aes = FALSE) +
     geom_segment(data = sites_pairs, aes(x = x_in, y = y_in, xend = x_out, yend = y_out),
-                 color = "grey60", linewidth = 0.8, alpha = 0.7) +
+                 color = "grey65", linewidth = 0.45, alpha = 0.7) +
     new_scale_fill() +
     geom_point(data = fig1_sites, aes(x = Lon, y = Lat, fill = status, shape = program),
-               size = 3.5, color = "white", stroke = 0.8) +
-    scale_fill_manual(name = "MPA Status", values = fig1_status_colors,
-                      guide = guide_legend(order = 1, override.aes = list(shape = 21, size = 4))) +
-    scale_shape_manual(name = "Program", values = program_shapes,
-                       guide = guide_legend(order = 2, override.aes = list(fill = "grey50", size = 4))) +
-    geom_text(data = sites_labels, aes(x = Lon, y = Lat - 0.08, label = site_label),
-              size = 3.0, fontface = "bold", color = "#1A1A1A") +
+               size = 3.6, color = "white", stroke = 0.9) +
+    scale_fill_manual(name = "Inside vs Outside MPA", values = fig1_status_colors,
+                      guide = guide_legend(order = 1, override.aes = list(shape = 21, size = 3))) +
+    scale_shape_manual(name = "Monitoring program", values = program_shapes,
+                       guide = guide_legend(order = 2, override.aes = list(fill = "grey60", size = 3))) +
+    # Label only the panel sites with (a)–(d) at the true site location (not offset points)
+    geom_text(data = sites_labels, aes(x = Lon, y = Lat - 0.04, label = paste0("(", panel_letter, ")")),
+              size = 3.3, fontface = "plain", color = "#1A1A1A") +
+    # Compact key so readers can map (a)-(d) to site names without cluttering the coast.
+    annotate(
+      "label",
+      # Put the (a)-(d) key in the top-left so it never competes with the inset
+      # (bottom-right) and keeps the bottom-left free for scale + compass.
+      x = BBOX_LONLAT["xmin"] + 0.10, y = BBOX_LONLAT["ymax"] - 0.06,
+      label = paste(panel_label_df$site_label, collapse = "\n"),
+      hjust = 0, vjust = 1,
+      size = 2.8, label.size = 0.25,
+      label.padding = unit(0.18, "lines"),
+      fill = scales::alpha("white", 0.85), color = "grey40"
+    ) +
     coord_sf(xlim = c(BBOX_LONLAT["xmin"], BBOX_LONLAT["xmax"]),
              ylim = c(BBOX_LONLAT["ymin"], BBOX_LONLAT["ymax"]), expand = FALSE, crs = 4326) +
     annotation_scale(location = "bl", width_hint = 0.2, pad_x = unit(0.3, "in"),
                      pad_y = unit(0.3, "in"), style = "ticks", text_cex = 0.75, line_width = 0.4) +
-    annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.25, "in"),
-                           pad_y = unit(0.25, "in"), style = north_arrow_minimal,
+    # Compass moved away from legends and inset; lift it above the scalebar.
+    annotation_north_arrow(location = "bl", which_north = "true", pad_x = unit(0.3, "in"),
+                           pad_y = unit(1.1, "in"), style = north_arrow_minimal,
                            height = unit(0.7, "cm"), width = unit(0.7, "cm")) +
-    theme_minimal(base_size = 10) +
+    theme_mpa(base_size = 10) +
     theme(
       panel.background = element_rect(fill = "#C6DBEF", color = NA),
-      panel.grid.major = element_line(color = "white", linewidth = 0.15),
-      panel.grid.minor = element_blank(),
-      panel.border = element_rect(fill = NA, color = "grey30", linewidth = 0.5),
+      panel.border = element_rect(fill = NA, color = "grey35", linewidth = 0.4),
+      axis.line.x.bottom = element_blank(),
+      axis.line.y.left = element_blank(),
       axis.title = element_blank(),
       axis.text = element_text(size = 8, color = "grey30"),
-      legend.position = c(0.95, 0.65),
-      legend.justification = c(1, 0.5),
-      legend.title = element_text(size = 9, face = "bold"),
+      # Put legends top-right and keep them aligned as a single vertical box.
+      legend.position = c(0.98, 0.98),
+      legend.justification = c(1, 1),
+      legend.direction = "vertical",
+      legend.box = "vertical",
+      legend.title = element_text(size = 8, face = "plain"),
       legend.text = element_text(size = 8),
-      legend.key.size = unit(0.45, "cm"),
-      legend.background = element_rect(fill = alpha("white", 0.90), color = "grey50", linewidth = 0.3),
-      legend.margin = margin(5, 5, 5, 5),
-      legend.box.background = element_rect(fill = alpha("white", 0.90), color = "grey50", linewidth = 0.3),
+      legend.key.size = unit(0.35, "cm"),
+      legend.spacing.x = unit(2, "mm"),
+      legend.spacing.y = unit(1, "mm"),
+      legend.background = element_rect(fill = alpha("white", 0.85), color = NA),
+      legend.margin = margin(2, 4, 2, 4),
+      legend.box.background = element_blank(),
       plot.margin = FIG1_PLOT_MARGIN
     )
 
@@ -667,12 +687,14 @@ if (has_fig1_pkgs) {
   inset_rect <- st_as_sfc(inset_bbox)
 
   inset_map <- ggplot() +
-    geom_sf(data = coast, fill = "grey90", color = "grey60", linewidth = 0.25) +
+    geom_sf(data = coast, fill = "grey92", color = "grey60", linewidth = 0.25) +
     geom_sf(data = inset_rect, fill = NA, color = "#C03A2B", linewidth = 0.7) +
     coord_sf(xlim = c(-125, -114), ylim = c(32, 42), expand = FALSE) +
     theme_void() +
-    theme(panel.background = element_rect(fill = "aliceblue", color = "grey50", linewidth = 0.4),
-          plot.margin = margin(2, 2, 2, 2))
+    theme(
+      panel.background = element_rect(fill = scales::alpha("white", 0.85), color = "grey60", linewidth = 0.35),
+      plot.margin = margin(2, 2, 2, 2)
+    )
 
   main_map <- main_map +
     patchwork::inset_element(inset_map, left = 0.76, bottom = 0.05, right = 0.99, top = 0.28, align_to = "full")
@@ -697,9 +719,9 @@ if (has_fig1_pkgs) {
     }
 
     ggplot(site_data, aes(x = year, y = mean_value, color = Status)) +
-      geom_vline(xintercept = mpa_year, linetype = "dashed", color = "grey50", linewidth = 0.4) +
-      geom_line(linewidth = 0.8) +
-      geom_point(size = 1.5, shape = 21, fill = "white", stroke = 0.6) +
+      geom_vline(xintercept = mpa_year, linetype = "dashed", color = "grey40", linewidth = 0.7) +
+      geom_line(linewidth = 0.6) +
+      geom_point(size = 1.2, alpha = 0.7, shape = 21, fill = "white", stroke = 0.5) +
       scale_color_manual(values = TS_COLORS, name = NULL) +
       scale_x_continuous(breaks = seq(1990, 2020, by = 10), limits = c(1988, 2024)) +
       scale_y_continuous(limits = c(0, NA), expand = expansion(mult = c(0, 0.1))) +
@@ -708,10 +730,10 @@ if (has_fig1_pkgs) {
            y = expression(Kelp~biomass~(g~m^{-2}))) +
       theme_mpa(base_size = 8) +
       theme(panel.grid.major.x = element_blank(),
-            panel.grid.major.y = element_line(color = "grey92", linewidth = 0.2),
-            plot.title = element_text(size = 8, face = "bold", hjust = 0.5,
+            panel.grid.major.y = element_blank(),
+            plot.title = element_text(size = 8, face = "plain", hjust = 0.5,
                                       margin = margin(b = 2)),
-            plot.tag = element_text(size = 9, face = "bold"),
+            plot.tag = element_text(size = 9, face = "plain"),
             plot.tag.position = c(0.02, 0.98),
             axis.title = element_text(size = 7.5, color = "grey20"),
             axis.title.y = element_text(margin = margin(r = 3)),
@@ -741,7 +763,11 @@ if (has_fig1_pkgs) {
     panels_row <- (fig1_panels$a + fig1_panels$b + fig1_panels$c + fig1_panels$d) +
       plot_layout(nrow = 1, guides = "collect") &
       theme(legend.position = "bottom",
-            legend.justification = "center")
+            legend.justification = "center",
+            panel.border = element_blank(),
+            axis.line = element_blank(),
+            axis.line.x.bottom = element_line(colour = "black", linewidth = 0.3),
+            axis.line.y.left = element_line(colour = "black", linewidth = 0.3))
 
     # Stack map on top, panels below — give panels more vertical space
     fig1 <- main_map / panels_row +
@@ -862,14 +888,14 @@ if (!"BA" %in% names(fig2_lnrr) || all(is.na(fig2_lnrr$BA))) {
 fig2_year_range <- range(c(fig2_raw$year, fig2_lnrr$year), na.rm = TRUE)
 fig2_x_limits <- c(floor(fig2_year_range[1] / 5) * 5 - 2,  # Round down to 5, add padding
                    ceiling(fig2_year_range[2] / 5) * 5 + 2)  # Round up to 5, add padding
-fig2_x_breaks <- seq(fig2_x_limits[1], fig2_x_limits[2], by = 10)
+fig2_x_breaks <- seq(fig2_x_limits[1], fig2_x_limits[2], by = 20)
 fig2_x_breaks <- fig2_x_breaks[fig2_x_breaks >= fig2_x_limits[1] & fig2_x_breaks <= fig2_x_limits[2]]
 
 # Build each panel individually for better control, then combine with patchwork
 # Common theme settings for consistent panel appearance
 fig2_theme <- theme_mpa(base_size = 10) +
   theme(legend.position = "none",
-        plot.title = element_text(size = 9.5, face = "bold", hjust = 0,
+        plot.title = element_text(size = 9.5, face = "plain", hjust = 0,
                                   margin = margin(b = 8)),
         axis.title.y = element_text(size = 9, margin = margin(r = 4)),
         axis.text = element_text(size = 8, color = "black"),
@@ -879,7 +905,7 @@ p2a <- ggplot(fig2_raw, aes(x = year, y = value, color = status)) +
   add_mpa_vline(scorpion_start) +
   # TUFTE: Annotate the MPA implementation line
   annotate("text", x = scorpion_start, y = Inf,
-           label = "MPA\nestablished", hjust = 1.1, vjust = 1.3,
+           label = "MPA\nestablished", hjust = -0.1, vjust = 1.8,
            size = 2.3, color = MPA_LABEL_COLOR, lineheight = 0.9) +
   geom_line(linewidth = 0.9) +
   geom_point(size = 2, shape = 21, fill = "white", stroke = 0.8) +
@@ -926,7 +952,7 @@ p2d <- ggplot(fig2_lnrr, aes(x = year, y = lnDiff, shape = BA)) +
         method = "lm", se = TRUE,
         color = col_taxa["S. purpuratus"],
         fill = col_taxa["S. purpuratus"],
-        alpha = 0.2, linewidth = 0.8,
+        alpha = 0.25, linewidth = 1.0,
         inherit.aes = FALSE
       )
     }
@@ -947,10 +973,15 @@ fig2_final <- (p2a + p2b + p2c + p2d) +
   theme(
     legend.position = "bottom",
     legend.box = "horizontal",
-    legend.title = element_text(face = "bold", size = 9, color = "black"),
+    legend.title = element_text(face = "plain", size = 9, color = "black"),
     legend.text = element_text(size = 8, color = "black"),
     legend.spacing.x = unit(6, "mm"),
-    legend.margin = margin(t = 2)
+    legend.margin = margin(t = 2),
+    # Reinforce L-shaped axes through patchwork & operator
+    panel.border = element_blank(),
+    axis.line = element_blank(),
+    axis.line.x.bottom = element_line(colour = "black", linewidth = 0.3),
+    axis.line.y.left = element_line(colour = "black", linewidth = 0.3)
   )
 
 # Conservation Letters: max 170mm double-column width
@@ -1035,8 +1066,7 @@ fig_s1 <- ggplot(fig_s1_data,
   theme(
     strip.text = element_text(face = "italic", size = 10,
                               margin = margin(3, 0, 3, 0)),
-    strip.background = element_rect(fill = "grey95", color = "grey70",
-                                    linewidth = 0.3),
+    strip.background = element_blank(),
     # Larger MPA name font for readability
     axis.text.y = element_text(size = 8, color = "grey15", hjust = 1),
     axis.text.x = element_text(size = 8),
@@ -1045,15 +1075,16 @@ fig_s1 <- ggplot(fig_s1_data,
     legend.box = "horizontal",
     legend.box.spacing = unit(0.5, "cm"),
     legend.spacing.x = unit(0.3, "cm"),
-    legend.title = element_text(face = "bold", size = 8.5),
+    legend.title = element_text(face = "plain", size = 8.5),
     legend.text = element_text(size = 8),
     legend.margin = margin(t = 4, b = 2),
-    legend.key.width = unit(0.7, "cm"),
+    legend.key.width = unit(0.5, "cm"),
+    legend.box.margin = margin(0, 0, 0, 0),
     panel.spacing.x = unit(1, "lines"),
-    panel.spacing.y = unit(0.6, "lines"),
+    panel.spacing.y = unit(0.4, "lines"),
     panel.background = element_rect(fill = "white", color = NA),
     panel.grid.major.y = element_blank(),
-    panel.grid.major.x = element_line(color = "grey92", linewidth = 0.2),
+    panel.grid.major.x = element_blank(),
     plot.margin = margin(6, 10, 6, 6)
   )
 
@@ -1099,7 +1130,7 @@ fig3_n <- fig3_individual %>%
   dplyr::summarise(n = dplyr::n(), .groups = "drop")
 
 # Define unified dodge width for perfect alignment between raw data and summary stats
-pd <- position_dodge(width = 0.6)
+pd <- position_dodge(width = 0.75)
 
 # Add sample sizes to meta data for annotation
 # Ensure Taxa types match before join
@@ -1122,7 +1153,7 @@ fig3 <- ggplot() +
              position = position_jitterdodge(jitter.width = 0.2,
                                               dodge.width = 0.6,
                                               seed = 42),
-             size = 1.5, alpha = 0.35, shape = 16) +
+             size = 1.8, alpha = 0.30, shape = 16) +
   # Layer 2: White halo behind diamonds
   geom_point(data = fig3_meta,
              aes(x = Taxa, y = Estimate),
@@ -1130,15 +1161,15 @@ fig3 <- ggplot() +
   # Layer 3: 95% CIs
   geom_errorbar(data = fig3_meta,
                 aes(x = Taxa, ymin = CI_lower, ymax = CI_upper, color = Response),
-                position = pd, width = 0.12, linewidth = 0.8) +
+                position = pd, width = 0.12, linewidth = 1.0) +
   # Layer 4: Meta-analytic means (diamonds)
   geom_point(data = fig3_meta,
              aes(x = Taxa, y = Estimate, color = Response),
-             position = pd, size = 5.5, shape = 18) +
-  # Sample size labels below x-axis
+             position = pd, size = 6.0, shape = 18) +
+  # Sample size labels below x-axis (wider dodge to prevent overlap)
   geom_text(data = fig3_meta,
             aes(x = Taxa, y = fig3_label_y, label = paste0("n=", n), color = Response),
-            position = pd, size = 2.5, show.legend = FALSE) +
+            position = position_dodge(width = 0.75), size = 2.8, show.legend = FALSE) +
   scale_color_manual(name = NULL, values = col_response_long,
                      guide = guide_legend(override.aes = list(size = 3, alpha = 1))) +
   coord_cartesian(ylim = c(fig3_y_min - 1.2, fig3_y_max + 0.6)) +
@@ -1153,7 +1184,7 @@ fig3 <- ggplot() +
     legend.margin = margin(t = 2),
     panel.grid.minor = element_blank(),
     panel.grid.major.x = element_blank(),
-    panel.grid.major.y = element_line(color = "grey92", linewidth = 0.2),
+    panel.grid.major.y = element_blank(),
     plot.margin = margin(8, 8, 6, 6)
   )
 
@@ -1436,7 +1467,7 @@ create_cascade_panel <- function(raw_data, mpa_data,
     # Background: raw annual observations
     geom_point(data = raw_data, aes(x = .data[[x_var]], y = .data[[y_var]]),
                position = position_jitter(width = 0.08, height = 0.08, seed = 42),
-               size = 1.5, alpha = 0.35, color = point_color, stroke = 0) +
+               size = 1.3, alpha = 0.20, color = point_color, stroke = 0) +
     # Foreground: MPA-level means with error bars
     geom_errorbar(data = mpa_data,
                   aes(x = .data[[x_var]],
@@ -1449,23 +1480,22 @@ create_cascade_panel <- function(raw_data, mpa_data,
                        xmax = .data[[x_var]] + .data[[paste0("SE_", sub("lnRR_", "", x_var))]]),
                    height = 0, linewidth = 0.4, color = "grey30", alpha = 0.6) +
     geom_point(data = mpa_data, aes(x = .data[[x_var]], y = .data[[y_var]]),
-               size = 3, alpha = 0.85, color = point_color, shape = 16) +
+               size = 3.5, alpha = 0.90, color = point_color, shape = 16) +
     # Regression
     geom_smooth(data = mpa_data, aes(x = .data[[x_var]], y = .data[[y_var]]),
                 method = "lm", se = TRUE, color = point_color, fill = point_color,
-                linewidth = 0.9, alpha = 0.18) +
+                linewidth = 1.2, alpha = 0.20) +
     # Correlation label
-    annotate("label", x = lim_x[2], y = lim_y[2], label = cor_label,
-             hjust = 1.05, vjust = 1.1, size = 2.5, fill = "white", alpha = 0.85,
-             label.size = 0.25, label.padding = unit(0.15, "lines")) +
+    annotate("text", x = lim_x[2], y = lim_y[2], label = cor_label,
+             hjust = 1.05, vjust = 1.1, size = 3.5, color = "grey25") +
     labs(x = x_lab, y = y_lab) +
     coord_fixed(ratio = 1, xlim = lim_x, ylim = lim_y, expand = FALSE) +
     theme_mpa(base_size = 9) +
     theme(
       panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "grey92", linewidth = 0.2),
+      panel.grid.major = element_blank(),
       axis.title = element_text(size = 8),
-      axis.text = element_text(size = 7),
+      axis.text = element_text(size = 8),
       plot.margin = margin(4, 6, 2, 6)
     )
 }
@@ -1526,8 +1556,15 @@ panel_D <- create_cascade_panel(
 cat("Assembling Figure 4 (4-panel trophic cascade)...\n")
 
 fig4 <- (panel_A | panel_B) / (panel_C | panel_D) +
-  plot_annotation(tag_levels = "a") +
-  plot_layout(heights = c(1, 1))  # Equal height for both rows
+  plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")",
+                  theme = theme(plot.tag = element_text(face = "plain", size = 10))) +
+  plot_layout(heights = c(1, 1)) &  # Equal height for both rows
+  theme(
+    panel.border = element_blank(),
+    axis.line = element_blank(),
+    axis.line.x.bottom = element_line(colour = "black", linewidth = 0.3),
+    axis.line.y.left = element_line(colour = "black", linewidth = 0.3)
+  )
 
 # Update dimensions for 4-panel figure
 FIG4_NEW_DIMS <- c(w = 17, h = 17)  # Square-ish for 2x2 layout
@@ -1596,6 +1633,28 @@ fig_s2_data <- fig_s2_data %>%
 # Helper function to build individual time series panels for Figure S2
 build_s2_panel <- function(mpa_name, data, mpa_starts) {
   d <- dplyr::filter(data, CA_MPA_Name_Short == mpa_name)
+
+  # --- Fix duplicate "Source" legend in patchwork ---
+  # Patchwork's guides="collect" only merges legends whose key glyphs are
+  # identical.  When panels contain different subsets of source levels, the
+  # rendered glyphs differ and two "Source" rows appear.  We inject one
+  # invisible dummy row per missing source level so every panel draws the
+  # same four shapes in its legend, making them merge correctly.
+  present_sources <- unique(as.character(d$source))
+  missing_sources <- setdiff(source_levels, present_sources)
+  if (length(missing_sources) > 0) {
+    # Use the first species_short level present as a placeholder (its color
+    # won't matter because alpha = 0).
+    first_species <- levels(d$species_short)[1]
+    dummy <- tibble::tibble(
+      year           = NA_real_,
+      lnDiff         = NA_real_,
+      source         = factor(missing_sources, levels = source_levels),
+      species_short  = factor(first_species, levels = levels(d$species_short)),
+      CA_MPA_Name_Short = mpa_name
+    )
+    d <- dplyr::bind_rows(d, dummy)
+  }
   mpa_start_yr <- mpa_starts[mpa_name]
 
   # Clean MPA name for display using standardized function
@@ -1603,7 +1662,12 @@ build_s2_panel <- function(mpa_name, data, mpa_starts) {
 
   year_rng <- range(d$year, na.rm = TRUE)
   if (!all(is.finite(year_rng))) year_rng <- c(2000, 2022)
-  year_breaks <- seq(floor(year_rng[1] / 5) * 5, ceiling(year_rng[2] / 5) * 5, by = 5)
+  # Use pretty breaks to avoid x-axis label crowding on wide time ranges
+  # (e.g., Scorpion panel spans ~45 years; fixed 5-year intervals crowd)
+  year_span <- diff(year_rng)
+  by_val <- if (year_span > 30) 10 else 5
+  year_breaks <- seq(floor(year_rng[1] / by_val) * by_val,
+                     ceiling(year_rng[2] / by_val) * by_val, by = by_val)
 
   y_annot <- suppressWarnings(max(d$lnDiff, na.rm = TRUE))
   if (!is.finite(y_annot)) y_annot <- 0
@@ -1624,10 +1688,10 @@ build_s2_panel <- function(mpa_name, data, mpa_starts) {
                 aes(group = species_short),
                 method = "loess", se = FALSE, span = 0.75,
                 linewidth = 0.7, alpha = 0.55) +
-    # Data points
-    geom_point(size = 1.8, alpha = 0.6) +
+    # Data points (na.rm suppresses warnings from invisible dummy rows)
+    geom_point(size = 1.8, alpha = 0.6, na.rm = TRUE) +
     scale_color_taxa(name = "Species") +
-    scale_shape_source(name = "Source") +
+    scale_shape_source(name = "Source", drop = FALSE) +
     scale_x_continuous(breaks = year_breaks) +
     scale_y_continuous(limits = c(-2, 2), breaks = seq(-2, 2, by = 1)) +
     labs(
@@ -1637,15 +1701,18 @@ build_s2_panel <- function(mpa_name, data, mpa_starts) {
     ) +
     theme_mpa(base_size = 9) +
     theme(
-      plot.title = element_text(size = 10, face = "bold", hjust = 0,
+      plot.title = element_text(size = 10, face = "plain", hjust = 0,
                                  margin = margin(b = 4)),
       legend.text = element_text(face = "italic", size = 8),
-      legend.title = element_text(face = "bold", size = 8.5),
+      legend.title = element_text(face = "plain", size = 8.5),
       legend.key.height = unit(0.45, "cm"),
       axis.title = element_text(size = 8.5),
       axis.text = element_text(size = 7.5),
       panel.grid.major.x = element_blank(),
-      panel.grid.major.y = element_line(color = "grey92", linewidth = 0.2),
+      panel.grid.major.y = element_blank(),
+      panel.background = element_rect(fill = "white", colour = NA),
+      plot.background = element_rect(fill = "white", colour = NA),
+      panel.border = element_blank(),
       plot.margin = margin(4, 6, 4, 4)
     )
 }
@@ -1655,26 +1722,34 @@ fig_s2_panels <- purrr::map(fig_s2_mpas, build_s2_panel,
                              data = fig_s2_data,
                              mpa_starts = fig_s2_starts)
 
-# Combine panels with collected legend — no embedded title
+# Apply legend styling to each panel individually (avoid patchwork & theme()
+# which corrupts axis.line hierarchy in ggplot2 4.x)
+s2_legend_theme <- theme(
+  legend.position = "bottom",
+  legend.direction = "horizontal",
+  legend.box = "vertical",
+  legend.justification = "center",
+  legend.title = element_text(face = "plain", size = 8.5),
+  legend.text = element_text(size = 7.5, face = "italic"),
+  legend.key.width = unit(0.4, "cm"),
+  legend.key.height = unit(0.35, "cm"),
+  legend.spacing.x = unit(0.15, "cm"),
+  legend.box.margin = margin(0, 0, 0, 0),
+  legend.margin = margin(t = 2, b = 2)
+)
+fig_s2_panels <- purrr::map(fig_s2_panels, function(p) p + s2_legend_theme)
+
+# Combine panels with collected legend — NO & theme() to avoid axis corruption
+cat("  [DEBUG] Fig S2: has_patchwork =", has_patchwork, ", has_ggpubr =", has_ggpubr, "\n")
 if (has_patchwork) {
   fig_s2 <- (fig_s2_panels[[1]] / fig_s2_panels[[2]] / fig_s2_panels[[3]]) +
-    plot_layout(guides = "collect") &
-    theme(
-      legend.position = "bottom",
-      legend.direction = "horizontal",
-      legend.box = "horizontal",
-      legend.title = element_text(face = "bold", size = 8.5),
-      legend.text = element_text(size = 8, face = "italic"),
-      legend.key.width = unit(0.8, "cm"),
-      legend.spacing.x = unit(0.3, "cm"),
-      legend.margin = margin(t = 2)
-    )
+    plot_layout(guides = "collect")
 } else if (has_ggpubr) {
   fig_s2 <- ggpubr::ggarrange(
     plotlist = fig_s2_panels,
     ncol = 1, nrow = 3,
     labels = c("a", "b", "c"),
-    font.label = list(size = 10, face = "bold"),
+    font.label = list(size = 10, face = "plain"),
     label.x = 0.02, label.y = 0.98,
     common.legend = TRUE,
     legend = "bottom"
@@ -1716,9 +1791,8 @@ trophic_assignment <- c(
 # Trophic level colors (blend of species colors within each level)
 trophic_colors <- c(
   "Predators" = "#5C8A70",  # Blend of teal + amber
-
   "Urchins"   = "#956079",  # Blend of purple + rust
-  "Kelp"      = col_taxa["M. pyrifera"]
+  "Kelp"      = unname(col_taxa["M. pyrifera"])
 )
 
 # Calculate mean effect by year and trophic level (After period only)
@@ -1758,16 +1832,23 @@ if (nrow(temporal_data) >= 10) {
                        aes(x = time, y = mean_lnRR, color = Trophic_Level, fill = Trophic_Level)) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.5) +
     annotate("text", x = 0.5, y = Inf, label = "Increase in MPA",
-             hjust = 0, vjust = 1.5, size = 2.5, color = "grey50", fontface = "italic") +
+             hjust = 0, vjust = 1.5, size = 2.5, color = "grey50") +
     annotate("text", x = 0.5, y = -Inf, label = "Decrease in MPA",
-             hjust = 0, vjust = -0.5, size = 2.5, color = "grey50", fontface = "italic") +
+             hjust = 0, vjust = -0.5, size = 2.5, color = "grey50") +
     geom_ribbon(aes(ymin = mean_lnRR - 1.96 * se_lnRR,
                     ymax = mean_lnRR + 1.96 * se_lnRR),
                 alpha = 0.2, color = NA) +
     geom_line(linewidth = 1.2) +
-    geom_point(size = 2.5, shape = 21, stroke = 0.8, color = "white") +
-    scale_color_manual(values = trophic_colors, name = "Trophic Level") +
-    scale_fill_manual(values = trophic_colors, name = "Trophic Level") +
+    geom_point(size = 2.5, shape = 21, stroke = 0.8, color = "white",
+               show.legend = FALSE) +
+    scale_color_manual(values = trophic_colors, name = "Trophic Level", drop = FALSE) +
+    scale_fill_manual(values = trophic_colors, name = "Trophic Level", drop = FALSE,
+                      guide = "none") +
+    # Ensure all trophic levels (including Kelp) appear in legend;
+    # show colored lines as legend keys (suppress point glyphs and fill legend)
+    guides(
+      color = guide_legend(override.aes = list(linewidth = 1.2))
+    ) +
     scale_x_continuous(breaks = seq(0, 20, by = 5)) +
     labs(
       x = "Years since MPA implementation",
@@ -1776,8 +1857,8 @@ if (nrow(temporal_data) >= 10) {
     theme_mpa(base_size = 10) +
     theme(
       legend.position = "bottom",
-      legend.title = element_text(face = "bold"),
-      panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
+      legend.title = element_text(face = "plain"),
+      panel.grid.major = element_blank()
     )
 
   # Panel B: Cumulative mean trajectories
@@ -1814,7 +1895,7 @@ if (nrow(temporal_data) >= 10) {
     theme_mpa(base_size = 10) +
     theme(
       legend.position = "none",
-      panel.grid.major = element_line(color = "grey95", linewidth = 0.25)
+      panel.grid.major = element_blank()
     )
 
   # Panel C: Rate of change by trophic level
@@ -1866,13 +1947,19 @@ if (nrow(temporal_data) >= 10) {
     theme_mpa(base_size = 10) +
     theme(
       legend.position = "none",
-      axis.text.x = element_text(face = "bold")
+      axis.text.x = element_text(face = "plain")
     )
 
   # Combine panels
   fig_s3 <- panel_S3A / (panel_S3B | panel_S3C) +
     plot_layout(heights = c(1.2, 1)) +
-    plot_annotation(tag_levels = "a")
+    plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
+    theme(
+      panel.border = element_blank(),
+      axis.line = element_blank(),
+      axis.line.x.bottom = element_line(colour = "black", linewidth = 0.3),
+      axis.line.y.left = element_line(colour = "black", linewidth = 0.3)
+    )
 
   save_fig(fig_s3, "fig_s03_temporal_dynamics", FIG_S3_DIMS["w"], FIG_S3_DIMS["h"])
 
@@ -1908,6 +1995,9 @@ heatmap_data <- All.RR.sub.trans %>%
   summarise(mean_lnRR = mean(lnDiff, na.rm = TRUE), .groups = "drop") %>%
   left_join(mpa_years, by = "CA_MPA_Name_Short") %>%
   filter(!is.na(MPA_Start))
+
+# Shorten MPA names (remove designation suffixes) for cleaner y-axis labels
+heatmap_data$CA_MPA_Name_Short <- shorten_mpa_name(heatmap_data$CA_MPA_Name_Short)
 
 # Order MPAs by implementation year (newer at bottom)
 mpa_order <- heatmap_data %>%
@@ -1979,7 +2069,7 @@ col_model <- c(
 
 panel_S5A <- ggplot(model_dist, aes(x = Taxa, y = prop, fill = Model)) +
   geom_col(position = "stack", width = 0.7, color = "white", linewidth = 0.3) +
-  scale_fill_manual(values = col_model, name = "Best Model") +
+  scale_fill_manual(values = col_model, name = "Effect size\nmethod") +
   scale_y_continuous(labels = scales::percent_format(), expand = c(0, 0)) +
   labs(
     x = NULL,
@@ -1988,7 +2078,9 @@ panel_S5A <- ggplot(model_dist, aes(x = Taxa, y = prop, fill = Model)) +
   theme_mpa(base_size = 10) +
   theme(
     axis.text.x = element_text(face = "italic", angle = 25, hjust = 1),
-    legend.position = "right"
+    legend.position = "right",
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
   )
 
 # Panel B: Variance components (if meta-analysis objects exist)
@@ -2006,7 +2098,7 @@ if (exists("meta_biomass") && exists("meta_density")) {
   panel_S5B <- ggplot(var_comp, aes(x = tau2, y = Response, fill = Component)) +
     geom_col(position = "dodge", width = 0.6, color = "white", linewidth = 0.3) +
     scale_fill_manual(
-      values = c("MPA" = col_taxa["S. pulcher"], "Source" = col_taxa["P. interruptus"]),
+      values = c("MPA" = "#2A7B8E", "Source" = "#D4933B"),
       name = "Variance\nComponent"
     ) +
     scale_x_continuous(expand = expansion(mult = c(0, 0.1))) +
@@ -2016,16 +2108,24 @@ if (exists("meta_biomass") && exists("meta_density")) {
     ) +
     theme_mpa(base_size = 10) +
     theme(
-      legend.position = "right"
+      legend.position = "right",
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
     )
 
   fig_s5 <- panel_S5A / panel_S5B +
     plot_layout(heights = c(1, 0.8)) +
-    plot_annotation(tag_levels = "a")
+    plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
+    theme(
+      panel.border = element_blank(),
+      axis.line = element_blank(),
+      axis.line.x.bottom = element_line(colour = "black", linewidth = 0.3),
+      axis.line.y.left = element_line(colour = "black", linewidth = 0.3)
+    )
 
 } else {
   fig_s5 <- panel_S5A +
-    plot_annotation(tag_levels = "a")
+    plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")")
 }
 
 save_fig(fig_s5, "fig_s05_statistical_transparency", FIG_S5_DIMS["w"], FIG_S5_DIMS["h"])
@@ -2154,16 +2254,24 @@ for (taxa_i in taxa_plot_order) {
     geom_point(color = taxa_color, size = 1, alpha = 0.7) +
     facet_wrap(~ CA_MPA_Name_Short, ncol = n_cols, scales = "free_x") +
     labs(
+      title = taxa_i,
       x = "Year",
       y = resp_label
     ) +
     theme_mpa(base_size = 8) +
     theme(
-      strip.text = element_text(size = 7, face = "bold"),
-      strip.background = element_rect(fill = "grey95", color = NA),
-      axis.text = element_text(size = 6),
-      panel.grid.major = element_line(color = "grey95", linewidth = 0.2),
-      panel.spacing = unit(0.4, "lines")
+      plot.title = element_text(size = 10, face = "italic",
+                                 margin = margin(b = 6)),
+      strip.text = element_text(size = 8, face = "plain"),
+      strip.background = element_blank(),
+      axis.text = element_text(size = 7.5),
+      panel.grid.major = element_blank(),
+      panel.spacing = unit(0.4, "lines"),
+      # Reinforce L-shaped axes
+      panel.border = element_blank(),
+      axis.line = element_blank(),
+      axis.line.x.bottom = element_line(colour = "black", linewidth = 0.3),
+      axis.line.y.left = element_line(colour = "black", linewidth = 0.3)
     )
 
   # Mark excluded sites with a subtle indicator in the strip
@@ -2200,7 +2308,7 @@ cat("  Site-level appendix complete. Dagger (\u2020) marks sites excluded from a
 cat("\n")
 cat("========================================================================\n")
 cat("  ALL MANUSCRIPT FIGURES GENERATED SUCCESSFULLY\n")
-cat("  Main text: Fig 1-5\n")
+cat("  Main text: Fig 1-4\n")
 cat("  Supplemental: Fig S1-S6\n")
 cat("========================================================================\n")
 cat("\n=== All figures saved to:", here::here("plots"), "===\n")

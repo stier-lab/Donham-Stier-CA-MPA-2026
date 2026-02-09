@@ -1,6 +1,6 @@
 # Results Summary: CA MPA Kelp Forest Analysis
 
-**Generated:** 2026-02-07 09:12:12
+**Generated:** 2026-02-08 21:45:30
 **Pipeline version:** Modular pBACIPS v2.0
 
 ---
@@ -22,24 +22,24 @@ at t=11 years post-MPA implementation.
 
 ### Biomass
 
-| Taxa | k | Estimate | SE | t | p-value | 95% CI | Effect |
-|------|---|----------|----|----|---------|--------|--------|
-| S. purpuratus | 3 | -0.5161 | 0.4426 | -1.1662 | 0.2530 | [-1.4213, 0.389] | negative |
-| M. franciscanus | 2 | 0.4807 | 0.475 | 1.0121 | 0.3198 | [-0.4907, 1.4521] | positive |
-| M. pyrifera | 17 | 0.543 | 0.3721 | 1.4592 | 0.1552 | [-0.2181, 1.3041] | positive |
-| P. interruptus | 2 | 0.5861 | 0.5633 | 1.0404 | 0.3067 | [-0.566, 1.7382] | positive |
-| S. pulcher | 10 | 1.1657 | 0.3738 | 3.1182 | 0.0041** | [0.4011, 1.9302] | positive |
+| Taxa | k | Estimate | SE | t | p-value | p (FDR) | 95% CI | Effect | Flag |
+|------|---|----------|----|----|---------|---------|--------|--------|------|
+| S. purpuratus | 3 | -0.5161 | 0.4426 | -1.1662 | 0.2530 | 0.4112 | [-1.4213, 0.389] | negative | preliminary (k<5) |
+| M. franciscanus | 2 | 0.4807 | 0.475 | 1.0121 | 0.3198 | 0.4112 | [-0.4907, 1.4521] | positive | preliminary (k<5) |
+| M. pyrifera | 17 | 0.543 | 0.3721 | 1.4592 | 0.1552 | 0.4112 | [-0.2181, 1.3041] | positive |  |
+| P. interruptus | 2 | 0.5861 | 0.5633 | 1.0404 | 0.3067 | 0.4112 | [-0.566, 1.7382] | positive | preliminary (k<5) |
+| S. pulcher | 10 | 1.1657 | 0.3738 | 3.1182 | 0.0041** | 0.0185 | [0.4011, 1.9302] | positive |  |
 
 ### Density
 
-| Taxa | k | Estimate | SE | t | p-value | 95% CI | Effect |
-|------|---|----------|----|----|---------|--------|--------|
-| S. purpuratus | 6 | -2.4015 | 0.5307 | -4.5254 | 0.0004*** | [-3.5327, -1.2704] | negative |
-| M. franciscanus | 1 | -0.4432 | 0.7477 | -0.5928 | 0.5621 | [-2.0369, 1.1504] | negative |
-| P. interruptus | 2 | 0.7315 | 0.5839 | 1.2528 | 0.2294 | [-0.513, 1.9761] | positive |
-| S. pulcher | 10 | -0.3244 | 0.5124 | -0.6331 | 0.5362 | [-1.4166, 0.7678] | negative |
+| Taxa | k | Estimate | SE | t | p-value | p (FDR) | 95% CI | Effect | Flag |
+|------|---|----------|----|----|---------|---------|--------|--------|------|
+| S. purpuratus | 6 | -2.4015 | 0.5307 | -4.5254 | 0.0004*** | 0.0036 | [-3.5327, -1.2704] | negative |  |
+| M. franciscanus | 1 | -0.4432 | 0.7477 | -0.5928 | 0.5621 | 0.5621 | [-2.0369, 1.1504] | negative | preliminary (k<5) |
+| P. interruptus | 2 | 0.7315 | 0.5839 | 1.2528 | 0.2294 | 0.4112 | [-0.513, 1.9761] | positive | preliminary (k<5) |
+| S. pulcher | 10 | -0.3244 | 0.5124 | -0.6331 | 0.5362 | 0.5621 | [-1.4166, 0.7678] | negative |  |
 
-*Significance: \*p<0.05, \*\*p<0.01, \*\*\*p<0.001*
+*Significance: \*p<0.05, \*\*p<0.01, \*\*\*p<0.001 (uncorrected). p (FDR) = Benjamini-Hochberg adjusted p-values.*
 
 ### Heterogeneity Statistics
 

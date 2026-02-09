@@ -1,7 +1,8 @@
-# macOS system files
+# OS files
 .DS_Store
 .DS_Store?
 ._*
+Thumbs.db
 
 # R specific
 .Rhistory
@@ -13,8 +14,8 @@
 # Temporary R plot files
 Rplots.pdf
 
-# Logs
-logs/
+# Pipeline logs (keep directory, ignore contents)
+logs/*.log
 
 # Large data files (symlinked to Google Drive - see CLAUDE.md for setup)
 data/MBON
@@ -24,8 +25,8 @@ data/LANDSAT
 data/MPA
 data/ALL_sizefreq_2024.csv
 
-# Cache files
-data/cache/
+# Cache files are large binary - track separately
+data/cache/*.rds
 data_cache/
 
 # Marmap bathymetry cache (downloaded at runtime)
@@ -33,6 +34,9 @@ marmap_coord_*.csv
 
 # Firebase logs
 firebase-debug.log
+
+# Debug/temp plots
+plots/debug_*
 
 # Diagnostic plots (not for publication)
 plots/diagnostics/

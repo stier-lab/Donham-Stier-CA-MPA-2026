@@ -47,11 +47,11 @@ Use this checklist to track your review of each change:
 
 | Taxa | Old Estimate | Old SE | Old p | **New Estimate** | **New SE** | **New p** | Change Direction |
 |------|--------------|--------|-------|------------------|------------|-----------|------------------|
-| S. purpuratus | -0.76 | 0.36 | 0.042 | **-0.53** | **0.40** | **0.192** | Effect smaller, no longer significant |
-| M. franciscanus | 0.17 | 0.34 | 0.626 | **0.86** | **0.33** | **0.014** | Effect larger, NOW SIGNIFICANT |
-| M. pyrifera | 0.62 | 0.27 | 0.028 | **0.67** | **0.30** | **0.031** | Similar (still significant) |
-| P. interruptus | 1.48 | 0.73 | 0.047 | **0.66** | **0.52** | **0.220** | Effect smaller, no longer significant |
-| S. pulcher | 0.30 | 0.50 | 0.558 | **1.23** | **0.31** | **<0.001** | Effect larger, NOW SIGNIFICANT |
+| S. purpuratus | -0.76 | 0.36 | 0.042 | **-0.52** | **0.44** | **0.253** | Effect smaller, no longer significant |
+| M. franciscanus | 0.17 | 0.34 | 0.626 | **0.48** | **0.48** | **0.320** | Effect positive, still not significant |
+| M. pyrifera | 0.62 | 0.27 | 0.028 | **0.54** | **0.37** | **0.155** | Similar magnitude, no longer significant |
+| P. interruptus | 1.48 | 0.73 | 0.047 | **0.59** | **0.56** | **0.307** | Effect smaller, no longer significant |
+| S. pulcher | 0.30 | 0.50 | 0.558 | **1.17** | **0.37** | **0.004** | Effect larger, NOW SIGNIFICANT |
 
 ### Density Effect Sizes (lnRR)
 
@@ -62,9 +62,11 @@ Use this checklist to track your review of each change:
 | P. interruptus | 0.85 | 0.42 | 0.047 | **0.73** | **0.58** | **0.229** | Similar magnitude, no longer significant |
 | S. pulcher | 0.02 | 0.28 | 0.946 | **-0.32** | **0.51** | **0.536** | Still non-significant |
 
+*Note: "New" values reflect current pipeline output from `data/table_02_meta_analysis.csv`.*
+
 ### Key Takeaways
 
-1. **Significance changed for 6 of 9 effects** - some gained, some lost significance
+1. **Significance changed for 6 of 9 effects** - mostly lost significance; S. pulcher biomass gained significance
 2. **Standard errors are generally larger** - this is correct (better uncertainty quantification)
 3. **Direction of effects unchanged** - positive/negative signs are consistent
 4. **Need to discuss interpretation changes** before updating manuscript narrative
@@ -106,7 +108,7 @@ Use this checklist to track your review of each change:
 
 The data structure is genuinely **crossed**: the same MPA can be sampled by multiple data sources. This is NOT a nested structure (where each MPA would appear in only one source).
 
-**Verification from our data (see `outputs/crossed_structure_verification.md`):**
+**Verification from our data (see `docs/crossed_structure_verification.md`):**
 
 | Sources per MPA | Number of MPAs | Examples |
 |-----------------|----------------|----------|
@@ -151,11 +153,11 @@ This is worth mentioning in Methods but does not invalidate the crossed structur
 #### Quantified Impact
 
 - Standard errors increased by ~20-30% consistently across taxa
-- 6 of 9 effects changed significance status (some gained, some lost)
+- 6 of 9 effects changed significance status (mostly lost; S. pulcher biomass gained)
 - **Direction of all effects unchanged** - the biological story is preserved:
-  - Sheephead biomass increases in MPAs (significant)
-  - Purple urchin density decreases in MPAs (significant)
-  - Kelp biomass increases in MPAs (significant)
+  - Sheephead biomass increases in MPAs (significant, p = 0.004)
+  - Purple urchin density decreases in MPAs (significant, p < 0.001)
+  - Kelp biomass shows positive trend (+54%) but no longer significant (p = 0.155)
 
 #### Recommended Methods Text
 
@@ -247,8 +249,8 @@ The following aspects of the analysis are unchanged and verified correct:
 
 The following aspects have been thoroughly analyzed and documented:
 
-- **Crossed data structure:** Verified that 52% of MPAs are sampled by multiple sources (see `outputs/crossed_structure_verification.md`)
-- **Random effects justification:** Full statistical argument with references to Cochrane/Campbell guidelines (see `outputs/random_effects_analysis.md`)
+- **Crossed data structure:** Verified that 52% of MPAs are sampled by multiple sources (see `docs/crossed_structure_verification.md`)
+- **Random effects justification:** Full statistical argument with references to Cochrane/Campbell guidelines (see `docs/random_effects_analysis.md`)
 - **Data filtering transparency:** Complete audit trail from raw data to final k-values (see `outputs/filter_audit_*.csv`)
 
 ---
@@ -263,7 +265,7 @@ The following aspects have been thoroughly analyzed and documented:
 
 4. **Are you comfortable with the changes to significance?** Some effects that were previously significant are now non-significant (and vice versa). The new results are more conservative and statistically appropriate, but we should discuss the narrative implications.
 
-5. **Review the random effects justification:** The crossed random effects structure has been thoroughly verified (see Section 1 above and `outputs/random_effects_analysis.md`). Key points for reviewers:
+5. **Review the random effects justification:** The crossed random effects structure has been thoroughly verified (see Section 1 above and `docs/random_effects_analysis.md`). Key points for reviewers:
    - 52% of MPAs are sampled by multiple sources (verified crossing)
    - Aligns with Cochrane/Campbell guidelines
    - Sensitivity analysis shows main conclusions are robust
@@ -276,8 +278,8 @@ The following aspects have been thoroughly analyzed and documented:
 |-------------|----------|---------|
 | `data/table_02_meta_analysis.csv` | Current Table 2 values | Replace manuscript Table 2 |
 | `plots/fig_03_mean_effects.pdf` | Updated Figure 3 | Replace manuscript Figure 3 |
-| `outputs/random_effects_analysis.md` | Full statistical justification for crossed random effects | Reviewer response / Methods supplement |
-| `outputs/crossed_structure_verification.md` | Verification that data is truly crossed | Reviewer response / internal documentation |
+| `docs/random_effects_analysis.md` | Full statistical justification for crossed random effects | Reviewer response / Methods supplement |
+| `docs/crossed_structure_verification.md` | Verification that data is truly crossed | Reviewer response / internal documentation |
 | `outputs/filter_audit_effect_sizes.csv` | Detailed filtering at effect size stage | Audit trail |
 | `outputs/filter_audit_meta_analysis.csv` | Detailed filtering at meta-analysis stage | Audit trail |
 | `outputs/data_flow_summary.csv` | Summary of k-values through pipeline stages | Understanding sample sizes |

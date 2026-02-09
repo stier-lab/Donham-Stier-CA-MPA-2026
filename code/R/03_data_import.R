@@ -52,6 +52,15 @@ cat("Importing raw data files...\n")
 # Uses safe_read_csv from 01_utils.R for existence validation
 SizeFreq <- safe_read_csv(here::here("data", "ALL_sizefreq_2024.csv"))
 
+# Schema validation: ensure expected columns are present
+expected_sizefreq_cols <- c("classcode", "campus", "site", "size", "year", "count")
+missing_sizefreq <- setdiff(expected_sizefreq_cols, names(SizeFreq))
+if (length(missing_sizefreq) > 0) {
+  stop("ALL_sizefreq_2024.csv missing expected columns: ",
+       paste(missing_sizefreq, collapse = ", "),
+       "\nFound columns: ", paste(names(SizeFreq), collapse = ", "))
+}
+
 cat("  Loaded size frequency data:", nrow(SizeFreq), "rows\n")
 
 # -----------------------------------------------------------------------------
@@ -161,6 +170,15 @@ cat("  Loaded MPA features:", nrow(Site.size), "MPAs\n")
 # This file links monitoring sites to their associated MPAs
 
 Site <- safe_read_csv(here::here("data", "Site_List_All.csv"))
+
+# Schema validation: ensure expected columns are present
+expected_site_cols <- c("CA_MPA_Name_Short", "Lat", "MPA_Start")
+missing_site <- setdiff(expected_site_cols, names(Site))
+if (length(missing_site) > 0) {
+  stop("Site_List_All.csv missing expected columns: ",
+       paste(missing_site, collapse = ", "),
+       "\nFound columns: ", paste(names(Site), collapse = ", "))
+}
 
 cat("  Loaded site list:", nrow(Site), "sites\n")
 

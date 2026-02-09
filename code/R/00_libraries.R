@@ -55,7 +55,7 @@ library(dplyr)
 # mgcv: Generalized Additive Models (GAMs) (not currently used)
 # emmeans: Estimated Marginal Means - for post-hoc comparisons
 # stats: Base R statistics (loaded by default, but explicit is good practice)
-# lmtest: Diagnostic tests for linear models (not currently used)
+# lmtest: Diagnostic tests for linear models (Durbin-Watson autocorrelation test)
 
 library(lme4)
 library(lmerTest)
@@ -64,7 +64,7 @@ library(car)
 # library(mgcv)      # Not currently used - uncomment if needed
 library(emmeans)
 library(stats)
-# library(lmtest)    # Not currently used - uncomment if needed
+library(lmtest)      # Used for Durbin-Watson autocorrelation diagnostics in 08_effect_sizes.R
 
 # DHARMa: Residual diagnostics for hierarchical (multi-level/mixed) regression
 #         models using simulation-based quantile residuals.

@@ -248,9 +248,21 @@ theme_mpa <- function(base_size = 9, base_family = "Helvetica") {
       # Panel
       panel.grid.major  = ggplot2::element_blank(),
       panel.grid.minor  = ggplot2::element_blank(),
-      panel.border      = ggplot2::element_rect(colour = "black", fill = NA,
-                                                 linewidth = 0.4),
-      panel.background  = ggplot2::element_rect(fill = "white"),
+      panel.border      = ggplot2::element_blank(),
+      panel.background  = ggplot2::element_rect(fill = "white", colour = NA),
+
+      # L-shaped axes (bottom + left only; no top or right lines)
+      # In ggplot2 4.x (S7 theme system), parent element_blank() overrides
+      # children during calc_element(). Set axis.line to element_line()
+      # (the identity/base element) so children can specialize.
+      axis.line          = ggplot2::element_line(colour = "black",
+                                                  linewidth = 0.3),
+      axis.line.x.top    = ggplot2::element_blank(),
+      axis.line.x.bottom = ggplot2::element_line(colour = "black",
+                                                   linewidth = 0.3),
+      axis.line.y.left   = ggplot2::element_line(colour = "black",
+                                                   linewidth = 0.3),
+      axis.line.y.right  = ggplot2::element_blank(),
 
       # Axes
       axis.title        = ggplot2::element_text(size = base_size,
@@ -265,21 +277,19 @@ theme_mpa <- function(base_size = 9, base_family = "Helvetica") {
       legend.background = ggplot2::element_blank(),
       legend.key        = ggplot2::element_blank(),
       legend.title      = ggplot2::element_text(size = base_size,
-                                                 face = "bold"),
+                                                 face = "plain"),
       legend.text       = ggplot2::element_text(size = base_size - 1),
       legend.key.size   = ggplot2::unit(3.5, "mm"),
 
       # Strip (for faceted plots)
-      strip.background  = ggplot2::element_rect(fill = "grey95",
-                                                  colour = "black",
-                                                  linewidth = 0.3),
+      strip.background  = ggplot2::element_blank(),
       strip.text        = ggplot2::element_text(size = base_size,
                                                   face = "italic",
                                                   margin = ggplot2::margin(2, 2, 2, 2)),
 
       # Plot title / caption
       plot.title        = ggplot2::element_text(size = base_size + 1,
-                                                 face = "bold",
+                                                 face = "plain",
                                                  hjust = 0,
                                                  margin = ggplot2::margin(b = 4)),
       plot.subtitle     = ggplot2::element_text(size = base_size,

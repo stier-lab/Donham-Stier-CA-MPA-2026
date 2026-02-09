@@ -100,6 +100,14 @@ assign_time_from_site_table <- function(df, site_table, mpa_col = "CA_MPA_Name_S
     }
   }
 
+  # Warn about MPAs that were not found in the site table (defaulting to time=0)
+  unmatched <- unique(df$CA_MPA_Name_Short[df$time == 0])
+  if (length(unmatched) > 0) {
+    warning("assign_time_from_site_table: ", length(unmatched),
+            " MPA(s) not found in site table (defaulting to time=0): ",
+            paste(unmatched, collapse = ", "), call. = FALSE)
+  }
+
   df
 }
 
@@ -125,6 +133,14 @@ assign_ba_from_site_table <- function(df, site_table, mpa_col = "CA_MPA_Name_Sho
       mpa_start <- site_table$MPA_Start[j[1]]
       df$BA[idx] <- assign_ba_period(df$year[idx], mpa_start)
     }
+  }
+
+  # Warn about MPAs that were not found in the site table (defaulting to BA=NA)
+  unmatched <- unique(df$CA_MPA_Name_Short[is.na(df$BA)])
+  if (length(unmatched) > 0) {
+    warning("assign_ba_from_site_table: ", length(unmatched),
+            " MPA(s) not found in site table (defaulting to BA=NA): ",
+            paste(unmatched, collapse = ", "), call. = FALSE)
   }
 
   df
@@ -655,6 +671,49 @@ SHEEPHEAD_ONLY_MPAS <- c(
   "Point Dume SMCA",
   "Santa Barbara Island SMR"
 )
+
+#' MPAs from the exclusion list that have sheephead data worth re-including.
+#' These are the MPAs where we DO have sheephead survey data, even though they
+#' lack other taxa. Note: this is a strict subset of SHEEPHEAD_ONLY_MPAS.
+SHEEPHEAD_REINCLUSION_MPAS <- c(
+  "Blue Cavern Onshore SMCA",
+  "Dana Point SMCA",
+  "Farnsworth Onshore SMCA",
+  "Swamis SMCA",
+  "Cat Harbor SMCA",
+  "Long Point SMR"
+)
+
+#' Re-include sheephead-only MPAs that were excluded from the general filter
+#'
+#' After removing SHEEPHEAD_ONLY_MPAS from a dataset, this function extracts
+#' the rows that should be added back: sheephead records from specific MPAs,
+#' plus a special case for Santa Barbara Island SMR (all KFM data, PISCO
+#' sheephead only).
+#'
+#' @param full_data The unfiltered dataset (before MPA exclusion)
+#' @param mpa_col Column name containing MPA names (default "CA_MPA_Name_Short")
+#' @param taxon_col Column name containing taxon identifiers
+#' @param sheephead_value The value identifying sheephead in taxon_col
+#' @return Data frame of rows to re-include (rbind with the filtered dataset)
+reinclude_sheephead_mpas <- function(full_data, mpa_col = "CA_MPA_Name_Short",
+                                     taxon_col = "y",
+                                     sheephead_value = "SPUL") {
+  # Standard sheephead-only MPAs: re-include only sheephead rows
+  standard_rows <- full_data[[mpa_col]] %in% SHEEPHEAD_REINCLUSION_MPAS &
+                   full_data[[taxon_col]] == sheephead_value
+
+  # Special case: Santa Barbara Island SMR
+  # - PISCO source: only sheephead rows
+  # - KFM source: all taxa (KFM has multi-taxa data here)
+  sbi_pisco <- full_data[[mpa_col]] == "Santa Barbara Island SMR" &
+               full_data[[taxon_col]] == sheephead_value &
+               full_data$source == "PISCO"
+  sbi_kfm <- full_data[[mpa_col]] == "Santa Barbara Island SMR" &
+              full_data$source == "KFM"
+
+  full_data[standard_rows | sbi_pisco | sbi_kfm, ]
+}
 
 
 # =============================================================================

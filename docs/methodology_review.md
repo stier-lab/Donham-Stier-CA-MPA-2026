@@ -455,8 +455,8 @@ Or run a sensitivity analysis excluding CI-only studies entirely.
 
 ### M7. Multiple testing without correction
 
-**Status: DEFERRED**
-**Reason:** Choice of correction method (Bonferroni, FDR, none) is a methodological decision. The meta-analysis framework already partially addresses this by pooling across MPAs. Recommend discussing with co-authors and noting in the Methods.
+**Status: PARTIALLY FIXED**
+**Change:** `09_meta_analysis.R` / `11_results_summary.R` -- Benjamini-Hochberg FDR correction now applied to meta-analysis p-values. FDR-adjusted p-values reported in `table_02_meta_analysis.csv` (column `pval_fdr`) and in `RESULTS_SUMMARY.md`. The "linear in before" tests and Table 3 regressions remain uncorrected.
 
 **Files:** `08_effect_sizes.R:167`, `09_meta_analysis.R:232-293`
 
@@ -863,7 +863,7 @@ standardization function.
 | M4 | Major | Statistics | 09_meta_analysis.R:232-293 | Table 3 ignores effect size uncertainty | **FIXED** |
 | M5 | Major | Statistics | 09_meta_analysis.R:79-105 | Aggressive outlier removal; no sensitivity | **FIXED** |
 | M6 | Major | Statistics | 08_effect_sizes.R:725 | CI designs pooled without moderator | DEFERRED |
-| M7 | Major | Statistics | 08/09 | Multiple testing without correction | DEFERRED |
+| M7 | Major | Statistics | 08/09 | Multiple testing without correction | **PARTIALLY FIXED** |
 | M8 | Major | Statistics | 08_effect_sizes.R:536-543 | Sigmoid hardcoded df; prediction vs confidence | **FIXED** |
 | D1 | Major | Data | 04:436-437 | Fish BOT filter overwritten | **FIXED** |
 | D2 | Major | Data | 04:515 | Wrong merge key for time assignment | **FIXED** |
@@ -883,6 +883,7 @@ standardization function.
 ### Fix Summary
 
 **Fixed: 18 of 28 issues** (5 critical code bugs + 7 major statistical + 3 major data + 3 minor)
+**Partially fixed: 1 issue** (M7: FDR correction applied to meta-analysis, remaining tests uncorrected)
 
 Files modified:
 - `01_utils.R` — C2, D9, N5
@@ -893,4 +894,4 @@ Files modified:
 - `08_effect_sizes.R` — M2, M8 (3 sigmoid blocks)
 - `09_meta_analysis.R` — C1, M3, M4, M5, N1
 
-**Deferred: 10 issues** requiring domain expert decisions (C4, M1, M6, M7, N2, N3) or large-scale refactoring with integration testing (D3, D4, D5, D6, D7, D8)
+**Deferred: 9 issues** requiring domain expert decisions (C4, M1, M6, N2, N3) or large-scale refactoring with integration testing (D3, D4, D5, D6, D7, D8)

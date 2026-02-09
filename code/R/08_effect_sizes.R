@@ -249,6 +249,33 @@ run_nls_diagnostics <- function(model, taxa, mpa, source, model_type) {
   })
 }
 
+#' Run Durbin-Watson test for residual autocorrelation
+#'
+#' Tests whether residuals from a linear model show significant temporal
+#' autocorrelation. Important for ecological time series spanning 10-20+ years,
+#' where correlated residuals can inflate Type I error by underestimating SEs.
+#'
+#' @param model Fitted lm object
+#' @return Named list with DW_stat (Durbin-Watson statistic) and DW_pval (p-value).
+#'   DW_stat near 2 indicates no autocorrelation; <2 positive, >2 negative.
+#'   Returns list(DW_stat = NA, DW_pval = NA) if test cannot be run.
+run_dw_test <- function(model) {
+  if (is.null(model) || !inherits(model, "lm")) {
+    return(list(DW_stat = NA, DW_pval = NA))
+  }
+  tryCatch({
+    if (requireNamespace("lmtest", quietly = TRUE)) {
+      dw <- lmtest::dwtest(model)
+      list(DW_stat = round(dw$statistic, 4), DW_pval = round(dw$p.value, 4))
+    } else {
+      list(DW_stat = NA, DW_pval = NA)
+    }
+  }, error = function(e) {
+    warning("Durbin-Watson test failed: ", e$message)
+    list(DW_stat = NA, DW_pval = NA)
+  })
+}
+
 ####################################################################################################
 ## Initialize SumStats dataframe ###################################################################
 ####################################################################################################
@@ -256,7 +283,7 @@ run_nls_diagnostics <- function(model, taxa, mpa, source, model_type) {
 SumStats <- data.frame(
   Taxa = NA, MPA = NA, Mean = NA, SE = NA, SD = NA, CI = NA,
   Model = NA, Source = NA, Resp = NA, BA = NA, Primary = NA,
-  Type = NA, LinearBefore = NA, N = NA
+  Type = NA, LinearBefore = NA, N = NA, DW_stat = NA, DW_pval = NA
 )
 
 ####################################################################################################
@@ -481,6 +508,9 @@ run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "
       formula_str <- as.formula(paste("lnDiff ~", time_var))
       Lm.Ab <- lm(formula_str, data = sub_dat)
 
+      # Durbin-Watson test for residual autocorrelation
+      dw_result <- run_dw_test(Lm.Ab)
+
       # Run DHARMa diagnostics and add to global tracking
       if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
         diag_result <- run_dharma_diagnostics(Lm.Ab, taxa_name, mpas[i], source_name, "CI_Linear")
@@ -529,14 +559,18 @@ run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "
         Taxa = taxa_name, MPA = mpas[i], Mean = mean_val, SE = es$SE, SD = es_sd, CI = es$CI,
         Model = "Linear", Source = source_name, Resp = resp_name, BA = "N",
         Primary = if (p <= 0.05) "Y" else "N",
-        Type = "CI", LinearBefore = "NA", N = n_obs, stringsAsFactors = FALSE
+        Type = "CI", LinearBefore = "NA", N = n_obs,
+        DW_stat = dw_result$DW_stat, DW_pval = dw_result$DW_pval,
+        stringsAsFactors = FALSE
       )
 
       mean_row <- data.frame(
         Taxa = taxa_name, MPA = mpas[i], Mean = CP.mean$lnDiff, SE = CP.mean$se,
         SD = CP.mean$sd, CI = CP.mean$ci, Model = "Mean", Source = source_name, Resp = resp_name,
         BA = "N", Primary = if (p <= 0.05) "N" else "Y",
-        Type = "CI", LinearBefore = "NA", N = n_obs, stringsAsFactors = FALSE
+        Type = "CI", LinearBefore = "NA", N = n_obs,
+        DW_stat = dw_result$DW_stat, DW_pval = dw_result$DW_pval,
+        stringsAsFactors = FALSE
       )
 
       rbind(linear_row, mean_row)
@@ -553,6 +587,23 @@ run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "
   if (length(rows) == 0) return(NULL)
   do.call(rbind, rows)
 }
+
+# =============================================================================
+# NOTE ON SE ESTIMATION METHODOLOGY:
+# =============================================================================
+# - Step and linear models: SE from emmeans::pairs() contrast (uses t-distribution,
+#   accounts for model covariance structure). This is the preferred approach as it
+#   correctly handles Var(A-B) = Var(A) + Var(B) - 2*Cov(A,B).
+# - NLS models (asymptotic/sigmoid): SE back-calculated from investr::predFit()
+#   confidence intervals as CI_width / (2 * 1.96). This assumes normality (z-distribution)
+#   rather than t-distribution, making it slightly anti-conservative for small samples.
+#   The independence assumption between t=0 and t=11 predictions makes the SE
+#   slightly conservative (overestimated).
+# - Net effect: These biases approximately cancel, but readers should note the
+#   methodological difference. All effect sizes are downstream weighted by 1/SE^2
+#   in the meta-analysis (09_meta_analysis.R), so any SE inflation for NLS models
+#   results in slightly lower weight, which is conservative.
+# =============================================================================
 
 #' Add a single step-model (BACI) effect size row
 #'
@@ -589,6 +640,9 @@ add_step_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_nam
   tryCatch({
     mod1 <- lm(data = dat, lnDiff ~ BA)
 
+    # Durbin-Watson test for residual autocorrelation
+    dw_result <- run_dw_test(mod1)
+
     # Run DHARMa diagnostics and add to global tracking
     if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
       diag_result <- run_dharma_diagnostics(mod1, taxa_name, mpa_name, source_name, "Step")
@@ -615,7 +669,9 @@ add_step_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_nam
     data.frame(
       Taxa = taxa_name, MPA = mpa_name, Mean = mean_es, SE = pSE, SD = pSD, CI = pCI,
       Model = "Step", Source = source_name, Resp = resp_name, BA = "Y", Primary = "Y",
-      Type = "BACI", LinearBefore = "N", N = n_obs, stringsAsFactors = FALSE
+      Type = "BACI", LinearBefore = "N", N = n_obs,
+      DW_stat = dw_result$DW_stat, DW_pval = dw_result$DW_pval,
+      stringsAsFactors = FALSE
     )
   }, error = function(e) {
     warning("add_step_effect_size failed for ", mpa_name, ": ", e$message)
@@ -671,6 +727,9 @@ add_linear_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_n
     formula_str <- as.formula(paste("lnDiff ~", time_var))
     mod1 <- lm(formula_str, data = dat)
 
+    # Durbin-Watson test for residual autocorrelation
+    dw_result <- run_dw_test(mod1)
+
     # Run DHARMa diagnostics and add to global tracking
     if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
       diag_result <- run_dharma_diagnostics(mod1, taxa_name, mpa_name, source_name, "Linear")
@@ -687,7 +746,9 @@ add_linear_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_n
     data.frame(
       Taxa = taxa_name, MPA = mpa_name, Mean = es$mean, SE = es$SE, SD = es_sd, CI = es$CI,
       Model = "Linear", Source = source_name, Resp = resp_name, BA = "Y", Primary = "Y",
-      Type = "pBACIPS", LinearBefore = "N", N = n_obs, stringsAsFactors = FALSE
+      Type = "pBACIPS", LinearBefore = "N", N = n_obs,
+      DW_stat = dw_result$DW_stat, DW_pval = dw_result$DW_pval,
+      stringsAsFactors = FALSE
     )
   }, error = function(e) {
     warning("add_linear_effect_size failed for ", mpa_name, ": ", e$message)
@@ -725,7 +786,9 @@ add_mean_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_nam
     data.frame(
       Taxa = taxa_name, MPA = mpa_name, Mean = CP.mean$lnDiff, SE = CP.mean$se,
       SD = CP.mean$sd, CI = CP.mean$ci, Model = "Mean", Source = source_name, Resp = resp_name,
-      BA = "N", Primary = "Y", Type = "CI", LinearBefore = "NA", N = n_obs, stringsAsFactors = FALSE
+      BA = "N", Primary = "Y", Type = "CI", LinearBefore = "NA", N = n_obs,
+      DW_stat = NA, DW_pval = NA,  # No linear model fit for mean-only effect sizes
+      stringsAsFactors = FALSE
     )
   }, error = function(e) {
     warning("add_mean_effect_size failed for ", mpa_name, ": ", e$message)
@@ -1041,7 +1104,8 @@ if (nrow(KFM.mfran.harris) >= 5) {
       pSD <- pSE * sqrt(df_approx + 1)
 
       SumStats[nrow(SumStats) + 1, ] <- c("M. franciscanus", "Harris Point SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original)
+                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original,
+                                            NA, NA)  # DW_stat, DW_pval: not applicable for NLS models
     }
   }
 }
@@ -1122,7 +1186,8 @@ if (nrow(KFM.macro.stipe) >= 5) {
       pSD <- pSE * sqrt(df_approx + 1)
 
       SumStats[nrow(SumStats) + 1, ] <- c("M. pyrifera", "Scorpion SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original)
+                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original,
+                                            NA, NA)  # DW_stat, DW_pval: not applicable for NLS models
     }
   }
 }
@@ -1200,7 +1265,8 @@ if (nrow(KFM.lob.gull) >= 5) {
       pSD <- pSE * sqrt(df_approx + 1)
 
       SumStats[nrow(SumStats) + 1, ] <- c("P. interruptus", "Gull Island SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Den", "Y", "Y", "pBACIPS", "N", n_obs_original)
+                                            "Sigmoid", "KFM", "Den", "Y", "Y", "pBACIPS", "N", n_obs_original,
+                                            NA, NA)  # DW_stat, DW_pval: not applicable for NLS models
     }
   }
 }
@@ -1271,9 +1337,13 @@ SumStats$Mean <- as.numeric(SumStats$Mean)
 SumStats$SE <- as.numeric(SumStats$SE)
 SumStats$CI <- as.numeric(SumStats$CI)
 SumStats$SD <- as.numeric(SumStats$SD)
+SumStats$DW_stat <- as.numeric(SumStats$DW_stat)
+SumStats$DW_pval <- as.numeric(SumStats$DW_pval)
 
-# Remove incomplete rows
-SumStats.sub <- SumStats[complete.cases(SumStats), ]
+# Remove incomplete rows (exclude DW columns from completeness check since
+# DW is NA for mean-only and NLS models by design)
+core_cols <- setdiff(names(SumStats), c("DW_stat", "DW_pval"))
+SumStats.sub <- SumStats[complete.cases(SumStats[, core_cols]), ]
 
 # Set factor levels for plotting
 SumStats.sub$Taxa <- factor(SumStats.sub$Taxa,
@@ -1327,8 +1397,8 @@ cat("====================================\n")
 cat("FILTERING AUDIT: Effect Size Data\n")
 cat("====================================\n")
 
-# Start with all complete cases from SumStats
-SumStats_complete <- SumStats[complete.cases(SumStats), ]
+# Start with all complete cases from SumStats (exclude DW columns from completeness check)
+SumStats_complete <- SumStats[complete.cases(SumStats[, core_cols]), ]
 cat("Step 0: Complete cases in SumStats:", nrow(SumStats_complete), "\n")
 
 # Create audit dataframe tracking each observation
@@ -1546,6 +1616,52 @@ if (exists("ModelDiagnostics") && nrow(ModelDiagnostics) > 0) {
   }
 } else {
   cat("\nNo model diagnostics recorded (DHARMa may not be installed).\n")
+}
+
+####################################################################################################
+## Durbin-Watson Autocorrelation Summary ###########################################################
+####################################################################################################
+
+cat("\n")
+cat("==========================================\n")
+cat("DURBIN-WATSON AUTOCORRELATION DIAGNOSTICS\n")
+cat("==========================================\n")
+
+# Summarize DW results across all effect size models
+dw_available <- SumStats.sub[!is.na(SumStats.sub$DW_stat), ]
+dw_na <- SumStats.sub[is.na(SumStats.sub$DW_stat), ]
+
+cat(sprintf("Models with DW test: %d\n", nrow(dw_available)))
+cat(sprintf("Models without DW test (Mean/NLS): %d\n", nrow(dw_na)))
+
+if (nrow(dw_available) > 0) {
+  n_sig <- sum(dw_available$DW_pval < 0.05, na.rm = TRUE)
+  n_nonsig <- sum(dw_available$DW_pval >= 0.05, na.rm = TRUE)
+  cat(sprintf("\nSignificant autocorrelation (p < 0.05): %d/%d (%.1f%%)\n",
+              n_sig, nrow(dw_available), 100 * n_sig / nrow(dw_available)))
+  cat(sprintf("No significant autocorrelation: %d/%d (%.1f%%)\n",
+              n_nonsig, nrow(dw_available), 100 * n_nonsig / nrow(dw_available)))
+  cat(sprintf("Mean DW statistic: %.3f (values near 2 indicate no autocorrelation)\n",
+              mean(dw_available$DW_stat, na.rm = TRUE)))
+
+  # List models with significant autocorrelation
+  if (n_sig > 0) {
+    sig_models <- dw_available[dw_available$DW_pval < 0.05, ]
+    cat("\nModels with significant autocorrelation:\n")
+    for (i in seq_len(nrow(sig_models))) {
+      row <- sig_models[i, ]
+      cat(sprintf("  - %s %s (%s, %s): DW=%.3f, p=%.4f\n",
+                  row$Taxa, row$MPA, row$Source, row$Model,
+                  row$DW_stat, row$DW_pval))
+    }
+    cat("\nNote: Significant autocorrelation may inflate Type I error rates by\n")
+    cat("underestimating SEs. However, the meta-analytic framework (rma.mv in\n")
+    cat("09_meta_analysis.R) partially mitigates this by modeling heterogeneity\n")
+    cat("across studies. Consider GLS or Newey-West corrections for a sensitivity analysis.\n")
+  } else {
+    cat("\nNo models show significant temporal autocorrelation. The independence\n")
+    cat("assumption for residuals appears reasonable across all effect size models.\n")
+  }
 }
 
 ####################################################################################################
