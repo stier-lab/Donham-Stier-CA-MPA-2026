@@ -20,9 +20,9 @@ plots/
     ├── fig_s01_forest_plot.{pdf,png}
     ├── fig_s02_all_taxa_timeseries.{pdf,png}
     ├── fig_s03_temporal_dynamics.{pdf,png}
-    ├── fig_s04_spacetime_heatmap.png
+    ├── fig_s04_spacetime_heatmap.{pdf,png}
     ├── fig_s05_statistical_transparency.{pdf,png}
-    └── fig_s06_appendix_{taxa}.png (5 files, one per taxa)
+    └── fig_s06_appendix_{taxa}.{pdf,png} (5 files, one per taxa)
 ```
 
 ## Main Text Figures
@@ -41,9 +41,9 @@ plots/
 | **Figure S1** | Forest plot showing effect sizes by MPA and taxa | `fig_s01_forest_plot.{pdf,png}` | 10_figures.R |
 | **Figure S2** | All taxa time series at 3 example MPAs | `fig_s02_all_taxa_timeseries.{pdf,png}` | 10_figures.R |
 | **Figure S3** | Temporal dynamics: effect size accumulation over time | `fig_s03_temporal_dynamics.{pdf,png}` | 10_figures.R |
-| **Figure S4** | Space-time heatmap: effects across MPAs and years | `fig_s04_spacetime_heatmap.png` | 10_figures.R |
+| **Figure S4** | Space-time heatmap: effects across MPAs and years | `fig_s04_spacetime_heatmap.{pdf,png}` | 10_figures.R |
 | **Figure S5** | Statistical transparency: model selection and heterogeneity | `fig_s05_statistical_transparency.{pdf,png}` | 10_figures.R |
-| **Figure S6** | Site-level appendix: individual lnRR time series for all taxa | `fig_s06_appendix_*.png` (5 files) | 10_figures.R |
+| **Figure S6** | Site-level appendix: individual lnRR time series for all taxa | `fig_s06_appendix_*.{pdf,png}` (5 files) | 10_figures.R |
 
 ### Figure S6 Taxa-Specific Files
 
@@ -92,8 +92,7 @@ source(here::here("code", "R", "run_all.R"))
 ### Export Formats
 
 - **Main text figures**: Exported as both PDF (vector) and PNG (300 DPI raster)
-- **Supplemental figures S1-S3, S5**: Exported as both PDF and PNG
-- **Supplemental figures S4, S6**: Exported as PNG only
+- **Supplemental figures S1-S6**: Exported as both PDF and PNG
 
 ### Figure Dimensions
 
@@ -107,11 +106,11 @@ Figures are sized for Conservation Letters specifications:
 
 All figures use the colorblind-safe palette defined in `00b_color_palette.R`:
 
-- Purple urchin: `#A463F2`
-- Red urchin: `#E05263`
-- Kelp: `#6EAA78`
-- Sheephead: `#E88C2B`
-- Lobster: `#E05263`
+- Purple urchin (*S. purpuratus*): `#7B68A6`
+- Red urchin (*M. franciscanus*): `#B85A4C`
+- Kelp (*M. pyrifera*): `#4A7C59`
+- Lobster (*P. interruptus*): `#D4933B`
+- Sheephead (*S. pulcher*): `#2A7B8E`
 
 ## Naming Conventions
 

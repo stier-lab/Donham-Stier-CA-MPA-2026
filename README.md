@@ -110,7 +110,7 @@ source("code/R/00_libraries.R")
 ```
 
 This will check for and install required packages including:
-`tidyverse`, `here`, `metafor`, `emmeans`, `lme4`, `cowplot`, `maps`, `mapdata`
+`tidyverse`, `here`, `metafor`, `emmeans`, `lme4`, `cowplot`, `patchwork`, `sf`
 
 ### 3. Set Up Data Symlinks
 
@@ -155,8 +155,12 @@ The pipeline executes scripts in sequence with error handling and checkpoint val
 Run specific analysis steps:
 
 ```r
-# Just regenerate figures
-source(here::here("code", "R", "10_figures.R"))
+# Fast figure regeneration (~17s all figures, ~4s single figure)
+source(here::here("code", "R", "run_figures_only.R"))
+
+# Render only specific figures
+RENDER_FIGURES <- c("fig03", "fig04")
+source(here::here("code", "R", "run_figures_only.R"))
 
 # Just run meta-analysis
 source(here::here("code", "R", "09_meta_analysis.R"))
@@ -316,14 +320,15 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 | `lme4` | Mixed-effects models |
 | `investr` | Nonlinear model inference |
 | `cowplot` | Figure composition |
-| `maps` / `mapdata` | Geographic mapping |
+| `patchwork` | Multi-panel figure assembly |
+| `sf` / `rnaturalearth` | Geographic mapping |
 
 ---
 
 ## Documentation
 
 - **`CLAUDE.md`** - Project conventions for AI assistants
-- **`docs/statistical_review_20260206.md`** - Comprehensive statistical validation (Grade: A+)
+- **`docs/STATISTICAL_AUDIT_REPORT.md`** - Comprehensive statistical validation
 - **`docs/methodology_review.md`** - Historical issue tracking and fixes
 - **`docs/MPA_Kelp_MS_V5.pdf`** - Current manuscript draft
 

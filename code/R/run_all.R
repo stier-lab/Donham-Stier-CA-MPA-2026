@@ -28,6 +28,7 @@
 #'   08  - Calculate effect sizes (pBACIPS)
 #'   09  - Multilevel meta-analysis
 #'   10  - Publication figures
+#'   11  - Results summary (CSVs and markdown)
 
 ####################################################################################################
 ## Setup ###########################################################################################
@@ -188,6 +189,23 @@ check_objects(c("SumStats", "SumStats.Final"), "08")
 # --- 09: Meta-analysis ---------------------------------------------------------------------------
 source_module("09_meta_analysis.R", "09")
 check_objects(c("Table2", "meta_biomass", "meta_density"), "09")
+
+# --- Save figures snapshot (enables run_figures_only.R) ----------------------------------------
+snapshot_path <- here::here("data", "cache", "figures_snapshot.rds")
+figures_snapshot <- list(
+  All.RR.sub.trans = All.RR.sub.trans,
+  All.Resp.sub     = All.Resp.sub,
+  SumStats.Final   = SumStats.Final,
+  Table2           = Table2,
+  Site             = Site,
+  meta_biomass     = if (exists("meta_biomass")) meta_biomass else NULL,
+  meta_density     = if (exists("meta_density")) meta_density else NULL,
+  snapshot_time    = Sys.time()
+)
+saveRDS(figures_snapshot, snapshot_path)
+snap_msg <- paste0("  Figures snapshot saved to: ", snapshot_path, "\n\n")
+cat(snap_msg)
+log_message(snap_msg)
 
 # --- 10: Figures ----------------------------------------------------------------------------------
 source_module("10_figures.R", "10")
