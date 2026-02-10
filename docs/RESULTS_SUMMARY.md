@@ -1,6 +1,6 @@
 # Results Summary: CA MPA Kelp Forest Analysis
 
-**Generated:** 2026-02-09 14:38:31
+**Generated:** 2026-02-10 06:41:24
 **Pipeline version:** Modular pBACIPS v2.0
 
 ---
@@ -28,7 +28,7 @@ at t=11 years post-MPA implementation.
 | M. franciscanus | 2 | 0.4807 | 0.475 | 1.0121 | 0.3198 | 0.4112 | [-0.4907, 1.4521] | positive | preliminary (k<5) |
 | M. pyrifera | 17 | 0.543 | 0.3721 | 1.4592 | 0.1552 | 0.4112 | [-0.2181, 1.3041] | positive |  |
 | P. interruptus | 2 | 0.5861 | 0.5633 | 1.0404 | 0.3067 | 0.4112 | [-0.566, 1.7382] | positive | preliminary (k<5) |
-| S. pulcher | 10 | 1.1657 | 0.3738 | 3.1182 | 0.0041** | 0.0185 | [0.4011, 1.9302] | positive |  |
+| S. pulcher | 10 | 1.1657 | 0.3738 | 3.1182 | 0.0041** | 0.0184 | [0.4011, 1.9302] | positive |  |
 
 ### Density
 
