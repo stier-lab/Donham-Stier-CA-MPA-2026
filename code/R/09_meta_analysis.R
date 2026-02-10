@@ -532,7 +532,7 @@ extract_meta_table <- function(model, data, response) {
     Estimate  = round(coef_table[, "estimate"], 4),
     SE        = round(coef_table[, "se"], 4),
     tval      = round(coef_table[, stat_col], 4),
-    pval      = round(coef_table[, "pval"], 4),
+    pval      = coef_table[, "pval"],  # Full precision for FDR correction
     CI_lower  = round(coef_table[, "ci.lb"], 4),
     CI_upper  = round(coef_table[, "ci.ub"], 4),
     Response  = response,

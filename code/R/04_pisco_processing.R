@@ -443,11 +443,12 @@ SizeFreq.Urch <- merge(SizeFreq.Urch, sites.short,
 # urchins. Therefore, we preserve the original unfiltered size frequency data
 # (SizeFreq.Urch.OG) for use in those scripts. The filter applied here only
 # affects PISCO urchin biomass estimation.
-SizeFreq.Urch <- subset(SizeFreq.Urch, size >= 25)
 
-# Preserve unfiltered size frequency data for KFM and LTER
-# These programs have different minimum size thresholds
+# Preserve unfiltered size frequency data for KFM and LTER BEFORE applying
+# the 25mm PISCO-specific filter
 SizeFreq.Urch.OG <- SizeFreq.Urch
+
+SizeFreq.Urch <- subset(SizeFreq.Urch, size >= 25)
 
 # Cache bootstrap results to avoid re-running the slow loop
 .cache_urchin <- here::here("data", "cache", "pisco_urchin_bootstrap.rds")

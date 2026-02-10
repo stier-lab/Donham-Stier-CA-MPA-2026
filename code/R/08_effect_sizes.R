@@ -54,9 +54,8 @@
 
 source(here::here("code", "R", "02_pBACIPS_function.R"))
 
-# Color palette for plots
-cols <- c("Sheephead" = "#377eb8", "Kelp" = "#4daf4a", "Lobs" = "#ff7f00",
-          "Purps" = "#984ea3", "Reds" = "#e41a1c")
+# Color palette for diagnostic plots
+# Note: `cols` is already defined in 00b_color_palette.R as col_taxa_short
 
 # Rename Site columns for MPA_implement reference
 MPA_implement <- Site
@@ -1422,10 +1421,7 @@ FilterAudit$Step2_Reason <- ifelse(FilterAudit$Step2_TypeFilter, "OK",
   ifelse(FilterAudit$Type == "BACI", "BACI type not included",
          paste0("Unknown type: ", FilterAudit$Type)))))
 
-# Step 3: Excluded MPA filter
-EXCLUDED_MPAS <- c("Painted Cave SMCA", "San Miguel Island SC",
-                   "Arrow Point to Lion Head Point SMCA", "Judith Rk SMR",
-                   "Point Conception SMR")
+# Step 3: Excluded MPA filter (uses EXCLUDED_MPAS from 01_utils.R)
 FilterAudit$Step3_MPAFilter <- !(FilterAudit$MPA %in% EXCLUDED_MPAS)
 FilterAudit$Step3_Reason <- ifelse(FilterAudit$Step3_MPAFilter, "OK",
   ifelse(FilterAudit$MPA == "Painted Cave SMCA", "Excluded: lobster take allowed",

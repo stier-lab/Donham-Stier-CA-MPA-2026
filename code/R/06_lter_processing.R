@@ -409,7 +409,7 @@ lter.lob.site <- subset(lter.lob.site, CA_MPA_Name_Short != "")
 # Calculate biomass from size using allometric equation
 # bio_lobster() from 01_utils.R converts carapace length (mm) to weight (g)
 # Total biomass = count * weight per individual
-lter.lob.site$biomass <- lter.lob.site$COUNT * bio_lobster(lter.lob.site$SIZE)
+lter.lob.site$biomass <- lter.lob.site$COUNT * bio_lobster(lter.lob.site$SIZE_MM)
 lter.lob.site$biomass[is.na(lter.lob.site$biomass)] <- 0  # NA sizes -> 0 biomass
 
 # Summarise: replicate -> transect -> site -> MPA level
