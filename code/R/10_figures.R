@@ -499,7 +499,7 @@ if (has_fig1_pkgs) {
   # Figure 1 specific constants
   FIG1_PLOT_MARGIN <- ggplot2::margin(2, 2, 2, 2)
   # Reduce overall height to avoid unused vertical whitespace (esp. with square bottom panels).
-  FIG1_DIMS <- c(w = 17, h = 12)  # cm — Conservation Letters double-column max (17cm)
+  FIG1_DIMS <- c(w = 17, h = 14.5)  # cm — taller for balanced map/panel composition
 
   # --- 1. Define Study Region ---
   BBOX_LONLAT <- c(xmin = -120.75, ymin = 33.42, xmax = -117.65, ymax = 34.50)
@@ -539,7 +539,7 @@ if (has_fig1_pkgs) {
 		  # Marmap bathy depths are negative (meters); map legend uses positive meters.
 		  depth_max_m <- abs(min(bathy_ocean$depth, na.rm = TRUE))
 		  # Use a "nice" step that yields enough labels without overcrowding.
-		  depth_step_m <- if (depth_max_m <= 2000) 250 else 500
+		  depth_step_m <- if (depth_max_m <= 1000) 250 else 500
 		  depth_breaks_m <- seq(0, floor(depth_max_m / depth_step_m) * depth_step_m, by = depth_step_m)
 
   # --- 2b. Load/Compute Land Hillshade ---
@@ -607,8 +607,8 @@ if (has_fig1_pkgs) {
   pisco_sites <- c("Point Vicente SMCA", "Carrington Pt SMR", "Painted Cave SMCA",
                    "Skunk Pt SMR", "Anacapa Island SMCA")
 
-  PANEL_SITES <- c("a" = "Campus Point SMCA", "b" = "Harris Point SMR",
-                   "c" = "South Point SMR", "d" = "Santa Barbara Island SMR")
+  PANEL_SITES <- c("b" = "Campus Point SMCA", "c" = "Harris Point SMR",
+                   "d" = "South Point SMR", "e" = "Santa Barbara Island SMR")
   MPA_YEARS <- c("Campus Point SMCA" = 2012, "Harris Point SMR" = 2003,
                  "South Point SMR" = 2003, "Santa Barbara Island SMR" = 2003)
 
@@ -636,10 +636,10 @@ if (has_fig1_pkgs) {
   # Create short site names for labels
   # Two-letter site abbreviations for compact map labels (match panel order a-d).
   site_abbrev <- c(
-    "Campus Point SMCA" = "CP",
-    "Harris Point SMR" = "HP",
-    "South Point SMR" = "SP",
-    "Santa Barbara Island SMR" = "SB"
+    "Campus Point SMCA" = "(b)",
+    "Harris Point SMR" = "(c)",
+    "South Point SMR" = "(d)",
+    "Santa Barbara Island SMR" = "(e)"
   )
 
   panel_label_df <- tibble::tibble(
@@ -648,6 +648,10 @@ if (has_fig1_pkgs) {
     site_abbrev = unname(site_abbrev[unname(PANEL_SITES)])
   )
   sites_labels <- sites_base %>% inner_join(panel_label_df, by = "CA_MPA_Name_Short")
+
+  # Site accent colors (Dark2, colorblind-safe) for visual linkage between map and panels
+  SITE_ACCENT <- c("(b)" = "#1B9E77", "(c)" = "#D95F02", "(d)" = "#7570B3", "(e)" = "#E7298A")
+  sites_labels$label_color <- SITE_ACCENT[sites_labels$site_abbrev]
 
   # --- 6. Load Time Series Data ---
   ts_cache <- here::here("data", "cache", "figure_data.rds")
@@ -683,23 +687,19 @@ if (has_fig1_pkgs) {
 		      limits = c(0, depth_max_m),
 		      oob = scales::squish,
 		      guide = guide_colorbar(
-		        # Requested: left-to-right (horizontal) depth bar with evenly spaced tick marks.
 		        direction = "horizontal",
-		        barwidth = unit(5.0, "cm"),
-		        barheight = unit(0.30, "cm"),
-		        title.position = "top",
+		        barwidth = unit(4.5, "cm"),
+		        barheight = unit(0.3, "cm"),
+		        title.position = "left",
 		        title.hjust = 0.5,
-		        title.theme = element_text(size = 8, face = "plain"),
+		        title.theme = element_text(size = 7, face = "plain"),
 		        frame.colour = "grey60",
 		        frame.linewidth = 0.25,
 	        ticks = TRUE,
 	        ticks.colour = "grey40",
 		        ticks.linewidth = 0.35,
 		        label.position = "bottom",
-		        # Keep many labels readable without overlaps.
-		        label.theme = element_text(size = 6.6, color = "grey25",
-		                                   angle = 45, hjust = 1, vjust = 1,
-		                                   margin = margin(t = 1)),
+		        label.theme = element_text(size = 6, color = "grey25"),
 		        order = 3
 		      )
 		    ) +
@@ -719,23 +719,26 @@ if (has_fig1_pkgs) {
     new_scale_fill() +
     geom_point(data = fig1_sites, aes(x = Lon, y = Lat, fill = status, shape = program),
                size = 3.6, color = "white", stroke = 0.9) +
-    scale_fill_manual(name = "Inside vs Outside MPA", values = fig1_status_colors,
+    scale_fill_manual(name = NULL, values = fig1_status_colors,
                       guide = guide_legend(order = 1, nrow = 1, byrow = TRUE,
                                            override.aes = list(shape = 21, size = 3))) +
-    scale_shape_manual(name = "Monitoring program", values = program_shapes,
+    scale_shape_manual(name = NULL, values = program_shapes,
                        guide = guide_legend(order = 2, nrow = 1, byrow = TRUE,
                                             override.aes = list(fill = "grey60", size = 3))) +
     # Label only the panel sites with two-letter abbreviations at the true site location
     # (not the offset inside/outside points). This avoids bulky site-name text boxes.
     geom_label(
       data = sites_labels,
-      aes(x = Lon, y = Lat - 0.045, label = site_abbrev),
-      size = 3.0,
-      label.size = 0.2,
+      aes(x = Lon, y = Lat - 0.055, label = site_abbrev, colour = label_color),
+      size = 2.6,
+      fontface = "bold",
+      linewidth = 0.3,
       label.padding = unit(0.15, "lines"),
-      fill = scales::alpha("white", 0.75),
-      color = "#1A1A1A"
+      label.r = unit(0.12, "lines"),
+      fill = "white",
+      show.legend = FALSE
     ) +
+    scale_colour_identity() +
     coord_sf(xlim = c(BBOX_LONLAT["xmin"], BBOX_LONLAT["xmax"]),
              ylim = c(BBOX_LONLAT["ymin"], BBOX_LONLAT["ymax"]), expand = FALSE, crs = 4326) +
     annotation_scale(location = "bl", width_hint = 0.2, pad_x = unit(0.3, "in"),
@@ -744,36 +747,36 @@ if (has_fig1_pkgs) {
     annotation_north_arrow(location = "bl", which_north = "true", pad_x = unit(0.3, "in"),
                            pad_y = unit(1.1, "in"), style = north_arrow_minimal,
                            height = unit(0.7, "cm"), width = unit(0.7, "cm")) +
-    theme_mpa(base_size = 10) +
+    theme_mpa(base_size = 9) +
+    labs(tag = "(a)") +
     theme(
       panel.background = element_rect(fill = "#C6DBEF", color = NA),
       panel.border = element_rect(fill = NA, color = "grey35", linewidth = 0.4),
       axis.line.x.bottom = element_blank(),
       axis.line.y.left = element_blank(),
       axis.title = element_blank(),
-      axis.text = element_text(size = 8, color = "grey30"),
-      # Put legends top-right and keep them aligned as a single vertical box.
-      legend.position = c(0.98, 0.98),
-      legend.justification = c(1, 1),
-      legend.direction = "vertical",
-      legend.box = "vertical",
-      legend.title = element_text(size = 8, face = "plain"),
-      legend.text = element_text(size = 8),
-      legend.key.size = unit(0.35, "cm"),
-      legend.spacing.x = unit(2, "mm"),
-      legend.spacing.y = unit(1, "mm"),
-      legend.key.width = unit(0.7, "cm"),
-      legend.key.height = unit(0.35, "cm"),
-	      # One coherent background for ALL legends (inside/outside, program, depth).
-	      # Slightly de-emphasize so the map reads first.
-	      legend.background = element_rect(fill = alpha("white", 0.78), color = "grey70", linewidth = 0.25),
-	      legend.margin = margin(1, 3, 1, 3),
-	      legend.box.background = element_blank(),
-	      # Make colorbar ticks visually obvious.
-	      legend.ticks = element_line(color = "grey40", linewidth = 0.35),
-	      legend.ticks.length = unit(2.0, "mm"),
-	      plot.margin = FIG1_PLOT_MARGIN
-	    )
+      axis.text = element_text(size = 7.5, color = "grey20"),
+      # Legends above the map
+      legend.position = "top",
+      legend.direction = "horizontal",
+      legend.box = "horizontal",
+      legend.title = element_text(size = 7, face = "plain"),
+      legend.text = element_text(size = 6.5),
+      legend.key.size = unit(0.3, "cm"),
+      legend.spacing.x = unit(4, "mm"),
+      legend.spacing.y = unit(0, "mm"),
+      legend.key.width = unit(0.5, "cm"),
+      legend.key.height = unit(0.3, "cm"),
+      legend.background = element_blank(),
+      legend.margin = margin(2, 0, 0, 0),
+      legend.box.margin = margin(0, 0, 0, 0),
+      legend.box.background = element_blank(),
+      legend.ticks = element_line(color = "grey40", linewidth = 0.35),
+      legend.ticks.length = unit(1.5, "mm"),
+      plot.tag = element_text(size = 9, face = "bold"),
+      plot.tag.position = "topleft",
+      plot.margin = FIG1_PLOT_MARGIN
+    )
 
   # --- 9. California Inset Map ---
   inset_bbox <- st_bbox(BBOX_LONLAT, crs = 4326)
@@ -804,8 +807,11 @@ if (has_fig1_pkgs) {
   # --- 10. Time Series Panels ---
   TS_COLORS <- c("Inside MPA" = "#2A7B8E", "Outside MPA" = "#8C7B6A")
 
-	  build_ts_panel <- function(data, site_name, letter, mpa_year) {
+	  build_ts_panel <- function(data, site_name, letter, mpa_year, accent_color = "black") {
 	    short_name <- gsub(" SMCA| SMR", "", site_name)
+	    short_name <- gsub("Point", "Pt.", short_name)
+	    short_name <- gsub("Island", "Is.", short_name)
+	    short_name <- gsub("Santa Barbara", "S.B.", short_name)
 	    site_data <- data %>%
 	      filter(CA_MPA_Name_Short == site_name,
 	             grepl("pyrifera|Macrocystis", taxon_name, ignore.case = TRUE),
@@ -823,61 +829,67 @@ if (has_fig1_pkgs) {
 		      )
 		    }
 
-	    p <- ggplot(site_data, aes(x = year, y = mean_value, color = Status)) +
-	      geom_vline(xintercept = mpa_year, linetype = "dashed", color = "grey40", linewidth = 0.7) +
+	    # Annotation data for MPA establishment label (only on leftmost panel)
+	    mpa_label_df <- data.frame(x = mpa_year, y = Inf, label = "MPA est.")
+
+	    p <- ggplot(site_data, aes(x = year, y = mean_value, color = Status,
+	                                linetype = Status)) +
+	      geom_vline(xintercept = mpa_year, linetype = "dashed", color = "grey45", linewidth = 0.5) +
+	      {if (identical(letter, "b")) geom_text(
+	        data = mpa_label_df, aes(x = x, y = y, label = label),
+	        inherit.aes = FALSE, size = 2.3, color = "grey40", hjust = -0.1, vjust = 1.5,
+	        fontface = "italic"
+	      )} +
 	      geom_line(linewidth = 0.6) +
-	      geom_point(size = 1.2, alpha = 0.7, shape = 21, fill = "white", stroke = 0.5) +
+	      geom_point(size = 1.3, alpha = 0.8) +
 	      scale_color_manual(values = TS_COLORS, name = NULL) +
+	      scale_linetype_manual(values = c("Inside MPA" = "solid", "Outside MPA" = "32"),
+	                            guide = "none") +
 	      scale_x_continuous(breaks = seq(1990, 2020, by = 10), limits = c(1988, 2024)) +
 	      scale_y_continuous(
 	        limits = c(0, NA),
 	        expand = expansion(mult = c(0, 0.1)),
-	        # Requested: halve kelp biomass on the y-axis ONLY for panel (a).
-	        # Keep data unchanged; adjust tick labels for panel (a) only.
-	        labels = if (identical(letter, "a")) scales::label_number(scale = 0.5) else waiver()
+	        labels = if (identical(letter, "b")) scales::label_number(scale = 0.5) else waiver()
 	      ) +
 			      labs(title = paste0("(", letter, ") ", short_name),
 			           x = NULL,
-			           # All panels share the same y-axis label. Panel (a) tick labels are
-			           # already halved via scales::label_number(scale = 0.5) — the previous
-			           # ~"/2" suffix in the axis title rendered as a trailing "2" artifact.
 			           y = expression(Kelp~biomass~(g~m^{-2}))) +
-	      theme_mpa(base_size = 8) +
+	      theme_mpa(base_size = 9) +
 		      theme(panel.grid.major.x = element_blank(),
 		            panel.grid.major.y = element_blank(),
-			            plot.title = element_text(size = 8, face = "plain", hjust = 0,
-			                                      margin = margin(b = 1)),
+			            plot.title = element_text(size = 9, face = "bold", hjust = 0,
+			                                      color = "black", margin = margin(b = 1)),
 			            plot.tag = element_blank(),
-		            axis.title = element_text(size = 7.5, color = "grey20"),
+		            axis.title = element_text(size = 8, color = "grey20"),
 		            axis.title.y = element_text(margin = margin(r = 3)),
-		            axis.text = element_text(size = 6.2, color = "grey30"),
-		            axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1),
-		            # Requested: square panels (panel area height ~= width).
-		            aspect.ratio = 1,
-		            legend.position = "bottom",
-		            legend.text = element_text(size = 6.5),
-		            legend.key.width = unit(0.45, "cm"),
-		            legend.key.height = unit(0.35, "cm"),
-		            legend.spacing.x = unit(1.5, "mm"),
-		            legend.margin = margin(0, 0, 0, 0),
-		            # Keep panels compact; patchwork controls overall row height.
-		            plot.margin = margin(0.1, 0.25, 0.1, 0.25))
+		            axis.text = element_text(size = 7.5, color = "grey20"),
+		            axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 1),
+		            legend.position = "none",
+		            plot.margin = margin(2, 3, 1, 3))
 
 	    # Requested: remove y-axis title on panels (b–d) WITHOUT changing widths.
 	    # Use transparent text so the grob width is preserved (prevents plots b/c/d looking wider).
-	    if (!identical(letter, "a")) {
+	    if (!identical(letter, "b")) {
 	      p <- p + theme(axis.title.y = element_text(color = "transparent"))
 	    }
+
+	    # Add thin colored accent on left axis for grayscale-safe linkage to map labels
+	    p <- p +
+	      annotate("segment", x = -Inf, xend = -Inf, y = -Inf, yend = Inf,
+	               color = accent_color, linewidth = 1.2) +
+	      coord_cartesian(clip = "off")
 
 	    p
 	  }
 
-  # Build panels
+  # Build panels (accent colors match map labels for perceptual linkage)
+  PANEL_ACCENT <- c("b" = "#1B9E77", "c" = "#D95F02", "d" = "#7570B3", "e" = "#E7298A")
   fig1_panels <- list()
   if (!is.null(ts_data)) {
     for (letter in names(PANEL_SITES)) {
       site <- PANEL_SITES[letter]
-      fig1_panels[[letter]] <- build_ts_panel(ts_data, site, letter, MPA_YEARS[site])
+      fig1_panels[[letter]] <- build_ts_panel(ts_data, site, letter, MPA_YEARS[site],
+                                              PANEL_ACCENT[letter])
     }
   }
 
@@ -886,28 +898,23 @@ if (has_fig1_pkgs) {
 	    # Reduce bottom margin of main map
 	    main_map <- main_map + theme(plot.margin = margin(1, 1, 0, 1))
 
-    # Create row of panels using patchwork with collected legend
-	    panels_row <- (fig1_panels$a + fig1_panels$b + fig1_panels$c + fig1_panels$d) +
-	      plot_layout(nrow = 1, guides = "collect", widths = rep(1, 4)) &
-	      theme(legend.position = "bottom",
-	            legend.justification = "center",
-	            panel.border = element_blank(),
+    panels_row <- (fig1_panels$b + fig1_panels$c + fig1_panels$d + fig1_panels$e) +
+	      plot_layout(nrow = 1, widths = rep(1, 4)) &
+	      theme(panel.border = element_blank(),
             axis.line = element_blank(),
             axis.line.x.bottom = element_line(colour = "black", linewidth = 0.3),
             axis.line.y.left = element_line(colour = "black", linewidth = 0.3))
 
-	    # Stack map on top, panels below — give the bottom row more space now that panels are square.
-	    # Keep the square panels snug in their row (avoid large empty vertical slack).
 	    fig1 <- main_map / panels_row +
-	      plot_layout(heights = c(2.4, 0.6))
+	      plot_layout(heights = c(1.0, 1.0))
 	  } else {
 	    fig1 <- main_map
 	  }
 
-	  fig1 <- fig1 + plot_annotation(theme = theme(plot.margin = margin(0.2, 1.5, 0.8, 1.5)))
+	  fig1 <- fig1 + plot_annotation(theme = theme(plot.margin = margin(1, 2, 2, 2)))
 
   # --- 12. Save Figure 1 ---
-  save_fig(fig1, "fig_01_mpa_map", FIG1_DIMS["w"], FIG1_DIMS["h"])
+  save_fig(fig1, "fig_01_mpa_map", FIG1_DIMS["w"], FIG1_DIMS["h"], dpi = 600)
 
 } else {
   cat("  Skipping Figure 1 (required packages not available)\n")
