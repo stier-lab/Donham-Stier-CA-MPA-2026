@@ -1,6 +1,6 @@
 # Statistical Audit Report: CA MPA Kelp Forest Analysis
 
-**Date:** 2026-02-05
+**Date:** 2026-02-05 (initial), 2026-02-10 (updated)
 **Prepared by:** Statistical Pipeline Review
 **Purpose:** Document findings from comprehensive statistical review and actions taken
 
@@ -75,12 +75,16 @@ A comprehensive review of the statistical pipeline was conducted, examining:
 
 ## 3. Outlier Analysis Results
 
-**Good news:** The latest pipeline run (2026-02-05) detected **no outliers**:
+The pipeline applies Cook's distance outlier detection with a 4/n threshold (standard meta-analytic practice).
 
-- Biomass observations: 70 total → 0 removed (0%)
-- Density observations: 71 total → 0 removed (0%)
+**Latest pipeline run (2026-02-10):**
 
-The Cook's distance threshold (4/n = ~0.057) is standard meta-analytic practice and appropriately implemented.
+- Biomass observations: 79 input → 45 removed (57%) → 34 final
+- Density observations: 62 input → 43 removed (69%) → 19 final
+
+The high removal rate reflects the aggressive 4/n threshold on heterogeneous ecological data. Full-data and outlier-removed results are both reported (sensitivity analysis). See `outputs/filter_audit_meta_analysis.csv` for the complete outlier trace.
+
+**Note:** The earlier (2026-02-05) run reported 0 outliers because it was using SD^2 instead of SE^2 for sampling variance (fix C1 in methodology_review.md), which inflated within-study variance and masked between-study heterogeneity.
 
 ---
 

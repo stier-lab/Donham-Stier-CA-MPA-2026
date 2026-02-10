@@ -3,7 +3,7 @@
 **Date:** 2026-02-02
 **Reviewers:** Statistician Agent, Data Engineer Agent
 **Target journal:** Conservation Letters
-**Last updated:** 2026-02-06 (all applicable fixes verified in current codebase)
+**Last updated:** 2026-02-10 (D7 fixed via bug bash C6; see also `bug-bash-reports/summary.md` for additional audit)
 
 This document summarizes all issues identified during a systematic review of the
 statistical methodology and data processing pipeline. Each issue includes a severity
@@ -669,8 +669,8 @@ df <- df[complete.cases(df$year), ]
 
 ### D7. `SizeFreq.Urch.OG` is an undocumented implicit dependency
 
-**Status: DEFERRED**
-**Reason:** The `SizeFreq.Urch.OG` object appears to be created in 04 before the 25mm filter. Need to verify the exact assignment location and add explicit documentation. This is related to C4 (size cutoff consistency).
+**Status: FIXED** (2026-02-10, bug bash fix C6)
+**Change:** `04_pisco_processing.R:449` — Moved `SizeFreq.Urch.OG <- SizeFreq.Urch` assignment BEFORE the `subset(SizeFreq.Urch, size >= 25)` filter. Previously the "unfiltered" backup was actually the filtered version, causing KFM/LTER bootstraps to sample from the 25mm-filtered distribution.
 
 **Files:** `05_kfm_processing.R:142`, `06_lter_processing.R:83`
 
@@ -871,7 +871,7 @@ standardization function.
 | D4 | Major | Data | 04/05/06/07 | 50+ hard-coded column indices | DEFERRED |
 | D5 | Major | Data | 03/04 | Site object overwritten mid-pipeline | DEFERRED |
 | D6 | Major | Data | 04/05/06 | Full outer joins + silent drops | DEFERRED |
-| D7 | Major | Data | 04/05/06 | SizeFreq.Urch.OG undocumented dependency | DEFERRED |
+| D7 | Major | Data | 04/05/06 | SizeFreq.Urch.OG undocumented dependency | **FIXED** |
 | D8 | Major | Data | 01_utils.R:172 | +0.01 correction magnitude-dependent bias | DEFERRED |
 | D9 | Major | Data | 01_utils.R:159-178 | PropCorr=0 when max=0 causes -Inf | **FIXED** |
 | N1 | Minor | Statistics | 09_meta_analysis.R | z-test vs Knapp-Hartung t-test | **FIXED** |
@@ -882,7 +882,7 @@ standardization function.
 
 ### Fix Summary
 
-**Fixed: 18 of 28 issues** (5 critical code bugs + 7 major statistical + 3 major data + 3 minor)
+**Fixed: 19 of 28 issues** (5 critical code bugs + 7 major statistical + 4 major data + 3 minor)
 **Partially fixed: 1 issue** (M7: FDR correction applied to meta-analysis, remaining tests uncorrected)
 
 Files modified:

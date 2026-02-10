@@ -1,7 +1,7 @@
 # Pipeline Changes for Manuscript Revision
 
 **Prepared by:** Adrian Stier
-**Last Updated:** 2026-02-06
+**Last Updated:** 2026-02-10
 **Purpose:** Document methodological changes between original analysis and current pipeline
 
 ---
@@ -231,6 +231,24 @@ Pipeline now calculates and reports tau-squared and pseudo-I-squared for meta-an
 - [ ] Report in Results text only
 - [ ] Include in Supplemental Materials only
 - [ ] Do not include
+
+---
+
+## Bug Fixes Applied (2026-02-10)
+
+A deep 6-agent audit of all 17 R scripts (12,699 lines) identified 8 critical issues. After verification, 2 were false positives. The following 5 fixes were applied and verified:
+
+| Fix | Description | File | Impact |
+|-----|-------------|------|--------|
+| C1 | Removed `EXCLUDED_MPAS` redefinition that overwrote the authoritative 11-MPA list with a different 5-MPA list | `08_effect_sizes.R` | Data filtering now consistent across all pipeline stages |
+| C2 | Removed `cols` palette redefinition that overwrote colorblind-safe colors | `08_effect_sizes.R` | Diagnostic plots now use project-wide palette |
+| C6 | Moved urchin size-frequency preservation before 25mm filter | `04_pisco_processing.R` | KFM/LTER bootstraps now sample from unfiltered distribution |
+| C8 | Changed `$SIZE` to `$SIZE_MM` for LTER lobster biomass | `06_lter_processing.R` | Eliminates reliance on R's partial column matching |
+| M7 | Use full-precision p-values for FDR correction | `09_meta_analysis.R` | More accurate multiple testing correction |
+
+**Key results are unchanged** after these fixes: S. purpuratus density (p=0.0004, FDR=0.0036) and S. pulcher biomass (p=0.004, FDR=0.018) remain the two significant effects.
+
+See `bug-bash-reports/summary.md` for the full audit report including remaining moderate-priority issues.
 
 ---
 
