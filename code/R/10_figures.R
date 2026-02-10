@@ -1030,38 +1030,42 @@ fig2_x_breaks <- fig2_x_breaks[fig2_x_breaks >= fig2_x_limits[1] & fig2_x_breaks
 
 # Build each panel individually for better control, then combine with patchwork
 # Common theme settings for consistent panel appearance
-fig2_theme <- theme_mpa(base_size = 10) +
+fig2_theme <- theme_mpa(base_size = 11) +
   theme(legend.position = "none",
-        plot.title = element_text(size = 9.5, face = "plain", hjust = 0,
+        plot.title = element_text(size = 10, face = "plain", hjust = 0,
                                   margin = margin(b = 8)),
-        axis.title.y = element_text(size = 9, margin = margin(r = 4)),
-        axis.text = element_text(size = 8, color = "black"),
+        axis.title.y = element_text(size = 9.5, margin = margin(r = 4)),
+        axis.text = element_text(size = 8.5, color = "black"),
         plot.margin = margin(4, 4, 4, 4))
 
-p2a <- ggplot(fig2_raw, aes(x = year, y = value, color = status)) +
+# Compact MPA annotation for panels b-d (panel a gets a fuller label)
+fig2_mpa_label <- function(mpa_year) {
+  annotate("text", x = mpa_year, y = Inf,
+           label = "MPA est.", hjust = -0.1, vjust = 1.5,
+           size = 2.3, color = MPA_LABEL_COLOR, fontface = "italic")
+}
+
+p2a <- ggplot(fig2_raw, aes(x = year, y = value, color = status, linetype = status)) +
   add_mpa_vline(scorpion_start) +
-  # TUFTE: Annotate the MPA implementation line with semi-transparent background
-  # to prevent overlap with data points near the MPA establishment year.
-  annotate("label", x = scorpion_start - 0.5, y = Inf,
-           label = "MPA\nestablished", hjust = 1.05, vjust = 1.25,
-           size = 2.3, color = MPA_LABEL_COLOR, lineheight = 0.9,
-           fill = alpha("white", 0.8), label.size = 0,
-           label.padding = unit(0.15, "lines")) +
-  geom_line(linewidth = 0.9) +
-  geom_point(size = 2, shape = 21, fill = "white", stroke = 0.8) +
+  fig2_mpa_label(scorpion_start) +
+  geom_line(linewidth = 1.0) +
+  geom_point(size = 2.2, shape = 21, fill = "white", stroke = 0.9) +
   scale_color_site(name = "Site") +
-  # TUFTE: Declarative title - concise to fit panel width
+  scale_linetype_manual(values = c("Inside" = "solid", "Outside" = "32"),
+                        guide = "none") +
   labs(title = "(a) MPA > Reference",
        x = NULL, y = expression(Density~(ind~m^{-2}))) +
   scale_x_continuous(breaks = fig2_x_breaks, limits = fig2_x_limits) +
   fig2_theme
 
-p2b <- ggplot(fig2_prop, aes(x = year, y = value, color = status)) +
+p2b <- ggplot(fig2_prop, aes(x = year, y = value, color = status, linetype = status)) +
   add_mpa_vline(scorpion_start) +
-  geom_line(linewidth = 0.9) +
-  geom_point(size = 2, shape = 21, fill = "white", stroke = 0.8) +
+  fig2_mpa_label(scorpion_start) +
+  geom_line(linewidth = 1.0) +
+  geom_point(size = 2.2, shape = 21, fill = "white", stroke = 0.9) +
   scale_color_site(name = "Site") +
-  # TUFTE: Concise title
+  scale_linetype_manual(values = c("Inside" = "solid", "Outside" = "32"),
+                        guide = "none") +
   labs(title = "(b) Standardized", x = NULL, y = "Proportion of max") +
   scale_x_continuous(breaks = fig2_x_breaks, limits = fig2_x_limits) +
   scale_y_continuous(breaks = seq(0, 1, by = 0.5)) +
@@ -1069,14 +1073,14 @@ p2b <- ggplot(fig2_prop, aes(x = year, y = value, color = status)) +
 
 p2c <- ggplot(fig2_lnrr, aes(x = year, y = lnDiff, shape = BA)) +
   add_mpa_vline(scorpion_start) +
+  fig2_mpa_label(scorpion_start) +
   geom_hline(yintercept = 0, linetype = "dotted", color = "grey60", linewidth = 0.5) +
-  geom_point(size = 2.5, color = col_taxa["S. purpuratus"]) +
+  geom_point(size = 2.8, color = col_taxa["S. purpuratus"]) +
   scale_shape_manual(
     name = "Period",
     values = c("Before" = 1, "After" = 16),
     guide = guide_legend(override.aes = list(color = unname(col_taxa["S. purpuratus"])))
   ) +
-  # TUFTE: Concise title
   labs(title = "(c) MPA effect", x = NULL, y = "ln(MPA / Reference)") +
   scale_x_continuous(breaks = fig2_x_breaks, limits = fig2_x_limits) +
   fig2_theme
@@ -1086,8 +1090,9 @@ fig2d_after <- dplyr::filter(fig2_lnrr, BA == "After")
 
 p2d <- ggplot(fig2_lnrr, aes(x = year, y = lnDiff, shape = BA)) +
   add_mpa_vline(scorpion_start) +
+  fig2_mpa_label(scorpion_start) +
   geom_hline(yintercept = 0, linetype = "dotted", color = "grey60", linewidth = 0.5) +
-  geom_point(size = 2.5, color = col_taxa["S. purpuratus"]) +
+  geom_point(size = 2.8, color = col_taxa["S. purpuratus"]) +
   {
     if (nrow(fig2d_after) >= 3) {
       geom_smooth(
@@ -1096,7 +1101,7 @@ p2d <- ggplot(fig2_lnrr, aes(x = year, y = lnDiff, shape = BA)) +
         method = "lm", se = TRUE,
         color = col_taxa["S. purpuratus"],
         fill = col_taxa["S. purpuratus"],
-        alpha = 0.25, linewidth = 1.0,
+        alpha = 0.15, linewidth = 1.0,
         inherit.aes = FALSE
       )
     }
@@ -1106,7 +1111,6 @@ p2d <- ggplot(fig2_lnrr, aes(x = year, y = lnDiff, shape = BA)) +
     values = c("Before" = 1, "After" = 16),
     guide = guide_legend(override.aes = list(color = unname(col_taxa["S. purpuratus"])))
   ) +
-  # TUFTE: Concise title with finding
   labs(title = "(d) Declining trend", x = NULL, y = NULL) +
   scale_x_continuous(breaks = fig2_x_breaks, limits = fig2_x_limits) +
   fig2_theme
