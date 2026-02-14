@@ -861,6 +861,11 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
   # STEP 2: Create period factor for step model
   # ---------------------------------------------------------------------------
   # Convert time.model to categorical Before/After
+  # NOTE: In this framework, time.model == 0 represents the Before period
+  # (all pre-MPA observations are mapped to 0), and time.model > 0 represents
+  # sequential years in the After period. This is consistent with the linear
+  # and nonlinear model parameterizations where the intercept at time.model=0
+  # estimates the Before-period baseline.
 
   period <- ifelse(time.model == 0, "Before", "After")
 
@@ -872,7 +877,7 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
   # H0: mean delta is the same Before and After
   # This is the traditional BACI analysis approach
 
-  step.Model <- aov(delta ~ period)
+  step.Model <- lm(delta ~ period)
 
   ## --- Linear Model (OLS) ---
   # H0: no linear trend in delta over time since MPA
@@ -986,6 +991,7 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
 
   # Skip asymptotic if data diagnostics suggest it will fail
   asymptotic.Model <- NULL
+  asymptotic_fallback <- "none"  # Track fallback level for AICc exclusion
   if (!data_diag$problematic_for_asymptotic) {
     # Try primary asymptotic fitting
     asymptotic.Model <- tryCatch(
@@ -998,51 +1004,69 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
     )
   }
 
-  # Fallback 1: try stable parameterization
+  # Fallback 1: try stable parameterization (still a true asymptotic NLS — valid for AICc)
   if (is.null(asymptotic.Model)) {
     asymptotic.Model <- tryCatch(
       fit_asymptotic_stable(delta, time.model),
       error = function(e) NULL
     )
     if (!is.null(asymptotic.Model)) {
+      asymptotic_fallback <- "stable_reparam"
       log_model_fit(model_type = "asymptotic", success = TRUE,
                     message = "Using stable parameterization")
     }
   }
 
-  # Fallback 2: try self-starting asymptotic model
+  # Fallback 2: try self-starting asymptotic model (still a true NLS — valid for AICc)
   if (is.null(asymptotic.Model)) {
     asymptotic.Model <- fit_asymptotic_selfstart(delta, time.model)
     if (!is.null(asymptotic.Model)) {
+      asymptotic_fallback <- "selfstart"
       log_model_fit(model_type = "asymptotic", success = TRUE,
                     message = "Using self-starting SSasymp")
     }
   }
 
-  # Fallback 3: piecewise linear (changepoint model)
+  # ---------------------------------------------------------------------------
+  # FALLBACK MODELS BELOW: These are NOT true asymptotic NLS fits.
+  # They are excluded from AICc comparison because:
+  #   - Piecewise linear and quadratic are lm() models masquerading as nonlinear
+  #   - GAM AICc (penalized likelihood) is not comparable to lm/nls AICc
+  #   - Reporting these as "Asymptotic" would be misleading
+  # The fallback models are still fitted and stored for reference, but they
+  # do NOT enter the model selection competition.
+  # ---------------------------------------------------------------------------
+
+  # Fallback 3: piecewise linear (changepoint model) — EXCLUDED from AICc
   if (is.null(asymptotic.Model)) {
     asymptotic.Model <- fit_piecewise_linear(delta, time.model)
     if (!is.null(asymptotic.Model)) {
+      asymptotic_fallback <- "piecewise"
+      attr(asymptotic.Model, "model_fallback") <- "piecewise"
       log_model_fit(model_type = "asymptotic", success = TRUE,
-                    message = "Using piecewise linear as fallback")
+                    message = "Using piecewise linear as fallback (EXCLUDED from AICc)")
     }
   }
 
-  # Fallback 4: quadratic model captures curvature
+  # Fallback 4: quadratic model captures curvature — EXCLUDED from AICc
   if (is.null(asymptotic.Model)) {
     asymptotic.Model <- fit_quadratic_fallback(delta, time.model)
     if (!is.null(asymptotic.Model)) {
+      asymptotic_fallback <- "quadratic"
+      attr(asymptotic.Model, "model_fallback") <- "quadratic"
       log_model_fit(model_type = "asymptotic", success = TRUE,
-                    message = "Using quadratic model as fallback")
+                    message = "Using quadratic model as fallback (EXCLUDED from AICc)")
     }
   }
 
-  # Fallback 5: GAM for flexible nonlinear fit
+  # Fallback 5: GAM for flexible nonlinear fit — EXCLUDED from AICc
   if (is.null(asymptotic.Model)) {
     asymptotic.Model <- fit_gam_fallback(delta, time.model)
     if (!is.null(asymptotic.Model)) {
+      asymptotic_fallback <- "gam"
+      attr(asymptotic.Model, "model_fallback") <- "gam"
       log_model_fit(model_type = "asymptotic", success = TRUE,
-                    message = "Using GAM as final fallback")
+                    message = "Using GAM as final fallback (EXCLUDED from AICc)")
     }
   }
 
@@ -1167,6 +1191,7 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
 
   # Skip sigmoid if data diagnostics suggest it will fail
   sigmoid.Model <- NULL
+  sigmoid_fallback <- "none"  # Track fallback level for AICc exclusion
   if (!data_diag$problematic_for_sigmoid) {
     # Try primary sigmoid fitting
     sigmoid.Model <- tryCatch(
@@ -1179,51 +1204,65 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
     )
   }
 
-  # Fallback 1: 4-parameter logistic (alternative parameterization)
+  # Fallback 1: 4-parameter logistic (alternative NLS parameterization — valid for AICc)
   if (is.null(sigmoid.Model)) {
     sigmoid.Model <- tryCatch(
       fit_sigmoid_4pl(delta, time.model),
       error = function(e) NULL
     )
     if (!is.null(sigmoid.Model)) {
+      sigmoid_fallback <- "4pl_reparam"
       log_model_fit(model_type = "sigmoid", success = TRUE,
                     message = "Using 4PL parameterization")
     }
   }
 
-  # Fallback 2: try self-starting logistic model
+  # Fallback 2: try self-starting logistic model (still a true NLS — valid for AICc)
   if (is.null(sigmoid.Model)) {
     sigmoid.Model <- fit_sigmoid_selfstart(delta, time.model)
     if (!is.null(sigmoid.Model)) {
+      sigmoid_fallback <- "selfstart"
       log_model_fit(model_type = "sigmoid", success = TRUE,
                     message = "Using self-starting SSlogis")
     }
   }
 
-  # Fallback 3: piecewise linear
+  # ---------------------------------------------------------------------------
+  # FALLBACK MODELS BELOW: These are NOT true sigmoid NLS fits.
+  # They are excluded from AICc comparison for the same reasons as the
+  # asymptotic fallbacks (see above). Still fitted and stored for reference.
+  # ---------------------------------------------------------------------------
+
+  # Fallback 3: piecewise linear — EXCLUDED from AICc
   if (is.null(sigmoid.Model)) {
     sigmoid.Model <- fit_piecewise_linear(delta, time.model)
     if (!is.null(sigmoid.Model)) {
+      sigmoid_fallback <- "piecewise"
+      attr(sigmoid.Model, "model_fallback") <- "piecewise"
       log_model_fit(model_type = "sigmoid", success = TRUE,
-                    message = "Using piecewise linear as fallback")
+                    message = "Using piecewise linear as fallback (EXCLUDED from AICc)")
     }
   }
 
-  # Fallback 4: quadratic model
+  # Fallback 4: quadratic model — EXCLUDED from AICc
   if (is.null(sigmoid.Model)) {
     sigmoid.Model <- fit_quadratic_fallback(delta, time.model)
     if (!is.null(sigmoid.Model)) {
+      sigmoid_fallback <- "quadratic"
+      attr(sigmoid.Model, "model_fallback") <- "quadratic"
       log_model_fit(model_type = "sigmoid", success = TRUE,
-                    message = "Using quadratic model as fallback")
+                    message = "Using quadratic model as fallback (EXCLUDED from AICc)")
     }
   }
 
-  # Fallback 5: GAM for flexible nonlinear fit
+  # Fallback 5: GAM for flexible nonlinear fit — EXCLUDED from AICc
   if (is.null(sigmoid.Model)) {
     sigmoid.Model <- fit_gam_fallback(delta, time.model)
     if (!is.null(sigmoid.Model)) {
+      sigmoid_fallback <- "gam"
+      attr(sigmoid.Model, "model_fallback") <- "gam"
       log_model_fit(model_type = "sigmoid", success = TRUE,
-                    message = "Using GAM as final fallback")
+                    message = "Using GAM as final fallback (EXCLUDED from AICc)")
     }
   }
 
@@ -1232,21 +1271,46 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
   # ---------------------------------------------------------------------------
   # AICc is preferred over AIC for small samples (n/K < 40)
   # where n = sample size and K = number of parameters
+  #
+  # IMPORTANT: Only models fit with comparable likelihood functions enter the
+  # AICc comparison. Fallback models (piecewise linear, quadratic, GAM) that
+  # were substituted for failed NLS fits are EXCLUDED because:
+  #   1. GAM AICc uses penalized likelihood, not comparable to lm/nls AICc
+  #   2. A piecewise-linear or quadratic model is a fundamentally different
+  #      model class than the intended asymptotic/sigmoid — reporting it as
+  #      "Asymptotic" or "Sigmoid" would be misleading
+  #   3. Degrees of freedom differ between model classes
+  # True NLS reparameterizations (stable, self-start, 4PL) ARE included since
+  # they are genuine nonlinear fits estimated via maximum likelihood.
 
-  # Build list of successfully fitted models
+  # Determine which fallback models should be excluded from AICc
+  # Fallbacks beyond reparameterization are: piecewise, quadratic, gam
+  INVALID_FALLBACKS <- c("piecewise", "quadratic", "gam")
+  asymptotic_excluded <- asymptotic_fallback %in% INVALID_FALLBACKS
+  sigmoid_excluded <- sigmoid_fallback %in% INVALID_FALLBACKS
+
+  # Build list of successfully fitted models eligible for AICc comparison
   model_list <- list(step.Model = step.Model, linear.Model = linear.Model)
   model_names <- c("step.Model", "linear.Model")
 
-  if (!is.null(asymptotic.Model)) {
+  if (!is.null(asymptotic.Model) && !asymptotic_excluded) {
     model_list$asymptotic.Model <- asymptotic.Model
     model_names <- c(model_names, "asymptotic.Model")
+  } else if (asymptotic_excluded) {
+    log_model_fit(model_type = "asymptotic", success = TRUE,
+                  message = paste0("Excluded from AICc: fallback=", asymptotic_fallback,
+                                   " (not a true NLS fit)"))
   }
-  if (!is.null(sigmoid.Model)) {
+  if (!is.null(sigmoid.Model) && !sigmoid_excluded) {
     model_list$sigmoid.Model <- sigmoid.Model
     model_names <- c(model_names, "sigmoid.Model")
+  } else if (sigmoid_excluded) {
+    log_model_fit(model_type = "sigmoid", success = TRUE,
+                  message = paste0("Excluded from AICc: fallback=", sigmoid_fallback,
+                                   " (not a true NLS fit)"))
   }
 
-  # Calculate AICc for each successfully fitted model
+  # Calculate AICc for each eligible model
   aicc_values <- sapply(model_list, function(m) {
     tryCatch(AICc(m), error = function(e) Inf)
   })
@@ -1278,7 +1342,7 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
     AICc.test$aicWeights <- (AICc.test$RL / RL_sum) * 100
   }
 
-  # Build full weights vector (4 elements, with 0 for missing models)
+  # Build full weights vector (4 elements, with 0 for missing/excluded models)
   w <- c(
     step.Model = AICc.test$aicWeights[rownames(AICc.test) == "step.Model"],
     linear.Model = AICc.test$aicWeights[rownames(AICc.test) == "linear.Model"],
@@ -1330,7 +1394,13 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
     linear = linear.Model,
     asymptotic = asymptotic.Model,
     sigmoid = sigmoid.Model,
-    best = best.Model
+    best = best.Model,
+    fallback_info = list(
+      asymptotic = asymptotic_fallback,
+      sigmoid = sigmoid_fallback,
+      asymptotic_excluded_from_aicc = asymptotic_excluded,
+      sigmoid_excluded_from_aicc = sigmoid_excluded
+    )
   )
 }
 
@@ -1453,24 +1523,50 @@ myASYfun_standalone <- function(delta, time.model, time.model.of.impact, time.tr
     }
   }
 
-  # Fallback: try stable parameterization
+  # Fallback: try stable parameterization (still a true NLS fit)
   fit <- fit_asymptotic_stable(delta, time.model)
-  if (!is.null(fit)) return(fit)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "stable_reparam"
+    return(fit)
+  }
 
-  # Fallback: self-starting
+  # Fallback: self-starting (still a true NLS fit)
   fit <- fit_asymptotic_selfstart(delta, time.model)
-  if (!is.null(fit)) return(fit)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "selfstart"
+    return(fit)
+  }
+
+  # WARNING: Fallbacks below are NOT true asymptotic NLS fits.
+  # Downstream code (08_effect_sizes.R) should check attr(model, "model_fallback")
+  # and use the actual model class name rather than reporting "Asymptotic".
 
   # Fallback: piecewise linear
   fit <- fit_piecewise_linear(delta, time.model)
-  if (!is.null(fit)) return(fit)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "piecewise"
+    log_model_fit(model_type = "asymptotic_standalone", success = TRUE,
+                  message = "Piecewise fallback used — NOT a true asymptotic fit")
+    return(fit)
+  }
 
   # Fallback: quadratic
   fit <- fit_quadratic_fallback(delta, time.model)
-  if (!is.null(fit)) return(fit)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "quadratic"
+    log_model_fit(model_type = "asymptotic_standalone", success = TRUE,
+                  message = "Quadratic fallback used — NOT a true asymptotic fit")
+    return(fit)
+  }
 
   # Fallback: GAM
-  fit_gam_fallback(delta, time.model)
+  fit <- fit_gam_fallback(delta, time.model)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "gam"
+    log_model_fit(model_type = "asymptotic_standalone", success = TRUE,
+                  message = "GAM fallback used — NOT a true asymptotic fit")
+  }
+  fit
 }
 
 
@@ -1484,7 +1580,7 @@ myASYfun_standalone <- function(delta, time.model, time.model.of.impact, time.tr
 #' @param time.model Time since intervention (0 for Before, sequential for After)
 #' @param time.model.of.impact Index of last Before-period observation
 #' @param time.true Full time index vector
-#' @return Fitted NLS model object or fallback model
+#' @return Fitted NLS model object or fallback model with model_fallback attribute
 mySIGfun_standalone <- function(delta, time.model, time.model.of.impact, time.true) {
   # Add offset to avoid 0^K issues
   time_offset <- time.model + 0.01
@@ -1606,24 +1702,50 @@ mySIGfun_standalone <- function(delta, time.model, time.model.of.impact, time.tr
     }
   }
 
-  # Fallback: 4-parameter logistic
+  # Fallback: 4-parameter logistic (still a true NLS fit)
   fit <- fit_sigmoid_4pl(delta, time.model)
-  if (!is.null(fit)) return(fit)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "4pl_reparam"
+    return(fit)
+  }
 
-  # Fallback: self-starting SSlogis
+  # Fallback: self-starting SSlogis (still a true NLS fit)
   fit <- fit_sigmoid_selfstart(delta, time.model)
-  if (!is.null(fit)) return(fit)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "selfstart"
+    return(fit)
+  }
+
+  # WARNING: Fallbacks below are NOT true sigmoid NLS fits.
+  # Downstream code (08_effect_sizes.R) should check attr(model, "model_fallback")
+  # and use the actual model class name rather than reporting "Sigmoid".
 
   # Fallback: piecewise linear
   fit <- fit_piecewise_linear(delta, time.model)
-  if (!is.null(fit)) return(fit)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "piecewise"
+    log_model_fit(model_type = "sigmoid_standalone", success = TRUE,
+                  message = "Piecewise fallback used — NOT a true sigmoid fit")
+    return(fit)
+  }
 
   # Fallback: quadratic
   fit <- fit_quadratic_fallback(delta, time.model)
-  if (!is.null(fit)) return(fit)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "quadratic"
+    log_model_fit(model_type = "sigmoid_standalone", success = TRUE,
+                  message = "Quadratic fallback used — NOT a true sigmoid fit")
+    return(fit)
+  }
 
   # Fallback: GAM
-  fit_gam_fallback(delta, time.model)
+  fit <- fit_gam_fallback(delta, time.model)
+  if (!is.null(fit)) {
+    attr(fit, "model_fallback") <- "gam"
+    log_model_fit(model_type = "sigmoid_standalone", success = TRUE,
+                  message = "GAM fallback used — NOT a true sigmoid fit")
+  }
+  fit
 }
 
 
@@ -1707,9 +1829,14 @@ validate_all_models <- function(sumstats, all_data = NULL, save_plots = FALSE,
       result$model_type <- "simple"
       result$notes <- "Simple model - standard diagnostics apply"
       result$diagnosed <- TRUE
-    } else if (row$Model %in% c("Asymptotic", "Sigmoid")) {
+    } else if (row$Model %in% c("Asymptotic", "Sigmoid") ||
+               grepl("^(Asymptotic|Sigmoid)$", row$Model)) {
       result$model_type <- "nonlinear"
       result$notes <- "Nonlinear model - requires original data for diagnostics"
+    } else if (grepl("fallback", row$Model, ignore.case = TRUE)) {
+      result$model_type <- "fallback"
+      result$notes <- paste("Fallback model used:", row$Model,
+                            "- not a true NLS fit, interpret with caution")
     } else {
       result$model_type <- row$Model
     }
@@ -1767,13 +1894,17 @@ create_model_quality_report <- function(sumstats) {
   # Summary message
   total_models <- nrow(sumstats)
   nonlinear_models <- sum(sumstats$Model %in% c("Asymptotic", "Sigmoid"))
-  fallback_models <- sum(sumstats$Model %in% c("Quadratic", "GAM", "Piecewise"))
+  # Count both old-style fallback labels and new-style "Sigmoid_fallback_*" labels
+  fallback_models <- sum(
+    sumstats$Model %in% c("Quadratic", "GAM", "Piecewise") |
+    grepl("fallback", sumstats$Model, ignore.case = TRUE)
+  )
 
   report$summary <- paste0(
     "Model Fitting Summary:\n",
     "  Total models: ", total_models, "\n",
-    "  Nonlinear (asymptotic/sigmoid): ", nonlinear_models, "\n",
-    "  Fallback models used: ", fallback_models, "\n",
+    "  Nonlinear (true asymptotic/sigmoid NLS): ", nonlinear_models, "\n",
+    "  Fallback models used (non-NLS substitutions): ", fallback_models, "\n",
     "  Issues identified: ", length(report$issues)
   )
 

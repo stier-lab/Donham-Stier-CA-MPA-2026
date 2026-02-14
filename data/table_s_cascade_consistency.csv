@@ -1,0 +1,18 @@
+"CA_MPA_Name_Short","MPA_short","P. interruptus","S. pulcher","S. purpuratus","M. franciscanus","M. pyrifera","cascade_score","n_species"
+"Abalone Cove SMCA","Abalone Cove",TRUE,TRUE,TRUE,TRUE,TRUE,5,5
+"Gull Island SMR","Gull Is.",TRUE,TRUE,TRUE,TRUE,TRUE,5,5
+"Santa Barbara Island SMR","Santa Barbara Is.",TRUE,TRUE,TRUE,TRUE,TRUE,5,5
+"Campus Point SMCA","Campus Pt.",TRUE,FALSE,TRUE,TRUE,TRUE,4,5
+"Matlahuayl SMR","Matlahuayl",TRUE,FALSE,TRUE,TRUE,TRUE,4,5
+"Scorpion SMR","Scorpion",TRUE,FALSE,TRUE,TRUE,TRUE,4,5
+"South Point SMR","South Pt.",TRUE,FALSE,TRUE,TRUE,TRUE,4,5
+"Anacapa Island SMR 2003","Anacapa Is.",FALSE,TRUE,TRUE,TRUE,FALSE,3,5
+"Harris Point SMR","Harris Pt.",TRUE,FALSE,FALSE,TRUE,TRUE,3,5
+"Point Vicente SMCA","Pt. Vicente",TRUE,TRUE,FALSE,FALSE,TRUE,3,5
+"Blue Cavern Onshore SMCA","Blue Cavern Onshore",NA,TRUE,NA,NA,NA,1,1
+"Farnsworth Onshore SMCA","Farnsworth Onshore",NA,TRUE,NA,NA,NA,1,1
+"Naples SMCA","Naples",FALSE,FALSE,FALSE,FALSE,TRUE,1,5
+"Cat Harbor SMCA","Cat Harbor",NA,FALSE,NA,NA,NA,0,1
+"Dana Point SMCA","Dana Point",NA,FALSE,NA,NA,NA,0,1
+"Long Point SMR","Long Point",NA,FALSE,NA,NA,NA,0,1
+"Swamis SMCA","Swamis",NA,FALSE,NA,NA,NA,0,1

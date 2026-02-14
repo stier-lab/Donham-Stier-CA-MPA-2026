@@ -604,7 +604,8 @@ KFM.den <- kfm.edit.den %>%
   spread(status, den)
 KFM.den$source <- "KFM"
 KFM.den <- KFM.den[complete.cases(KFM.den), ]
-KFM.den.long <- gather(KFM.den, status, value, 5:6)
+# FIXED: Replaced positional column indices 5:6 with explicit column names
+KFM.den.long <- gather(KFM.den, status, value, mpa, reference)
 KFM.den.long$resp <- "Den"
 
 kfm.edit.bio <- subset(kfm.ave.ave, y != "Macrocystis pyrifera" | area != 2)
@@ -616,7 +617,8 @@ KFM.bio <- kfm.edit.bio %>%
   spread(status, biomass)
 KFM.bio$source <- "KFM"
 KFM.bio <- KFM.bio[complete.cases(KFM.bio), ]
-KFM.bio.long <- gather(KFM.bio, status, value, 5:6)
+# FIXED: Replaced positional column indices 5:6 with explicit column names
+KFM.bio.long <- gather(KFM.bio, status, value, mpa, reference)
 KFM.bio.long$resp <- "Bio"
 
 KFM.resp <- rbind(KFM.den.long, KFM.bio.long)
@@ -700,7 +702,8 @@ KFM.fish.den <- mbon.fish.edit %>%
   spread(status, count)
 KFM.fish.den$source <- "KFM"
 KFM.fish.den.sub <- KFM.fish.den[complete.cases(KFM.fish.den), ]
-KFM.fish.den.long <- gather(KFM.fish.den.sub, status, value, 5:6)
+# FIXED: Replaced positional column indices 5:6 with explicit column names
+KFM.fish.den.long <- gather(KFM.fish.den.sub, status, value, mpa, reference)
 KFM.fish.den.long$resp <- "Den"
 
 # -- Proportions for RDFC method --

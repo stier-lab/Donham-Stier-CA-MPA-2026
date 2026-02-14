@@ -1,6 +1,6 @@
 # Results Summary: CA MPA Kelp Forest Analysis
 
-**Generated:** 2026-02-10 06:41:24
+**Generated:** 2026-02-13 15:54:09
 **Pipeline version:** Modular pBACIPS v2.0
 
 ---
@@ -8,36 +8,41 @@
 ## Overview
 
 This document summarizes the key results from the California MPA kelp forest
-pBACIPS analysis. Effect sizes represent the log response ratio (ln[MPA/Reference])
-at t=11 years post-MPA implementation.
+pBACIPS analysis. Effect sizes are estimated as log response ratios (lnRR = ln[MPA/Reference])
+at t=11 years post-MPA implementation, and back-transformed to response ratios (RR = exp(lnRR)).
 
 **Interpretation:**
-- Positive effect size = higher values inside MPA vs reference
-- Negative effect size = lower values inside MPA vs reference
+- **lnRR > 0 / RR > 1** = higher values inside MPA vs reference
+- **lnRR < 0 / RR < 1** = lower values inside MPA vs reference
+- **lnRR = 0 / RR = 1** = no difference
+- **% Change** = (RR - 1) x 100 (e.g., RR = 1.72 means +72% higher inside MPA)
 - Significance threshold: p < 0.05
 
 ---
 
 ## Meta-Analysis Results (Table 2)
 
+**Estimate** = log response ratio (lnRR). **RR** = back-transformed response ratio = exp(lnRR).
+RR > 1 means higher inside MPA; RR < 1 means lower inside MPA.
+
 ### Biomass
 
-| Taxa | k | Estimate | SE | t | p-value | p (FDR) | 95% CI | Effect | Flag |
-|------|---|----------|----|----|---------|---------|--------|--------|------|
-| S. purpuratus | 3 | -0.5161 | 0.4426 | -1.1662 | 0.2530 | 0.4112 | [-1.4213, 0.389] | negative | preliminary (k<5) |
-| M. franciscanus | 2 | 0.4807 | 0.475 | 1.0121 | 0.3198 | 0.4112 | [-0.4907, 1.4521] | positive | preliminary (k<5) |
-| M. pyrifera | 17 | 0.543 | 0.3721 | 1.4592 | 0.1552 | 0.4112 | [-0.2181, 1.3041] | positive |  |
-| P. interruptus | 2 | 0.5861 | 0.5633 | 1.0404 | 0.3067 | 0.4112 | [-0.566, 1.7382] | positive | preliminary (k<5) |
-| S. pulcher | 10 | 1.1657 | 0.3738 | 3.1182 | 0.0041** | 0.0184 | [0.4011, 1.9302] | positive |  |
+| Taxa | k | Estimate | RR | % Change | SE | t | p-value | p (FDR) | 95% CI (RR) | Effect | Flag |
+|------|---|----------|----|----------|----|----|---------|---------|-------------|--------|------|
+| S. purpuratus | 3 | -0.6252 | 0.535 | -46.5% | 0.3967 | -1.5761 | 0.1252 | 0.0003 | [0.238, 1.202] | negative |  |
+| M. franciscanus | 3 | 0.2544 | 1.29 | +29% | 0.4078 | 0.6239 | 0.5372 | 0.4114 | [0.561, 2.963] | positive |  |
+| M. pyrifera | 18 | 0.5877 | 1.8 | +80% | 0.3161 | 1.8595 | 0.0725 | 0.0003 | [0.945, 3.429] | positive |  |
+| P. interruptus | 2 | 0.5139 | 1.672 | +67.2% | 0.5288 | 0.9718 | 0.3387 | 0.0834 | [0.569, 4.916] | positive |  |
+| S. pulcher | 10 | 1.0873 | 2.966 | +196.6% | 0.3232 | 3.3644 | 0.0021** | 0.0003 | [1.534, 5.734] | positive |  |
 
 ### Density
 
-| Taxa | k | Estimate | SE | t | p-value | p (FDR) | 95% CI | Effect | Flag |
-|------|---|----------|----|----|---------|---------|--------|--------|------|
-| S. purpuratus | 6 | -2.4015 | 0.5307 | -4.5254 | 0.0004*** | 0.0036 | [-3.5327, -1.2704] | negative |  |
-| M. franciscanus | 1 | -0.4432 | 0.7477 | -0.5928 | 0.5621 | 0.5621 | [-2.0369, 1.1504] | negative | preliminary (k<5) |
-| P. interruptus | 2 | 0.7315 | 0.5839 | 1.2528 | 0.2294 | 0.4112 | [-0.513, 1.9761] | positive | preliminary (k<5) |
-| S. pulcher | 10 | -0.3244 | 0.5124 | -0.6331 | 0.5362 | 0.5621 | [-1.4166, 0.7678] | negative |  |
+| Taxa | k | Estimate | RR | % Change | SE | t | p-value | p (FDR) | 95% CI (RR) | Effect | Flag |
+|------|---|----------|----|----------|----|----|---------|---------|-------------|--------|------|
+| S. purpuratus | 6 | -2.4015 | 0.091 | -90.9% | 0.5307 | -4.5254 | 0.0004*** | 0.0007 | [0.029, 0.281] | negative |  |
+| M. franciscanus | 1 | -0.4432 | 0.642 | -35.8% | 0.7477 | -0.5928 | 0.5621 | 0.3170 | [0.13, 3.159] | negative |  |
+| P. interruptus | 2 | 0.7315 | 2.078 | +107.8% | 0.5839 | 1.2528 | 0.2294 | 0.0030 | [0.599, 7.215] | positive |  |
+| S. pulcher | 10 | -0.3244 | 0.723 | -27.7% | 0.5124 | -0.6331 | 0.5362 | 0.0948 | [0.243, 2.155] | negative |  |
 
 *Significance: \*p<0.05, \*\*p<0.01, \*\*\*p<0.001 (uncorrected). p (FDR) = Benjamini-Hochberg adjusted p-values.*
 
@@ -45,7 +50,7 @@ at t=11 years post-MPA implementation.
 
 | Response | tau2 (MPA) | tau2 (Source) |
 |----------|------------|---------------|
-| Biomass | 0.1416 | 0.2388 |
+| Biomass | 0.1343 | 0.1461 |
 | Density | 0.0742 | 0.5131 |
 
 ---
@@ -90,6 +95,7 @@ Effect sizes for each MPA-taxa-response combination.
 | Campus Point SMCA | Bio | PISCO | -0.2588 | 0.3803 | [-1.0959, 0.5783] | Not significant |
 | Gull Island SMR | Bio | KFM | 1.146 | 0.3909 | [0.3516, 1.9404] | Significant increase |
 | Gull Island SMR | Bio | PISCO | 0.247 | 0.2923 | [-0.3799, 0.874] | Not significant |
+| Harris Point SMR | Bio | KFM | -0.3198 | 0.618 | [-1.5785, 0.9389] | Not significant |
 | Harris Point SMR | Bio | PISCO | 0.0103 | 0.1497 | [-0.3107, 0.3313] | Not significant |
 | Naples SMCA | Bio | LTER | 1.0984 | 0.2057 | [0.6402, 1.5567] | Significant increase |
 | Naples SMCA | Bio | PISCO | 1.2056 | 0.2469 | [0.6677, 1.7436] | Significant increase |
@@ -98,8 +104,8 @@ Effect sizes for each MPA-taxa-response combination.
 | South Point SMR | Bio | PISCO | 1.2023 | 0.2143 | [0.7393, 1.6652] | Significant increase |
 | South Point SMR | Bio | KFM | 1.2126 | 0.0961 | [1.009, 1.4163] | Significant increase |
 | Abalone Cove SMCA | Den | PISCO | -2.4162 | 0.3481 | [-3.1824, -1.65] | Significant decrease |
-| Anacapa Island SMR 2003 | Den | KFM | -2.7358 | 0.4302 | [-3.6528, -1.8188] | Significant decrease |
 | Anacapa Island SMR 2003 | Den | PISCO | -1.2279 | 0.258 | [-1.7813, -0.6745] | Significant decrease |
+| Anacapa Island SMR 2003 | Den | KFM | -2.7358 | 0.4302 | [-3.6528, -1.8188] | Significant decrease |
 | Campus Point SMCA | Den | PISCO | -1.0448 | 0.3686 | [-1.8478, -0.2417] | Significant decrease |
 | Gull Island SMR | Den | PISCO | -0.8908 | 0.3627 | [-1.6688, -0.1129] | Significant decrease |
 | Harris Point SMR | Den | KFM | -0.5323 | 0.3681 | [-1.2775, 0.2129] | Not significant |
@@ -117,34 +123,35 @@ Effect sizes for each MPA-taxa-response combination.
 |-----|----------|--------|-------------|-------|--------|--------|
 | Abalone Cove SMCA | Bio | PISCO | 0.0929 | 0.4395 | [-0.8646, 1.0504] | Not significant |
 | Abalone Cove SMCA | Bio | Landsat | 3.0387 | 0.7799 | [1.4538, 4.6236] | Significant increase |
-| Anacapa Island SMR 2003 | Bio | PISCO | 1.536 | 0.4059 | [0.6708, 2.4012] | Significant increase |
 | Anacapa Island SMR 2003 | Bio | KFM | 0.1113 | 1.8342 | [-3.777, 3.9995] | Not significant |
+| Anacapa Island SMR 2003 | Bio | PISCO | 1.536 | 0.4059 | [0.6708, 2.4012] | Significant increase |
 | Cabrillo SMR | Bio | Landsat | -0.1213 | 1.8258 | [-3.8405, 3.5978] | Not significant |
 | Campus Point SMCA | Bio | LTER | 1.7789 | 0.5273 | [0.6822, 2.8755] | Significant increase |
 | Campus Point SMCA | Bio | PISCO | 1.6169 | 0.6343 | [0.2348, 2.9989] | Significant increase |
 | Campus Point SMCA | Bio | Landsat | 0.4308 | 0.4877 | [-0.5593, 1.4209] | Not significant |
 | Carrington Pt SMR | Bio | Landsat | 2.5496 | 0.6268 | [1.2771, 3.8222] | Significant increase |
 | Farnsworth Onshore SMCA | Bio | Landsat | -1.9067 | 0.9737 | [-3.9261, 0.1127] | Not significant |
-| Gull Island SMR | Bio | PISCO | 1.6757 | 0.5108 | [0.58, 2.7713] | Significant increase |
-| Gull Island SMR | Bio | KFM | 5.2348 | 1.385 | [2.41, 8.0596] | Significant increase |
 | Gull Island SMR | Bio | Landsat | 0.8811 | 0.2825 | [0.3076, 1.4546] | Significant increase |
+| Gull Island SMR | Bio | KFM | 5.2348 | 1.385 | [2.41, 8.0596] | Significant increase |
+| Gull Island SMR | Bio | PISCO | 1.6757 | 0.5108 | [0.58, 2.7713] | Significant increase |
 | Harris Point SMR | Bio | PISCO | -0.5664 | 0.3456 | [-1.2991, 0.1663] | Not significant |
 | Harris Point SMR | Bio | Landsat | 0.7468 | 0.5278 | [-0.3259, 1.8194] | Not significant |
 | Matlahuayl SMR | Bio | PISCO | 1.962 | 0.5776 | [0.5487, 3.3754] | Significant increase |
 | Naples SMCA | Bio | LTER | 3.7129 | 1.0927 | [1.4405, 5.9854] | Significant increase |
-| Naples SMCA | Bio | Landsat | -0.0922 | 0.7464 | [-1.6074, 1.423] | Not significant |
 | Naples SMCA | Bio | PISCO | -0.7152 | 0.2081 | [-1.1647, -0.2656] | Significant decrease |
+| Naples SMCA | Bio | Landsat | -0.0922 | 0.7464 | [-1.6074, 1.423] | Not significant |
 | Point Dume SMCA | Bio | Landsat | 0.2394 | 0.4933 | [-0.762, 1.2408] | Not significant |
 | Point Dume SMR | Bio | Landsat | 1.0933 | 1.0334 | [-1.0046, 3.1913] | Not significant |
-| Point Vicente SMCA | Bio | Landsat | 1.8299 | 0.7655 | [0.2725, 3.3873] | Significant increase |
 | Point Vicente SMCA | Bio | PISCO | -0.5287 | 0.3316 | [-1.2399, 0.1826] | Not significant |
+| Point Vicente SMCA | Bio | Landsat | 1.8299 | 0.7655 | [0.2725, 3.3873] | Significant increase |
 | Santa Barbara Island SMR | Bio | KFM | 3.9147 | 1.1253 | [1.6302, 6.1991] | Significant increase |
 | Santa Barbara Island SMR | Bio | Landsat | 2.0391 | 0.4963 | [1.0316, 3.0466] | Significant increase |
+| Scorpion SMR | Bio | KFM | 3.9312 | 1.8268 | [0.2101, 7.6523] | Significant increase |
 | Scorpion SMR | Bio | PISCO | 2.568 | 0.6118 | [1.2827, 3.8534] | Significant increase |
 | Skunk Pt SMR | Bio | Landsat | 0.7773 | 0.611 | [-0.4644, 2.0191] | Not significant |
 | South La Jolla SMR | Bio | Landsat | 3.0581 | 1.4819 | [0.0466, 6.0697] | Significant increase |
-| South Point SMR | Bio | PISCO | 0.5977 | 0.2879 | [-0.016, 1.2113] | Not significant |
 | South Point SMR | Bio | KFM | 3.7711 | 1.475 | [0.6272, 6.9149] | Significant increase |
+| South Point SMR | Bio | PISCO | 0.5977 | 0.2879 | [-0.016, 1.2113] | Not significant |
 | South Point SMR | Bio | Landsat | 0.0178 | 0.2574 | [-0.5048, 0.5403] | Not significant |
 | Swamis SMCA | Bio | Landsat | -1.8229 | 1.0917 | [-4.0391, 0.3933] | Not significant |
 
@@ -160,11 +167,12 @@ Effect sizes for each MPA-taxa-response combination.
 | Naples SMCA | Bio | PISCO | 1.1476 | 0.4302 | [0.2183, 2.0769] | Significant increase |
 | Point Vicente SMCA | Bio | PISCO | 0.3924 | 0.4786 | [-0.661, 1.4459] | Not significant |
 | Abalone Cove SMCA | Den | PISCO | -0.8885 | 0.4568 | [-1.8838, 0.1068] | Not significant |
-| Anacapa Island SMR 2003 | Den | KFM | 3.3458 | 0.3004 | [2.7089, 3.9827] | Significant increase |
 | Anacapa Island SMR 2003 | Den | PISCO | 2.0849 | 0.2378 | [1.578, 2.5918] | Significant increase |
+| Anacapa Island SMR 2003 | Den | KFM | 3.3458 | 0.3004 | [2.7089, 3.9827] | Significant increase |
 | Campus Point SMCA | Den | PISCO | 2.3747 | 0.7748 | [0.6865, 4.0629] | Significant increase |
 | Campus Point SMCA | Den | LTER | -0.0553 | 0.2314 | [-0.5645, 0.454] | Not significant |
 | Gull Island SMR | Den | PISCO | 2.1034 | 0.3673 | [1.3206, 2.8862] | Significant increase |
+| Gull Island SMR | Den | KFM | 0.1668 | 0.4812 | [-0.8133, 1.147] | Not significant |
 | Harris Point SMR | Den | PISCO | 0.6936 | 0.2641 | [0.1307, 1.2565] | Significant increase |
 | Matlahuayl SMR | Den | PISCO | -0.1091 | 0.3758 | [-1.0287, 0.8105] | Not significant |
 | Naples SMCA | Den | LTER | 0.5586 | 0.2986 | [-0.0986, 1.2158] | Not significant |
@@ -173,8 +181,8 @@ Effect sizes for each MPA-taxa-response combination.
 | Santa Barbara Island SMR | Den | KFM | 1.9917 | 0.3406 | [1.3021, 2.6812] | Significant increase |
 | Scorpion SMR | Den | PISCO | 2.6353 | 0.256 | [2.0995, 3.1712] | Significant increase |
 | Scorpion SMR | Den | KFM | 2.5971 | 0.3072 | [1.9747, 3.2196] | Significant increase |
-| South Point SMR | Den | PISCO | 2.5756 | 0.4202 | [1.6745, 3.4768] | Significant increase |
 | South Point SMR | Den | KFM | 0.8924 | 0.2611 | [0.3388, 1.446] | Significant increase |
+| South Point SMR | Den | PISCO | 2.5756 | 0.4202 | [1.6745, 3.4768] | Significant increase |
 
 ### S. pulcher
 
@@ -216,8 +224,8 @@ Effect sizes for each MPA-taxa-response combination.
 | Point Vicente SMCA | Den | PISCO | 0.3289 | 0.1083 | [0.1003, 0.5575] | Significant increase |
 | Santa Barbara Island SMR | Den | PISCO | -0.1035 | 0.1049 | [-0.3409, 0.1339] | Not significant |
 | Scorpion SMR | Den | PISCO | 0.0884 | 0.0683 | [-0.0546, 0.2315] | Not significant |
-| South Point SMR | Den | KFM | 0.2348 | 0.1109 | [-2e-04, 0.4699] | Not significant |
 | South Point SMR | Den | PISCO | 0.5243 | 0.0896 | [0.3368, 0.7119] | Significant increase |
+| South Point SMR | Den | KFM | 0.2348 | 0.1109 | [-2e-04, 0.4699] | Not significant |
 | Swamis SMCA | Den | PISCO | 2.139 | 0.6512 | [0.5457, 3.7323] | Significant increase |
 
 ---
@@ -226,19 +234,19 @@ Effect sizes for each MPA-taxa-response combination.
 
 ### Effect Direction Summary
 
-- **Significant increases inside MPA:** 61
+- **Significant increases inside MPA:** 62
 - **Significant decreases inside MPA:** 32
-- **Not significant:** 48
-- **Total effects analyzed:** 141
+- **Not significant:** 50
+- **Total effects analyzed:** 144
 
 ### Summary by Taxa
 
 | Taxa | n | Significant | Mean Effect |
 |------|---|-------------|-------------|
 | S. purpuratus | 22 | 18 (82%) | -1.394 |
-| M. franciscanus | 25 | 18 (72%) | -0.428 |
-| M. pyrifera | 32 | 17 (53%) | 1.235 |
-| P. interruptus | 23 | 15 (65%) | 1.161 |
+| M. franciscanus | 26 | 18 (69%) | -0.424 |
+| M. pyrifera | 33 | 18 (55%) | 1.317 |
+| P. interruptus | 24 | 15 (62%) | 1.119 |
 | S. pulcher | 39 | 25 (64%) | 0.577 |
 
 ---

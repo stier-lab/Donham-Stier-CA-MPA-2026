@@ -9,28 +9,33 @@
 #
 # WHAT THIS SCRIPT DOES:
 #   1. Prepares effect size data for meta-analysis (calculates sampling variance)
-#   2. Fits multilevel random-effects models separately for biomass and density
-#   3. Detects and removes influential outliers using Cook's distance
-#   4. Produces Table 2: Meta-analytic estimates by taxa
-#   5. Produces Table 3: Cross-taxa relationships (trophic cascade tests)
+#   2. Fits joint multilevel models (for sensitivity comparison & variance components)
+#   3. Fits PER-TAXA meta-analyses (PRIMARY) with within-taxon outlier detection
+#   4. Produces Table 2: Meta-analytic estimates by taxa (from per-taxa models)
+#   5. Produces outlier sensitivity table (full data vs per-taxa vs joint Cook's D)
+#   6. Produces leave-one-out analysis for borderline kelp result
+#   7. Produces Table 3: Cross-taxa relationships (trophic cascade tests)
 #
-# META-ANALYSIS MODEL STRUCTURE:
+# PRIMARY META-ANALYSIS STRUCTURE (Per-Taxa):
+#   For each taxon-response separately:
+#   yi ~ 1, random = ~1|MPA   (for k >= 5 and >= 3 MPAs)
+#   yi ~ 1                     (simple RE for k < 5)
+#   Cook's D applied within each taxon at threshold 4/k
+#
+# SENSITIVITY: JOINT MODEL STRUCTURE:
 #   yi ~ Taxa - 1, random = list(~1|MPA, ~1|Source)
-#   - yi: Effect size (mean difference on log-ratio scale)
-#   - V: Sampling variance (SE^2)
-#   - Taxa: Fixed effect moderator (estimates each taxa's mean effect)
-#   - MPA: Random intercept (accounts for non-independence within MPAs)
-#   - Source: Random intercept (accounts for program-level variation)
-#   - Method: REML (Restricted Maximum Likelihood)
+#   Cook's D at 4/n across all taxa (retained for comparison)
+#
+# WHY PER-TAXA INSTEAD OF JOINT MODEL:
+#   The joint model applies Cook's D globally, flagging observations that differ
+#   from OTHER taxa, not just unusual within their own taxon. This resulted in
+#   62% outlier removal in the joint model. Per-taxa Cook's D correctly asks
+#   "Is this observation influential for THIS taxon's estimate?"
 #
 # WHY SEPARATE MODELS FOR BIOMASS AND DENSITY:
 #   Biomass and density estimates for the same taxa/MPA/source are non-independent
 #   (they come from the same surveys). Running them together would violate
 #   independence assumptions. By splitting, we can properly estimate variance.
-#
-# OUTLIER DETECTION:
-#   Cook's distance identifies observations that disproportionately influence
-#   model estimates. Threshold is 4/n (standard in meta-analysis).
 #
 # METHODS REFERENCE:
 #   "We fit multilevel meta-analysis models with restricted maximum-likelihood
@@ -126,7 +131,7 @@ cat("Biomass observations:", nrow(biomass_data), "\n")
 cat("Density observations:", nrow(density_data), "\n")
 
 ####################################################################################################
-## Biomass meta-analysis ###########################################################################
+## JOINT MODEL: Biomass meta-analysis (Sensitivity / Variance Components) ##########################
 ####################################################################################################
 
 # Step 1: Fit initial model with all biomass data
@@ -226,7 +231,9 @@ cat("Between-Source variance (tau²_Source):", round(meta_biomass$sigma2[2], 4),
 # Total heterogeneity variance = sum of random effect variances
 # Typical within-study variance approximated by mean sampling variance
 total_hetero_bio <- sum(meta_biomass$sigma2)
-typical_v_bio <- mean(biomass_clean$vi)
+# Use harmonic mean of sampling variances (more robust to outlier variances;
+# see Nakagawa & Santos 2012 for multilevel I² approximation)
+typical_v_bio <- 1 / mean(1 / biomass_clean$vi)
 pseudo_I2_bio <- 100 * total_hetero_bio / (total_hetero_bio + typical_v_bio)
 cat("Pseudo-I² (total):", round(pseudo_I2_bio, 1), "%\n")
 cat("Interpretation: ",
@@ -234,7 +241,7 @@ cat("Interpretation: ",
            ifelse(pseudo_I2_bio < 75, "Moderate heterogeneity", "High heterogeneity")), "\n")
 
 ####################################################################################################
-## Density meta-analysis ###########################################################################
+## JOINT MODEL: Density meta-analysis (Sensitivity / Variance Components) ##########################
 ####################################################################################################
 
 # Step 1: Fit initial model with all density data
@@ -290,7 +297,8 @@ cat("Between-MPA variance (tau²_MPA):", round(meta_density$sigma2[1], 4), "\n")
 cat("Between-Source variance (tau²_Source):", round(meta_density$sigma2[2], 4), "\n")
 # Calculate pseudo-I² for multilevel models
 total_hetero_den <- sum(meta_density$sigma2)
-typical_v_den <- mean(density_clean$vi)
+# Use harmonic mean of sampling variances (consistent with biomass model)
+typical_v_den <- 1 / mean(1 / density_clean$vi)
 pseudo_I2_den <- 100 * total_hetero_den / (total_hetero_den + typical_v_den)
 cat("Pseudo-I² (total):", round(pseudo_I2_den, 1), "%\n")
 cat("Interpretation: ",
@@ -503,6 +511,273 @@ cat("which is below the recommended minimum of 5-6 for reliable variance estimat
 cat("Interpret tau²_Source estimates with caution; wide CIs are expected.\n")
 
 ####################################################################################################
+## PER-TAXA META-ANALYSIS (Primary Analysis) ######################################################
+####################################################################################################
+#
+# Why per-taxa instead of joint model?
+# The joint model (rma.mv with Taxa moderator) applies Cook's distance globally across
+# all taxa. An observation can be flagged as an "outlier" because it differs from OTHER
+# taxa's effect sizes, not because it's unusual within its OWN taxon. With the joint
+# model, the Cook's D threshold of 4/n (where n = all observations) is extremely aggressive
+# when taxa have naturally different effect magnitudes.
+#
+# Per-taxa models apply Cook's distance within each taxon separately, which is the
+# correct question: "Is this observation influential for THIS taxon's estimate?"
+#
+# For taxa with k >= 5 and >= 3 MPAs: rma.mv() with MPA random effect
+# For taxa with 2 <= k < 5: rma() simple random-effects model
+# For taxa with k < 2: report descriptively (no model)
+#
+# The joint model results are retained above as a sensitivity comparison.
+#
+
+#' Fit per-taxa meta-analysis with within-taxon outlier detection
+#'
+#' @param data Data frame with columns: Taxa, MPA, Source, Mean, vi
+#' @param response_label Character: "Biomass" or "Density"
+#' @return List with: table (summary df), clean_data (filtered data), audit (all data with flags)
+run_per_taxa_meta <- function(data, response_label) {
+  taxa_list <- sort(unique(as.character(data$Taxa)))
+  results_list <- list()
+  clean_data_list <- list()
+  audit_list <- list()
+
+  for (taxon in taxa_list) {
+    sub <- data[data$Taxa == taxon, ]
+    k_input <- nrow(sub)
+
+    cat(sprintf("\n  %s (%s): k_input = %d\n", taxon, response_label, k_input))
+
+    # --- Handle k < 2: report descriptively ---
+    if (k_input < 2) {
+      cat(sprintf("    -> k < 2: reporting descriptively\n"))
+      mean_val <- as.numeric(sub$Mean[1])
+      se_val <- as.numeric(sub$SE[1])
+      z <- mean_val / se_val
+      results_list[[taxon]] <- data.frame(
+        Taxa = taxon, k = k_input,
+        Estimate = round(mean_val, 4), SE = round(se_val, 4),
+        tval = round(z, 4),
+        pval = 2 * pnorm(-abs(z)),
+        CI_lower = round(mean_val - 1.96 * se_val, 4),
+        CI_upper = round(mean_val + 1.96 * se_val, 4),
+        Response = response_label, stringsAsFactors = FALSE
+      )
+      sub$Is_Outlier <- FALSE
+      sub$Cooks_Distance <- NA_real_
+      sub$Cooks_Threshold <- NA_real_
+      sub$In_Final_Analysis <- TRUE
+      sub$Exclusion_Reason <- "INCLUDED"
+      audit_list[[taxon]] <- sub
+      clean_data_list[[taxon]] <- sub
+      next
+    }
+
+    # --- Fit initial model ---
+    model_full <- tryCatch({
+      if (k_input >= 5 && length(unique(sub$MPA)) >= 3) {
+        rma.mv(yi = Mean, V = vi, random = list(~ 1 | MPA),
+               data = sub, method = "REML", test = "t")
+      } else {
+        rma(yi = Mean, vi = vi, data = sub, method = "REML", test = "t")
+      }
+    }, error = function(e) {
+      warning(sprintf("Model failed for %s %s: %s. Falling back to FE.",
+                      taxon, response_label, e$message))
+      rma(yi = Mean, vi = vi, data = sub, method = "FE")
+    })
+
+    # --- Per-taxa Cook's distance ---
+    cooks_vals <- tryCatch(cooks.distance(model_full), error = function(e) rep(0, k_input))
+    threshold <- 4 / k_input
+    outlier_idx <- which(cooks_vals > threshold)
+
+    cat(sprintf("    -> Cook's D threshold (4/%d): %.4f, outliers: %d\n",
+                k_input, threshold, length(outlier_idx)))
+
+    # Track audit info
+    sub$Cooks_Distance <- cooks_vals
+    sub$Cooks_Threshold <- threshold
+
+    # --- Remove outliers and refit (if any, and if enough data remains) ---
+    if (length(outlier_idx) > 0 && (k_input - length(outlier_idx)) >= 2) {
+      sub_clean <- sub[-outlier_idx, ]
+      k_clean <- nrow(sub_clean)
+
+      model <- tryCatch({
+        if (k_clean >= 5 && length(unique(sub_clean$MPA)) >= 3) {
+          rma.mv(yi = Mean, V = vi, random = list(~ 1 | MPA),
+                 data = sub_clean, method = "REML", test = "t")
+        } else {
+          rma(yi = Mean, vi = vi, data = sub_clean, method = "REML", test = "t")
+        }
+      }, error = function(e) {
+        warning(sprintf("Clean model failed for %s %s: %s. Using full model.",
+                        taxon, response_label, e$message))
+        model_full
+      })
+
+      sub$Is_Outlier <- seq_len(nrow(sub)) %in% outlier_idx
+    } else {
+      sub_clean <- sub
+      model <- model_full
+      if (length(outlier_idx) > 0) {
+        cat(sprintf("    -> Cannot remove outliers: would leave k < 2\n"))
+      }
+      sub$Is_Outlier <- FALSE
+    }
+
+    sub$In_Final_Analysis <- !sub$Is_Outlier
+    sub$Exclusion_Reason <- ifelse(
+      sub$In_Final_Analysis, "INCLUDED",
+      paste0("Outlier (Cook's D=", round(sub$Cooks_Distance, 4),
+             " > ", round(sub$Cooks_Threshold, 4), ")")
+    )
+
+    audit_list[[taxon]] <- sub
+    clean_data_list[[taxon]] <- sub[sub$In_Final_Analysis, ]
+
+    # --- Extract results ---
+    coef_tbl <- coef(summary(model))
+    stat_col <- if ("tval" %in% colnames(coef_tbl)) "tval" else "zval"
+
+    results_list[[taxon]] <- data.frame(
+      Taxa = taxon, k = model$k,
+      Estimate = round(coef_tbl[1, "estimate"], 4),
+      SE = round(coef_tbl[1, "se"], 4),
+      tval = round(coef_tbl[1, stat_col], 4),
+      pval = coef_tbl[1, "pval"],
+      CI_lower = round(coef_tbl[1, "ci.lb"], 4),
+      CI_upper = round(coef_tbl[1, "ci.ub"], 4),
+      Response = response_label, stringsAsFactors = FALSE
+    )
+
+    cat(sprintf("    -> Final k=%d, estimate=%.3f, SE=%.3f, p=%.4f\n",
+                model$k, coef_tbl[1, "estimate"], coef_tbl[1, "se"], coef_tbl[1, "pval"]))
+  }
+
+  table_out <- do.call(rbind, results_list)
+  rownames(table_out) <- NULL
+  clean_out <- do.call(rbind, clean_data_list)
+  audit_out <- do.call(rbind, audit_list)
+
+  list(table = table_out, clean_data = clean_out, audit = audit_out)
+}
+
+# --- Run per-taxa meta-analysis ---
+cat("\n")
+cat("============================================\n")
+cat("PER-TAXA META-ANALYSIS (Primary Analysis)\n")
+cat("============================================\n")
+
+pertaxa_biomass <- run_per_taxa_meta(biomass_data, "Biomass")
+pertaxa_density <- run_per_taxa_meta(density_data, "Density")
+
+# Summary comparison: per-taxa vs joint outlier removal
+cat("\n--- Outlier Removal Comparison ---\n")
+pertaxa_bio_removed <- sum(!pertaxa_biomass$audit$In_Final_Analysis)
+pertaxa_den_removed <- sum(!pertaxa_density$audit$In_Final_Analysis)
+joint_bio_removed <- length(outliers_bio)
+joint_den_removed <- length(outliers_den)
+cat(sprintf("  Biomass: Joint model removed %d/%d (%.0f%%), Per-taxa removed %d/%d (%.0f%%)\n",
+            joint_bio_removed, n_bio, 100 * joint_bio_removed / n_bio,
+            pertaxa_bio_removed, n_bio, 100 * pertaxa_bio_removed / n_bio))
+cat(sprintf("  Density: Joint model removed %d/%d (%.0f%%), Per-taxa removed %d/%d (%.0f%%)\n",
+            joint_den_removed, n_den, 100 * joint_den_removed / n_den,
+            pertaxa_den_removed, n_den, 100 * pertaxa_den_removed / n_den))
+cat(sprintf("  TOTAL:   Joint removed %d/%d (%.0f%%), Per-taxa removed %d/%d (%.0f%%)\n",
+            joint_bio_removed + joint_den_removed, n_bio + n_den,
+            100 * (joint_bio_removed + joint_den_removed) / (n_bio + n_den),
+            pertaxa_bio_removed + pertaxa_den_removed, n_bio + n_den,
+            100 * (pertaxa_bio_removed + pertaxa_den_removed) / (n_bio + n_den)))
+
+# Export per-taxa audit
+pertaxa_audit <- rbind(pertaxa_biomass$audit, pertaxa_density$audit)
+write.csv(pertaxa_audit, here::here("outputs", "filter_audit_pertaxa_meta.csv"), row.names = FALSE)
+cat("Per-taxa audit saved to: outputs/filter_audit_pertaxa_meta.csv\n")
+
+# --- Outlier sensitivity table: 3 approaches side by side ---
+cat("\n")
+cat("============================================\n")
+cat("OUTLIER SENSITIVITY TABLE\n")
+cat("============================================\n")
+
+# Approach 1: No outlier removal (full data)
+extract_meta_table_helper <- function(model, data, response_label) {
+  coef_tbl <- coef(summary(model))
+  stat_col <- if ("tval" %in% colnames(coef_tbl)) "tval" else "zval"
+  taxa_names <- gsub("^Taxa", "", rownames(coef_tbl))
+  k_per_taxa <- vapply(taxa_names, function(t) sum(data$Taxa == t), integer(1))
+  data.frame(
+    Taxa = taxa_names, k = k_per_taxa,
+    Estimate = round(coef_tbl[, "estimate"], 4),
+    SE = round(coef_tbl[, "se"], 4),
+    pval = coef_tbl[, "pval"],
+    Response = response_label, row.names = NULL, stringsAsFactors = FALSE
+  )
+}
+
+full_bio_tbl <- extract_meta_table_helper(meta_biomass_full, biomass_data, "Biomass")
+full_den_tbl <- extract_meta_table_helper(meta_density_full, density_data, "Density")
+full_tbl <- rbind(full_bio_tbl, full_den_tbl)
+full_tbl$Method <- "No outlier removal"
+
+# Approach 2: Per-taxa Cook's D (primary)
+pertaxa_tbl <- rbind(pertaxa_biomass$table, pertaxa_density$table)
+pertaxa_tbl_sens <- pertaxa_tbl[, c("Taxa", "k", "Estimate", "SE", "pval", "Response")]
+pertaxa_tbl_sens$Method <- "Per-taxa Cook's D (4/k)"
+
+# Approach 3: Joint Cook's D (current/legacy)
+joint_bio_tbl <- extract_meta_table_helper(meta_biomass, biomass_clean, "Biomass")
+joint_den_tbl <- extract_meta_table_helper(meta_density, density_clean, "Density")
+joint_tbl <- rbind(joint_bio_tbl, joint_den_tbl)
+joint_tbl$Method <- "Joint Cook's D (4/n)"
+
+sensitivity_table <- rbind(full_tbl, pertaxa_tbl_sens, joint_tbl)
+sensitivity_table <- sensitivity_table[order(sensitivity_table$Response,
+                                              sensitivity_table$Taxa,
+                                              sensitivity_table$Method), ]
+
+write.csv(sensitivity_table, here::here("data", "table_s_outlier_sensitivity.csv"), row.names = FALSE)
+cat("Outlier sensitivity table saved to: data/table_s_outlier_sensitivity.csv\n")
+print(sensitivity_table)
+
+# --- Leave-one-out analysis for kelp biomass ---
+cat("\n")
+cat("============================================\n")
+cat("LEAVE-ONE-OUT: M. pyrifera biomass\n")
+cat("============================================\n")
+
+kelp_clean <- pertaxa_biomass$clean_data[pertaxa_biomass$clean_data$Taxa == "M. pyrifera", ]
+if (nrow(kelp_clean) >= 3) {
+  kelp_model <- rma(yi = Mean, vi = vi, data = kelp_clean, method = "REML")
+  loo_kelp <- leave1out(kelp_model)
+
+  cat(sprintf("Full model: estimate = %.4f, p = %.4f, k = %d\n",
+              kelp_model$beta[1], kelp_model$pval[1], kelp_model$k))
+  cat("\nLeave-one-out results:\n")
+  loo_df <- data.frame(
+    Removed_MPA = kelp_clean$MPA,
+    Removed_Source = kelp_clean$Source,
+    Removed_ES = round(as.numeric(kelp_clean$Mean), 3),
+    Estimate = round(loo_kelp$estimate, 4),
+    SE = round(loo_kelp$se, 4),
+    pval = round(loo_kelp$pval, 4)
+  )
+  loo_df$Significant <- ifelse(loo_df$pval < 0.05, "YES", "no")
+  print(loo_df)
+
+  n_sig <- sum(loo_df$pval < 0.05)
+  cat(sprintf("\nKelp is significant (p < 0.05) in %d of %d leave-one-out permutations (%.0f%%)\n",
+              n_sig, nrow(loo_df), 100 * n_sig / nrow(loo_df)))
+
+  write.csv(loo_df, here::here("data", "table_s_kelp_leave1out.csv"), row.names = FALSE)
+  cat("Leave-one-out results saved to: data/table_s_kelp_leave1out.csv\n")
+} else {
+  cat("Insufficient kelp data for leave-one-out analysis\n")
+}
+
+####################################################################################################
 ## Build Table 2: Summary of meta-analysis results ################################################
 ####################################################################################################
 
@@ -541,24 +816,32 @@ extract_meta_table <- function(model, data, response) {
   )
 }
 
-# Build Table 2 from both models
-Table2_biomass <- extract_meta_table(meta_biomass, biomass_clean, "Biomass")
-Table2_density <- extract_meta_table(meta_density, density_clean, "Density")
-Table2 <- rbind(Table2_biomass, Table2_density)
+# Build Table 2 from PER-TAXA models (primary analysis)
+# Joint model results are retained as Table2_joint for sensitivity comparison
+Table2_joint_biomass <- extract_meta_table(meta_biomass, biomass_clean, "Biomass")
+Table2_joint_density <- extract_meta_table(meta_density, density_clean, "Density")
+Table2_joint <- rbind(Table2_joint_biomass, Table2_joint_density)
+
+# Primary Table 2: per-taxa meta-analysis results
+Table2 <- rbind(pertaxa_biomass$table, pertaxa_density$table)
+
+# Use per-taxa clean data for sample size reporting
+biomass_clean_pertaxa <- pertaxa_biomass$clean_data
+density_clean_pertaxa <- pertaxa_density$clean_data
 
 # Report sample size summary
-cat("\n--- Sample Size Summary ---\n")
-cat("Total biomass effect sizes (after outlier removal):", nrow(biomass_clean), "\n")
-cat("  - Number of unique MPAs:", length(unique(biomass_clean$MPA)), "\n")
-cat("  - Number of unique data sources:", length(unique(biomass_clean$Source)), "\n")
-if ("N" %in% names(biomass_clean)) {
-  cat("  - Total underlying observations (N):", sum(as.numeric(biomass_clean$N), na.rm = TRUE), "\n")
+cat("\n--- Sample Size Summary (Per-Taxa Analysis) ---\n")
+cat("Total biomass effect sizes (after per-taxa outlier removal):", nrow(biomass_clean_pertaxa), "\n")
+cat("  - Number of unique MPAs:", length(unique(biomass_clean_pertaxa$MPA)), "\n")
+cat("  - Number of unique data sources:", length(unique(biomass_clean_pertaxa$Source)), "\n")
+if ("N" %in% names(biomass_clean_pertaxa)) {
+  cat("  - Total underlying observations (N):", sum(as.numeric(biomass_clean_pertaxa$N), na.rm = TRUE), "\n")
 }
-cat("Total density effect sizes (after outlier removal):", nrow(density_clean), "\n")
-cat("  - Number of unique MPAs:", length(unique(density_clean$MPA)), "\n")
-cat("  - Number of unique data sources:", length(unique(density_clean$Source)), "\n")
-if ("N" %in% names(density_clean)) {
-  cat("  - Total underlying observations (N):", sum(as.numeric(density_clean$N), na.rm = TRUE), "\n")
+cat("Total density effect sizes (after per-taxa outlier removal):", nrow(density_clean_pertaxa), "\n")
+cat("  - Number of unique MPAs:", length(unique(density_clean_pertaxa$MPA)), "\n")
+cat("  - Number of unique data sources:", length(unique(density_clean_pertaxa$Source)), "\n")
+if ("N" %in% names(density_clean_pertaxa)) {
+  cat("  - Total underlying observations (N):", sum(as.numeric(density_clean_pertaxa$N), na.rm = TRUE), "\n")
 }
 
 # Order taxa to match manuscript Table 2 presentation
@@ -576,6 +859,21 @@ if (nrow(low_k) > 0) {
   cat("\nWARNING: The following taxa have k < 5 effect sizes (interpret with caution):\n")
   print(low_k[, c("Taxa", "Response", "k", "Estimate", "pval")])
 }
+# Additional warning for k < 3: cannot meaningfully estimate heterogeneity
+very_low_k <- Table2[Table2$k < 3, ]
+if (nrow(very_low_k) > 0) {
+  cat("\nCAUTION: Taxa with k < 3 have insufficient replication for reliable meta-analysis.\n")
+  cat("  These should be reported descriptively, not as formal meta-analytic estimates.\n")
+  cat("  Affected: ", paste(paste0(very_low_k$Taxa, " (", very_low_k$Response, ", k=", very_low_k$k, ")"),
+                            collapse = "; "), "\n")
+}
+
+# Back-transform to Response Ratio scale for interpretability
+# RR = exp(lnRR); RR = 1 means no difference, RR > 1 = higher inside MPA
+Table2$RR        <- round(exp(Table2$Estimate), 3)
+Table2$RR_lower  <- round(exp(Table2$CI_lower), 3)
+Table2$RR_upper  <- round(exp(Table2$CI_upper), 3)
+Table2$Pct_Change <- round((exp(Table2$Estimate) - 1) * 100, 1)
 
 # FDR-corrected p-values for multiple testing across all taxa-response tests
 Table2$pval_fdr <- p.adjust(Table2$pval, method = "fdr")
@@ -592,9 +890,20 @@ cat("TABLE 2: Meta-analysis results\n")
 cat("============================\n")
 print(Table2)
 
-# Export Table 2 as CSV to data directory
-write.csv(Table2, here::here("data", "table_02_meta_analysis.csv"), row.names = FALSE)
+# --- OUTPUT VALIDATION: Ensure RR columns are present before export ---
+required_cols <- c("Taxa", "k", "Estimate", "SE", "tval", "pval",
+                   "CI_lower", "CI_upper", "Response", "Flag",
+                   "RR", "RR_lower", "RR_upper", "Pct_Change", "pval_fdr")
+missing_cols <- setdiff(required_cols, names(Table2))
+if (length(missing_cols) > 0) {
+  stop("Table2 is missing expected columns before export: ",
+       paste(missing_cols, collapse = ", "))
+}
+
+# Export Table 2 as CSV to data directory (with explicit column order)
+write.csv(Table2[, required_cols], here::here("data", "table_02_meta_analysis.csv"), row.names = FALSE)
 cat("\nTable 2 exported to:", here::here("data", "table_02_meta_analysis.csv"), "\n")
+cat("  Columns:", paste(required_cols, collapse = ", "), "\n")
 
 ####################################################################################################
 ## META-ANALYSIS FILTERING AUDIT: Track exactly what enters meta-analysis #########################

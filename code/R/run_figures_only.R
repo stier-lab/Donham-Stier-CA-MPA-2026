@@ -4,7 +4,7 @@
 #' ---
 #'
 #' Loads a cached snapshot of pipeline data objects and sources only the
-#' minimal scripts needed by 10_figures.R. Requires a prior full pipeline
+#' minimal scripts needed by 11_figures.R. Requires a prior full pipeline
 #' run to create the snapshot.
 #'
 #' Usage:
@@ -16,8 +16,11 @@
 #'   source(here::here("code", "R", "run_figures_only.R"))
 #'
 #'   # Available figure names:
-#'   #   fig01, fig02, fig03, fig04,
-#'   #   fig_s01, fig_s02, fig_s03, fig_s04, fig_s05, fig_s06
+#'   #   fig01, fig02, fig03, fig04, fig05 (from 11_figures.R)
+#'   #   fig_s01, fig_s02 (from 11_figures.R)
+#'   #   fig_s03, fig_s04, fig_s05, fig_s06 (from 10_temporal_analysis.R)
+#'   #   fig_s07, fig_s08 (from 11_figures.R)
+#'   #   fig_s09 (from 13_additional_analyses.R)
 
 # Preserve RENDER_FIGURES across rm() using options (survives workspace clear)
 if (exists("RENDER_FIGURES", envir = .GlobalEnv)) {
@@ -43,6 +46,9 @@ source(here::here("code", "R", "00_libraries.R"))
 
 cat("Loading color palette and theme...\n")
 source(here::here("code", "R", "00b_color_palette.R"))
+
+cat("Loading analysis constants...\n")
+source(here::here("code", "R", "00c_analysis_constants.R"))
 
 # --- 2. Load figures snapshot ---
 snapshot_path <- here::here("data", "cache", "figures_snapshot.rds")
@@ -80,7 +86,10 @@ if (!is.null(snapshot$meta_density)) assign("meta_density", snapshot$meta_densit
 cat("Data objects loaded:", paste(required_objs, collapse = ", "), "\n\n")
 
 # --- 3. Generate figures ---
-source(here::here("code", "R", "10_figures.R"))
+source(here::here("code", "R", "11_figures.R"))
+
+# --- 4. Additional analyses (S9 + moderator table) ---
+source(here::here("code", "R", "13_additional_analyses.R"))
 
 elapsed <- round(difftime(Sys.time(), t0, units = "secs"), 1)
 cat("\n========================================================================\n")

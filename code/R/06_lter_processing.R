@@ -192,6 +192,7 @@ if (!is.null(cached)) {
 if (!is.null(cached)) {
   Urchin.site <- cached
 } else {
+  set.seed(SEED_LTER_URCHIN)  # Reproducibility for bootstrap resampling
   for (i in seq_len(nrow(u))) {
     t <- which(URCHINS$site_id == u$site_id[i] &
                  URCHINS$year == u$year[i] &

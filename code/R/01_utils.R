@@ -457,66 +457,8 @@ calculate_log_response_ratio <- function(df) {
 #
 # The function below uses the independence assumption (omits covariance) which
 # is CONSERVATIVE (overestimates SE) when covariance is positive, but may
-# UNDERESTIMATE SE when covariance is negative. For predictions from the same
-# regression at different x-values, covariance is typically positive, so the
-# independence assumption gives slightly larger SEs than the true value.
-#
-# For more precise SE calculation, use calculate_effect_size_from_contrast()
-# which uses emmeans::pairs() to properly handle the covariance.
-
-#' Calculate effect size from emmeans estimates (independence assumption)
-#'
-#' Returns the mean difference on the log-ratio scale between two time points
-#' (typically time=0 for Before and time=T for After).
-#'
-#' @param before_emmeans Tidy emmeans object for the "before" period (time=0)
-#' @param after_emmeans Tidy emmeans object for the "after" period (time=T)
-#'
-#' @return List with components:
-#'   - mean: Effect size (after - before)
-#'   - SE: Standard error of the difference (assumes independence - see note)
-#'   - SD: Pooled standard deviation (for legacy compatibility)
-#'   - CI: 95% confidence interval half-width (SE * 1.96)
-#'
-#' @note DEPRECATED (2026-02-06): This function assumes independence between
-#'   before and after estimates, which is incorrect when they come from the same
-#'   model. Use calculate_effect_size_from_contrast() instead, which properly
-#'   handles covariance via emmeans::pairs().
-calculate_effect_size <- function(before_emmeans, after_emmeans) {
-  # DEPRECATION WARNING (2026-02-06)
-  stop(
-    "calculate_effect_size() is deprecated and should not be used.\n",
-    "This function incorrectly assumes independence between before/after estimates.\n",
-    "Use calculate_effect_size_from_contrast() instead, which properly handles ",
-    "covariance via emmeans::pairs().\n",
-    "See code review (2026-02-06) for rationale.",
-    call. = FALSE
-  )
-
-  # Effect size is simply the difference in estimates
-  mean_es <- after_emmeans$estimate[1] - before_emmeans$estimate[1]
-
-  # SE of the difference assuming independence of the two predictions
-  # Var(A - B) = Var(A) + Var(B) when independent
-  # NOTE: This ignores covariance. See function documentation.
-  se_diff <- sqrt(before_emmeans$std.error[1]^2 + after_emmeans$std.error[1]^2)
-
-  # 95% CI half-width
-  ci_diff <- se_diff * 1.96
-
-  # Back-calculate SD for legacy compatibility (not used in meta-analysis)
-  n_before <- before_emmeans$df[1] + 1
-  n_after <- after_emmeans$df[1] + 1
-  sd_before <- before_emmeans$std.error[1] * sqrt(n_before)
-  sd_after <- after_emmeans$std.error[1] * sqrt(n_after)
-
-  # Pooled standard deviation
-  pSD <- sqrt(((n_before - 1) * sd_before^2 + (n_after - 1) * sd_after^2) /
-                (n_before + n_after - 2))
-
-  list(mean = mean_es, SE = se_diff, SD = pSD, CI = ci_diff)
-}
-
+# For SE calculation, use calculate_effect_size_from_contrast() which uses
+# emmeans::pairs() to properly handle covariance between predictions.
 
 #' Calculate effect size using proper contrast (handles covariance)
 #'
@@ -865,6 +807,142 @@ safe_divide <- function(numerator, divisor, replace_zero = TRUE, context = "") {
     }
   }
   numerator / divisor
+}
+
+
+# =============================================================================
+# SECTION 9: FIGURE RENDERING AND DISPLAY UTILITIES
+# =============================================================================
+
+# --- Selective rendering control ---
+# Set RENDER_FIGURES before sourcing to render a subset (e.g., c("fig03"))
+# Default: render all figures
+should_render <- function(fig_name) {
+  if (!exists("RENDER_FIGURES", envir = .GlobalEnv)) return(TRUE)
+  rf <- get("RENDER_FIGURES", envir = .GlobalEnv)
+  identical(rf, "all") || fig_name %in% rf
+}
+
+# --- save_fig(): save a ggplot/patchwork figure to PDF + PNG ---
+save_fig <- function(plot, name, w, h, dpi = 600) {
+  pdf_path <- here::here("plots", paste0(name, ".pdf"))
+  png_path <- here::here("plots", paste0(name, ".png"))
+
+  # Detect if this is a patchwork plot (complex multi-panel)
+  is_patchwork <- inherits(plot, "patchwork") || (inherits(plot, "gg") && !is.null(plot$patches))
+
+  # Remove old PDF to prevent stale files if a save strategy silently fails
+  if (file.exists(pdf_path)) file.remove(pdf_path)
+
+  # Save PDF with error handling and fallback strategies
+  pdf_success <- FALSE
+
+  # Strategy 1: For patchwork plots, use pdf() device (most reliable)
+  if (is_patchwork && !pdf_success) {
+    pdf_success <- tryCatch({
+      pdf(pdf_path, width = w / 2.54, height = h / 2.54, bg = "white")
+      print(plot)
+      dev.off()
+      file.exists(pdf_path) && file.size(pdf_path) > 0
+    }, error = function(e) {
+      if (dev.cur() > 1) dev.off()
+      FALSE
+    })
+  }
+
+  # Strategy 2: Try cairo_pdf via ggsave (catch warnings too — cairo can
+  # fail with a warning rather than an error, leaving the file unwritten)
+  if (!pdf_success && capabilities("cairo")) {
+    pdf_success <- tryCatch(
+      withCallingHandlers({
+        ggsave(pdf_path, plot, width = w, height = h, units = "cm",
+               device = cairo_pdf, bg = "white", limitsize = FALSE)
+        file.exists(pdf_path) && file.size(pdf_path) > 0
+      },
+      warning = function(w) {
+        if (grepl("cairo", conditionMessage(w), ignore.case = TRUE)) {
+          invokeRestart("muffleWarning")
+        }
+      }),
+      error = function(e) { FALSE }
+    )
+  }
+
+  # Strategy 3: Try standard pdf device via ggsave
+  if (!pdf_success) {
+    pdf_success <- tryCatch({
+      ggsave(pdf_path, plot, width = w, height = h, units = "cm",
+             device = "pdf", bg = "white", limitsize = FALSE)
+      file.exists(pdf_path) && file.size(pdf_path) > 0
+    }, error = function(e) { FALSE })
+  }
+
+  # Strategy 4: Last resort - use pdf() device directly
+  if (!pdf_success) {
+    pdf_success <- tryCatch({
+      pdf(pdf_path, width = w / 2.54, height = h / 2.54, bg = "white")
+      print(plot)
+      dev.off()
+      file.exists(pdf_path) && file.size(pdf_path) > 0
+    }, error = function(e) {
+      if (dev.cur() > 1) dev.off()
+      warning("All PDF save strategies failed for ", name, ": ", e$message)
+      FALSE
+    })
+  }
+
+  # Save PNG with error handling
+  png_success <- tryCatch({
+    ggsave(png_path, plot, width = w, height = h, units = "cm",
+           dpi = dpi, bg = "white", limitsize = FALSE)
+    TRUE
+  }, error = function(e) {
+    warning("Failed to save PNG for ", name, ": ", e$message)
+    FALSE
+  })
+
+  # Verify files were created successfully
+  pdf_exists <- file.exists(pdf_path) && file.size(pdf_path) > 0
+  png_exists <- file.exists(png_path) && file.size(png_path) > 0
+
+  # Report results
+  if (pdf_exists && png_exists) {
+    pdf_size <- format(file.size(pdf_path) / 1024, digits = 1, nsmall = 1)
+    png_size <- format(file.size(png_path) / 1024, digits = 1, nsmall = 1)
+    cat(sprintf("  Saved: %s (PDF: %s KB, PNG: %s KB @ %d DPI)\n",
+                name, pdf_size, png_size, dpi))
+  } else if (!png_exists) {
+    stop("CRITICAL: Failed to create PNG for ", name,
+         " at ", png_path, "\n",
+         "  Check disk space and write permissions.")
+  } else if (!pdf_exists) {
+    png_size <- format(file.size(png_path) / 1024, digits = 1, nsmall = 1)
+    cat(sprintf("  Saved: %s (PNG: %s KB @ %d DPI) - PDF generation failed\n",
+                name, png_size, dpi))
+    warning("PDF generation failed for ", name, " but PNG was created successfully. ",
+            "This is a known issue with some complex ggplot2 figures. ",
+            "PNG can be converted to PDF externally if needed.")
+  }
+
+  invisible(list(pdf = pdf_path, png = png_path))
+}
+
+# --- shorten_mpa_name(): abbreviate MPA names for display ---
+shorten_mpa_name <- function(mpa_name) {
+  replacements <- c(
+    " SMCA| SMR| SC| 2003" = "",
+    "Anacapa Island"       = "Anacapa Is.",
+    "Santa Barbara Island" = "Santa Barbara Is.",
+    "San Miguel Island"    = "San Miguel Is.",
+    "Campus Point"         = "Campus Pt.",
+    "Point Vicente"        = "Pt. Vicente",
+    "Harris Point"         = "Harris Pt.",
+    "South Point"          = "South Pt.",
+    "Carrington Pt"        = "Carrington Pt.",
+    "Skunk Pt"             = "Skunk Pt.",
+    "Gull Island"          = "Gull Is."
+  )
+  stringr::str_replace_all(mpa_name, replacements)
 }
 
 

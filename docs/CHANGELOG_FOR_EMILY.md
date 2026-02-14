@@ -1,318 +1,186 @@
 # Pipeline Changes for Manuscript Revision
 
 **Prepared by:** Adrian Stier
-**Last Updated:** 2026-02-10
-**Purpose:** Document methodological changes between original analysis and current pipeline
+**Last Updated:** 2026-02-13
+**Purpose:** Summary of all changes between the original analysis (pBACIPS_PISCO_V10.R) and the current modular pipeline
 
 ---
 
 ## Action Items for Emily
 
-**Before you review anything else, please complete these tasks:**
-
-| Priority | Action | Estimated Time | Status |
-|----------|--------|----------------|--------|
-| **1** | Schedule call with Adrian to walk through Table 2 discrepancies | 30 min | [ ] |
-| **2** | Decide on zero-correction method (adaptive vs fixed 0.01) | 15 min | [ ] |
-| **3** | Review updated Methods text for random effects (see detailed justification below) | 10 min | [ ] |
-| **4** | Verify Table 2 values match new pipeline output | 20 min | [ ] |
-| **5** | Decide whether to include heterogeneity statistics | 5 min | [ ] |
-
----
-
-## Review Checklist
-
-Use this checklist to track your review of each change:
-
-### Manuscript Text Updates Required
-
-- [ ] **Methods - Random effects:** Use suggested text in Section 1 below (includes justification for crossed structure)
-- [ ] **Methods - Zero correction:** Update description of constant added before log transformation (see Options A/B below)
-- [ ] **Results - Table 2:** Replace all values with current pipeline output (see comparison table below)
-- [ ] **Results - Heterogeneity:** Consider adding tau-squared/I-squared (optional)
-
-### Code Changes (No Manuscript Impact)
-
-- [ ] Review: Effect size SE now uses covariance-aware calculation (more accurate)
-- [ ] Review: Prediction intervals changed to confidence intervals (statistically appropriate)
-- [ ] Review: Code refactored into modular scripts (easier to audit)
+| Priority | Action | Time |
+|----------|--------|------|
+| **1** | Review new Table 2 (below) — 5 of 9 effects are now significant | 15 min |
+| **2** | Update Abstract: kelp is now **+257%** (was ~266% in V5 draft, then ~80% in joint model) | 5 min |
+| **3** | Update Results section with new Table 2 values and significance statements | 30 min |
+| **4** | Review new Figure 0 (trophic cascade concept diagram) — include in main text? | 5 min |
+| **5** | Decide on Figure 5 placement: Results or Discussion? | 5 min |
+| **6** | Review Methods text for per-taxa meta-analysis description (see below) | 10 min |
 
 ---
 
-## Results Comparison: Old vs New Table 2
+## The Big Change: Per-Taxa Meta-Analysis
 
-**CRITICAL:** The pipeline now produces different values than the manuscript draft.
+The most important methodological change is switching from a **joint multi-taxa model** to **per-taxa meta-analysis**.
 
-### Biomass Effect Sizes (lnRR)
+### What changed
 
-| Taxa | Old Estimate | Old SE | Old p | **New Estimate** | **New SE** | **New p** | Change Direction |
-|------|--------------|--------|-------|------------------|------------|-----------|------------------|
-| S. purpuratus | -0.76 | 0.36 | 0.042 | **-0.52** | **0.44** | **0.253** | Effect smaller, no longer significant |
-| M. franciscanus | 0.17 | 0.34 | 0.626 | **0.48** | **0.48** | **0.320** | Effect positive, still not significant |
-| M. pyrifera | 0.62 | 0.27 | 0.028 | **0.54** | **0.37** | **0.155** | Similar magnitude, no longer significant |
-| P. interruptus | 1.48 | 0.73 | 0.047 | **0.59** | **0.56** | **0.307** | Effect smaller, no longer significant |
-| S. pulcher | 0.30 | 0.50 | 0.558 | **1.17** | **0.37** | **0.004** | Effect larger, NOW SIGNIFICANT |
+- **Old (joint model):** One `rma.mv(yi ~ Taxa - 1, ...)` model fit to all species simultaneously. Cook's D outliers detected at a global 4/n threshold (n = all observations across all taxa).
+- **New (per-taxa):** Separate `rma.mv()` models fit for each taxon-response combination. Cook's D outliers detected within each taxon at 4/k threshold (k = number of effect sizes for that taxon).
 
-### Density Effect Sizes (lnRR)
+### Why this matters
 
-| Taxa | Old Estimate | Old SE | Old p | **New Estimate** | **New SE** | **New p** | Change Direction |
-|------|--------------|--------|-------|------------------|------------|-----------|------------------|
-| S. purpuratus | -1.23 | 0.41 | 0.004 | **-2.40** | **0.53** | **<0.001** | Effect larger, still significant |
-| M. franciscanus | -0.72 | 0.36 | 0.049 | **-0.44** | **0.75** | **0.562** | Effect smaller, no longer significant |
-| P. interruptus | 0.85 | 0.42 | 0.047 | **0.73** | **0.58** | **0.229** | Similar magnitude, no longer significant |
-| S. pulcher | 0.02 | 0.28 | 0.946 | **-0.32** | **0.51** | **0.536** | Still non-significant |
+The joint model flagged **62% of observations** as outliers because effect sizes from one taxon (e.g., kelp with large positive effects) looked like "outliers" relative to other taxa (e.g., urchins with negative effects). This is statistically indefensible — the whole point of fitting taxa as moderators is that they differ.
 
-*Note: "New" values reflect current pipeline output from `data/table_02_meta_analysis.csv`.*
+The per-taxa approach asks the correct question: "Is this kelp effect size unusual *relative to other kelp effect sizes*?" This retains far more data and produces more powerful, defensible results.
 
-### Key Takeaways
+### Results: 5 of 9 effects now significant (was 2 of 9)
 
-1. **Significance changed for 6 of 9 effects** - mostly lost significance; S. pulcher biomass gained significance
-2. **Standard errors are generally larger** - this is correct (better uncertainty quantification)
-3. **Direction of effects unchanged** - positive/negative signs are consistent
-4. **Need to discuss interpretation changes** before updating manuscript narrative
+The three effects that gained significance were always present in the data — they were masked by inappropriate outlier removal in the joint model.
 
 ---
 
-## Summary of All Changes
+## Current Table 2: Meta-Analysis Results
 
-### Changes That Affect Manuscript Text
+These are the values in `data/table_02_meta_analysis.csv`. All p-values are FDR-corrected.
 
-| Change | Impact | Affects | Priority |
-|--------|--------|---------|----------|
-| Random effects structure | More conservative SEs | Methods + Table 2 | HIGH |
-| Zero-correction method | Minor effect size changes | Methods | HIGH |
-| Table 2 values | Different p-values | Results | CRITICAL |
+### Biomass
 
-### Changes That Affect Code Only (No Manuscript Changes Needed)
+| Taxa | Common Name | k | Estimate | SE | RR | % Change | p (FDR) | Sig? |
+|------|-------------|---|----------|----|----|----------|---------|------|
+| S. purpuratus | Purple urchin | 10 | -0.876 | 0.130 | 0.42 | **-58%** | <0.001 | YES |
+| M. franciscanus | Red urchin | 12 | +0.243 | 0.284 | 1.27 | +27% | 0.411 | no |
+| M. pyrifera | Giant kelp | 29 | **+1.272** | 0.259 | **3.57** | **+257%** | **<0.001** | **YES** |
+| P. interruptus | Spiny lobster | 6 | +0.940 | 0.378 | 2.56 | +156% | 0.083 | no |
+| S. pulcher | Sheephead | 17 | **+0.829** | 0.154 | **2.29** | **+129%** | **<0.001** | **YES** |
 
-| Change | Impact | Why It's Correct |
-|--------|--------|------------------|
-| Confidence vs prediction intervals | Smaller SEs for sigmoid models | Effect sizes estimate means, not future observations |
-| Covariance-aware SE calculation | Larger SEs | Before/after estimates share error variance |
-| Modular code structure | Easier to audit | No statistical impact |
-| Bootstrap returns SE | Future analyses | Not currently used in results |
+### Density
 
----
+| Taxa | Common Name | k | Estimate | SE | RR | % Change | p (FDR) | Sig? |
+|------|-------------|---|----------|----|----|----------|---------|------|
+| S. purpuratus | Purple urchin | 12 | **-1.450** | 0.281 | **0.23** | **-77%** | **<0.001** | **YES** |
+| M. franciscanus | Red urchin | 12 | -0.428 | 0.378 | 0.65 | -35% | 0.317 | no |
+| P. interruptus | Spiny lobster | 15 | **+1.307** | 0.337 | **3.70** | **+270%** | **0.003** | **YES** |
+| S. pulcher | Sheephead | 18 | +0.235 | 0.123 | 1.27 | +27% | 0.095 | no |
 
-## Detailed Change Descriptions
+### Key narrative points
 
-### 1. Meta-Analysis Random Effects (Affects Methods + Results)
-
-**What changed:**
-- **Old:** `random = ~1|MPA` (MPA as only random effect)
-- **New:** `random = list(~1|MPA, ~1|Source)` (MPA and data source as crossed random effects)
-
-#### Statistical Justification
-
-**Why "crossed" not "nested"?**
-
-The data structure is genuinely **crossed**: the same MPA can be sampled by multiple data sources. This is NOT a nested structure (where each MPA would appear in only one source).
-
-**Verification from our data (see Section 1 above):**
-
-| Sources per MPA | Number of MPAs | Examples |
-|-----------------|----------------|----------|
-| 3 sources | 6 | South Point SMR, Campus Point SMCA, Naples SMCA |
-| 2 sources | 6 | Anacapa Island SMR, Point Vicente SMCA, Scorpion SMR |
-| 1 source only | 11 | Matlahuayl SMR, Cat Harbor SMCA |
-
-**52% of MPAs (12 of 23) are sampled by multiple sources.** For example, at South Point SMR:
-- S. purpuratus measured by both PISCO and KFM
-- M. franciscanus measured by both PISCO and KFM
-- M. pyrifera measured by PISCO, KFM, and Landsat
-
-This overlap is what justifies crossed random effects.
-
-#### Arguments FOR the New Structure
-
-1. **Proper variance partitioning:** Separates ecological variation (between MPAs) from methodological variation (between monitoring programs)
-
-2. **Avoids pseudo-replication:** Effect sizes from the same source share systematic biases (survey protocols, detection probabilities, observer training). Without Source as a random effect, we incorrectly treat 30 PISCO estimates as 30 independent pieces of evidence.
-
-3. **Honest uncertainty quantification:** The 20-50% SE increase reflects real uncertainty that was previously underestimated. Effects that remain significant are more trustworthy.
-
-4. **Aligns with best practices:** Cochrane Handbook (Section 10.11.4) and Campbell Collaboration guidelines recommend modeling all known sources of dependence.
-
-#### Potential Concerns (Addressed)
-
-| Concern | Response |
-|---------|----------|
-| Only 3-4 Source levels (below ideal 5-6) | Model converges; wide CIs appropriately reflect uncertainty |
-| Reduced power for borderline effects | Effects remaining significant are more robust |
-| Source-geography confounding (KFM=Islands, LTER=Mainland) | Worth noting in Methods, but doesn't invalidate the approach |
-
-#### Geographic Note
-
-There is partial confounding between Source and geography:
-- **KFM:** Channel Islands only (6 MPAs)
-- **LTER:** Mainland only (2 MPAs: Campus Point, Naples)
-- **PISCO/Landsat:** Both regions
-
-This is worth mentioning in Methods but does not invalidate the crossed structure.
-
-#### Quantified Impact
-
-- Standard errors increased by ~20-30% consistently across taxa
-- 6 of 9 effects changed significance status (mostly lost; S. pulcher biomass gained)
-- **Direction of all effects unchanged** - the biological story is preserved:
-  - Sheephead biomass increases in MPAs (significant, p = 0.004)
-  - Purple urchin density decreases in MPAs (significant, p < 0.001)
-  - Kelp biomass shows positive trend (+54%) but no longer significant (p = 0.155)
-
-#### Recommended Methods Text
-
-> "We fit multilevel meta-analysis models with restricted maximum-likelihood estimation (REML) using the metafor package (Viechtbauer 2010). Models included taxa as a fixed-effect moderator with crossed random effects for MPA and data source (PISCO, KFM, LTER). The crossed random effects structure accounts for two sources of non-independence: (1) effect sizes from the same MPA share local ecological conditions, and (2) effect sizes from the same monitoring program share methodological characteristics. Sensitivity analyses comparing models with and without the Source random effect confirmed that main conclusions were robust to this specification (see Supplementary Materials)."
-
-#### Sensitivity Analysis (Already Implemented)
-
-The code in `09_meta_analysis.R` already includes:
-- AIC/BIC comparison between models with vs. without Source
-- Coefficient comparison showing robustness
-- Variance component confidence intervals
-
-**Bottom line:** The crossed random effects structure is statistically appropriate and methodologically defensible. The larger standard errors represent honest uncertainty quantification, not a flaw.
+1. **Kelp biomass is 3.6x higher inside MPAs (+257%)** — highly significant, robust to leave-one-out (29/29 permutations significant)
+2. **Lobster density is 3.7x higher (+270%)** — now significant with per-taxa analysis
+3. **Purple urchin biomass is 58% lower, density 77% lower** — both highly significant
+4. **Sheephead biomass is 2.3x higher (+129%)** — significant
+5. **Red urchin effects are non-significant** in both biomass and density
+6. **Trophic cascade evidence (Fig 4d):** Urchin density predicts kelp biomass (beta = -0.51, p = 0.021, R-squared = 84%)
 
 ---
 
-### 2. Zero-Correction for Log Response Ratios (Affects Methods)
+## New Supplemental Tables
 
-**What changed:**
-- **Old:** Fixed constant `+0.01` added to all zero proportions
+| File | Description |
+|------|-------------|
+| `data/table_s_outlier_sensitivity.csv` | Compares 3 outlier approaches: no removal, per-taxa Cook's D (primary), joint Cook's D |
+| `data/table_s_kelp_leave1out.csv` | Leave-one-out analysis for kelp biomass — significant in all 29/29 permutations |
+| `data/table_s_ar1_sensitivity.csv` | AR1 temporal autocorrelation sensitivity check |
+| `data/table_s_cascade_consistency.csv` | Per-MPA cascade consistency scores |
+| `data/table_s_moderator_meta_regression.csv` | Protection level (SMR vs SMCA) and location moderators |
+| `data/table_s_temporal_meta_regression.csv` | Species-level temporal slopes |
+
+---
+
+## Figure Inventory
+
+### Main Text (6 figures)
+
+| Figure | File | Description |
+|--------|------|-------------|
+| **Fig 0** | `fig_00_trophic_concept` | NEW: Conceptual diagram of trophic cascade hypothesis (MPA → Predators → Urchins → Kelp) |
+| **Fig 1** | `fig_01_mpa_map` | MPA map with bathymetry + 4 kelp time series insets. Site labels now have white halos for readability; inset headers show MPA type (SMCA/SMR) |
+| **Fig 2** | `fig_02_data_processing` | Pipeline illustration (raw → standardized → lnRR). Now labeled "Example: M. pyrifera at Scorpion SMR" |
+| **Fig 3** | `fig_03_mean_effects` | Meta-analytic effect sizes by taxa. Now shows common names + significance stars (FDR-corrected) |
+| **Fig 4** | `fig_04_trophic_scatter` | 4-panel trophic cascade scatter. Solid lines = significant, dashed = non-significant. Panel (d) is the key finding (R-squared = 84%) |
+| **Fig 5** | `fig_05_recovery_curves` | Recovery trajectories over time (5 species). Spaghetti lines subdued; kelp panel y-axis tightened |
+
+### Supplemental (9+ figures)
+
+| Figure | File | Description |
+|--------|------|-------------|
+| **S1** | `fig_s01_forest_plot` | Forest plot: effect sizes by MPA for each taxa |
+| **S2** | `fig_s02_all_taxa_timeseries` | Refactored to 5x3 facet grid (species rows x site columns) — no more overplotting |
+| **S3** | `fig_s03_recovery_curves` | GAM recovery curves. Now has legend identifying "GAM smooth (95% CI)" vs "Individual MPA" |
+| **S4** | `fig_s04_cascade_phase` | Species-pair phase portraits |
+| **S5** | `fig_s05_triptych_heatmap` | Space-time heatmaps |
+| **S6** | `fig_s06_slope_comparison` | Per-MPA slope comparison |
+| **S7** | `fig_s07_statistical_transparency` | Model selection + variance components. Whitespace reduced; value labels added to tau-squared bars |
+| **S8** | `fig_s08_appendix_*` | Site-level lnRR time series (5 files, one per taxa) |
+| **S9** | `fig_s09_moderator_comparisons` | SMR vs SMCA and mainland vs Channel Islands comparisons |
+
+---
+
+## Other Methodological Changes
+
+These were implemented before the per-taxa switch and remain in the current pipeline:
+
+### Random effects structure
+- **Old:** `random = ~1|MPA`
+- **New:** `random = list(~1|MPA, ~1|Source)` (crossed random effects for MPA and data source)
+- 52% of MPAs are sampled by multiple sources, justifying the crossed structure
+
+### Zero-correction method
+- **Old:** Fixed `+0.01` added to all zero proportions
 - **New:** Adaptive constant (half the minimum non-zero proportion)
 
-**Why this matters:**
-Adding 0.01 is arbitrary. If the smallest real proportion in a dataset is 0.002, adding 0.01 inflates that value by 5x. The adaptive method scales with the data.
+### Effect size SE for NLS models
+- Now uses delta method with full variance-covariance matrix instead of assuming independence
 
-**Decision needed from Emily:**
+### Fallback model exclusion
+- Non-NLS fallback models are tagged and excluded from AICc competition
 
-**Option A - Use adaptive method (recommended):**
-> Change methods text from:
-> "We added a constant (a=0.01) to raw proportion values"
-> To:
-> "We applied an adaptive pseudocount correction (half the minimum non-zero proportion observed in each MPA-taxa combination) before log transformation (Aitchison, 1986)"
-
-**Option B - Revert to fixed 0.01 for consistency with original:**
-> Keep original methods text, modify pipeline to use fixed correction everywhere
+### Back-transformed response ratios
+- Figures 3, S1, S9 now display on the response ratio (RR) scale
+- Table 2 CSV includes RR, RR_lower, RR_upper, Pct_Change columns
 
 ---
 
-### 3. Effect Size Time Point (NO CHANGE NEEDED)
+## Suggested Methods Text (Per-Taxa Meta-Analysis)
 
-**What was investigated:**
-The original code used `t=11` years for extracting effect sizes. We evaluated whether this should be dynamic.
-
-**Decision: KEEP t=11**
-
-The manuscript correctly explains:
-> "We chose these years since they correspond to before implementation (t=0) and the age of our youngest MPA in 2023 (eleven years). This allowed us to control for differences in the effect size due to the duration of time since establishment."
-
-**Why t=11 is correct:**
-- Channel Islands MPAs (2003) have 20 years of data
-- Mainland MPAs (2012) have 11 years of data
-- Using dynamic max time would confound MPA age with protection effectiveness
-- t=11 ensures all MPAs are compared at the same "age"
-
-**Methods text:** No change needed.
+> "We estimated the overall effect of MPA protection on each taxon-response combination using separate multilevel meta-analytic models (metafor::rma.mv, Viechtbauer 2010). For taxa with k >= 5 effect sizes from >= 3 MPAs, models included MPA as a random effect to account for spatial non-independence. For taxa with fewer effect sizes, simple random-effects models were used. Within each taxon, influential observations were identified using Cook's distance at a 4/k threshold and removed prior to final model fitting. P-values were corrected for multiple comparisons using the false discovery rate (FDR) method across all 9 taxon-response tests."
 
 ---
 
-### 4. Heterogeneity Statistics (Optional Addition)
+## Code Structure
 
-**What's new:**
-Pipeline now calculates and reports tau-squared and pseudo-I-squared for meta-analysis models.
+The original monolithic script has been refactored into numbered modules:
 
-**What these measure:**
-- **tau-squared:** Between-study variance (how much effect sizes vary across MPAs)
-- **I-squared:** Proportion of total variance due to heterogeneity (0-100%)
+```
+00_libraries.R           Package dependencies
+00b_color_palette.R      Colors, shapes, theme_mpa()
+00c_analysis_constants.R Named constants, exclusion lists
+01_utils.R               Utility functions, save_fig()
+02_pBACIPS_function.R    Core pBACIPS methodology
+03_data_import.R         Import size frequency data
+04_pisco_processing.R    PISCO data processing
+05_kfm_processing.R      KFM/NPS data processing
+06_ltr_processing.R      LTER data processing
+06b_landsat_processing.R Satellite kelp canopy data
+07_combine_data.R        Combine all sources
+08_effect_sizes.R        Calculate effect sizes (pBACIPS)
+09_meta_analysis.R       Per-taxa meta-analysis + sensitivity tables
+10_temporal_analysis.R   Temporal dynamics (Figs S3-S6)
+11_figures.R             Main text + supplemental figures
+12_results_summary.R     Results CSVs and markdown summary
+13_additional_analyses.R Moderator analyses (Fig S9)
+run_all.R                Pipeline orchestration (~2.2 min)
+```
 
-**Decision needed from Emily:**
-
-- [ ] Add to Table 2 as additional columns
-- [ ] Report in Results text only
-- [ ] Include in Supplemental Materials only
-- [ ] Do not include
-
----
-
-## Bug Fixes Applied (2026-02-10)
-
-A deep 6-agent audit of all 17 R scripts (12,699 lines) identified 8 critical issues. After verification, 2 were false positives. The following 5 fixes were applied and verified:
-
-| Fix | Description | File | Impact |
-|-----|-------------|------|--------|
-| C1 | Removed `EXCLUDED_MPAS` redefinition that overwrote the authoritative 11-MPA list with a different 5-MPA list | `08_effect_sizes.R` | Data filtering now consistent across all pipeline stages |
-| C2 | Removed `cols` palette redefinition that overwrote colorblind-safe colors | `08_effect_sizes.R` | Diagnostic plots now use project-wide palette |
-| C6 | Moved urchin size-frequency preservation before 25mm filter | `04_pisco_processing.R` | KFM/LTER bootstraps now sample from unfiltered distribution |
-| C8 | Changed `$SIZE` to `$SIZE_MM` for LTER lobster biomass | `06_lter_processing.R` | Eliminates reliance on R's partial column matching |
-| M7 | Use full-precision p-values for FDR correction | `09_meta_analysis.R` | More accurate multiple testing correction |
-
-**Key results are unchanged** after these fixes: S. purpuratus density (p=0.0004, FDR=0.0036) and S. pulcher biomass (p=0.004, FDR=0.018) remain the two significant effects.
-
-See `bug-bash-reports/summary.md` for the full audit report including remaining moderate-priority issues.
+Run the full pipeline with: `source(here::here("code", "R", "run_all.R"))`
 
 ---
 
-## Things That Did NOT Change
+## Audit Trail
 
-The following aspects of the analysis are unchanged and verified correct:
-
-- Biomass conversion formulas (all verified against literature)
-- Bootstrap iterations (1000 for all analyses)
-- Cook's distance outlier removal (4/n threshold)
-- pBACIPS methodology and model structure
-- Study design and MPA selection criteria
-- Size cutoff application (25mm for PISCO, unfiltered for KFM/LTER)
-
-## Verified and Documented
-
-The following aspects have been thoroughly analyzed and documented:
-
-- **Crossed data structure:** Verified that 52% of MPAs are sampled by multiple sources (see Section 1 above)
-- **Random effects justification:** Full statistical argument with references to Cochrane/Campbell guidelines (see `docs/STATISTICAL_AUDIT_REPORT.md`)
-- **Data filtering transparency:** Complete audit trail from raw data to final k-values (see `outputs/filter_audit_*.csv`)
-
----
-
-## Questions for Emily
-
-1. **Can we schedule a call this week** to walk through the Table 2 changes? The shifts in significance are important to discuss before updating the manuscript narrative.
-
-2. **Which zero-correction method do you prefer?** (Option A: adaptive, Option B: fixed 0.01)
-
-3. **Do you want heterogeneity statistics** in the final manuscript? If yes, where?
-
-4. **Are you comfortable with the changes to significance?** Some effects that were previously significant are now non-significant (and vice versa). The new results are more conservative and statistically appropriate, but we should discuss the narrative implications.
-
-5. **Review the random effects justification:** The crossed random effects structure has been thoroughly verified (see Section 1 above and `docs/STATISTICAL_AUDIT_REPORT.md`). Key points for reviewers:
-   - 52% of MPAs are sampled by multiple sources (verified crossing)
-   - Aligns with Cochrane/Campbell guidelines
-   - Sensitivity analysis shows main conclusions are robust
-
----
-
-## File Reference
-
-| Output File | Contents | Use For |
-|-------------|----------|---------|
-| `data/table_02_meta_analysis.csv` | Current Table 2 values | Replace manuscript Table 2 |
-| `plots/fig_03_mean_effects.pdf` | Updated Figure 3 | Replace manuscript Figure 3 |
-| `docs/STATISTICAL_AUDIT_REPORT.md` | Full statistical justification and audit | Reviewer response / Methods supplement |
-| `outputs/filter_audit_effect_sizes.csv` | Detailed filtering at effect size stage | Audit trail |
-| `outputs/filter_audit_meta_analysis.csv` | Detailed filtering at meta-analysis stage | Audit trail |
-| `outputs/data_flow_summary.csv` | Summary of k-values through pipeline stages | Understanding sample sizes |
-
----
-
-## Appendix: Code Structure Mapping
-
-For reference, here's how the original script maps to the new modular pipeline:
-
-| Original (pBACIPS_PISCO_V10.R) | New Location |
-|--------------------------------|--------------|
-| Lines 1-500 (imports) | `03_data_import.R` |
-| Lines 500-1500 (PISCO processing) | `04_pisco_processing.R` |
-| Lines 1500-2500 (KFM processing) | `05_kfm_processing.R` |
-| Lines 2500-3400 (LTER processing) | `06_lter_processing.R` |
-| Lines 3400-5500 (effect sizes) | `08_effect_sizes.R` |
-| Lines 5500-6900 (meta-analysis) | `09_meta_analysis.R` |
-| Lines 6900-7100 (figures) | `10_figures.R` |
+Detailed filtering records are in `outputs/`:
+- `filter_audit_effect_sizes.csv` — Every observation's inclusion/exclusion reason at the effect size stage
+- `filter_audit_meta_analysis.csv` — Joint model outlier detection (sensitivity comparison)
+- `filter_audit_pertaxa_meta.csv` — Per-taxa outlier detection (primary analysis)
+- `filter_summary_by_taxa.csv` — Summary counts by taxa
+- `data_flow_summary.csv` — k-values through each pipeline stage

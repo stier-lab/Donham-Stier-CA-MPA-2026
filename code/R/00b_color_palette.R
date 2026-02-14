@@ -76,14 +76,14 @@ cols <- col_taxa_short
 # or placed side-by-side in a forest plot.
 
 col_response <- c(
-  "Den"     = "#4A8C6A",
-    # Sage/moss green -- cool tone signals count-based measurement.
-    # Blue-shifted from taxa greens for distinction. L* ~52.
+  "Den"     = "#5B8BA0",
+    # Slate steel blue -- cool tone signals count-based measurement.
+    # Muted and professional, distinct from taxa palette. L* ~55.
 
-  "Bio"     = "#D98B4A"
-    # Warm amber-orange -- warm tone signals mass-based measurement.
-    # ~6 L* units lighter than Density + 120° hue separation ensures
-    # discrimination under all CVD types. L* ~58.
+  "Bio"     = "#B07C4F"
+    # Warm copper/terracotta -- warm tone signals mass-based measurement.
+    # Good luminance separation from Density (~50 L*) and ~170° hue
+    # separation ensures CVD discrimination.
 )
 
 # Longer labels for legends

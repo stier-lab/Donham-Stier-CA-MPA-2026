@@ -36,7 +36,7 @@ The analysis examines:
 Donham-Stier-CA-MPA-2026/
 │
 ├── code/
-│   └── R/                          # Analysis scripts (numbered 00-11)
+│   └── R/                          # Analysis scripts (numbered 00-13)
 │       ├── 00_libraries.R          # Package dependencies
 │       ├── 00b_color_palette.R     # Color scheme & ggplot theme
 │       ├── 00c_analysis_constants.R# Named constants & site exclusions
@@ -50,8 +50,10 @@ Donham-Stier-CA-MPA-2026/
 │       ├── 07_combine_data.R       # Merge all data sources
 │       ├── 08_effect_sizes.R       # Calculate effect sizes
 │       ├── 09_meta_analysis.R      # Multilevel meta-analysis
-│       ├── 10_figures.R            # Publication figures
-│       ├── 11_results_summary.R    # Generate results summaries
+│       ├── 10_temporal_analysis.R  # Temporal dynamics (Figs S3-S6)
+│       ├── 11_figures.R            # Publication figures (Figs 1-5, S1-S2, S7-S8)
+│       ├── 12_results_summary.R    # Generate results summaries
+│       ├── 13_additional_analyses.R# Moderator analyses (Fig S9)
 │       └── run_all.R               # Pipeline orchestration
 │
 ├── data/
@@ -62,8 +64,10 @@ Donham-Stier-CA-MPA-2026/
 │   ├── LANDSAT/ → [Google Drive]   # Satellite kelp canopy data
 │   └── ALL_sizefreq_2024.csv →     # Size frequency data
 │
-├── plots/                          # Generated figures (PDF & PNG)
+├── plots/                          # Generated figures (PDF & PNG at 600 DPI)
+├── outputs/                        # Filter audits, data flow summaries
 ├── docs/                           # Documentation & manuscript drafts
+├── .agent-review/                  # Multi-agent review synthesis
 ├── CLAUDE.md                       # AI assistant guidelines
 └── README.md                       # This file
 ```
@@ -232,14 +236,28 @@ source(here::here("code", "R", "run_all.R"))
                   └────────────┬────────────┘
                                ▼
                   ┌─────────────────────────┐
-                  │ 10_figures.R            │
+                  │ 10_temporal_analysis.R  │
                   │                         │
-                  │ Publication figures     │
-                  │ Main text + supplement  │
+                  │ Temporal dynamics       │
+                  │ Figs S3-S6 + tables     │
                   └────────────┬────────────┘
                                ▼
                   ┌─────────────────────────┐
-                  │ 11_results_summary.R    │
+                  │ 11_figures.R            │
+                  │                         │
+                  │ Publication figures     │
+                  │ Figs 1-5, S1-S2, S7-S8 │
+                  └────────────┬────────────┘
+                               ▼
+                  ┌─────────────────────────┐
+                  │ 13_additional_analyses.R│
+                  │                         │
+                  │ Moderator analyses      │
+                  │ Fig S9 + tables         │
+                  └────────────┬────────────┘
+                               ▼
+                  ┌─────────────────────────┐
+                  │ 12_results_summary.R    │
                   │                         │
                   │ Auto-generate results   │
                   │ CSVs and markdown       │
@@ -256,19 +274,23 @@ source(here::here("code", "R", "run_all.R"))
 |--------|-------------|-------------|
 | **Figure 1** | Map of MPAs with Channel Islands + kelp time series insets | `plots/fig_01_mpa_map.pdf` |
 | **Figure 2** | Data processing pipeline visualization | `plots/fig_02_data_processing.pdf` |
-| **Figure 3** | Mean effect sizes by taxa (meta-analysis) | `plots/fig_03_mean_effects.pdf` |
+| **Figure 3** | Mean effect sizes by taxa, RR-scaled axis (meta-analysis) | `plots/fig_03_mean_effects.pdf` |
 | **Figure 4** | Trophic cascade scatterplots (4-panel: biomass top row, density bottom row) | `plots/fig_04_trophic_scatter.pdf` |
+| **Figure 5** | Recovery trajectories: linear trends with lmer slopes and t=11 marker | `plots/fig_05_recovery_curves.pdf` |
 
 ### Supplemental Figures
 
 | Figure | Description | Output File |
 |--------|-------------|-------------|
-| **Figure S1** | Forest plot: effect sizes by MPA | `plots/fig_s01_forest_plot.pdf` |
+| **Figure S1** | Forest plot: effect sizes by MPA, RR-scaled axis | `plots/fig_s01_forest_plot.pdf` |
 | **Figure S2** | All taxa time series at example MPAs | `plots/fig_s02_all_taxa_timeseries.pdf` |
-| **Figure S3** | Temporal dynamics of trophic cascade | `plots/fig_s03_temporal_dynamics.png` |
-| **Figure S4** | Space-time effect heatmap across MPAs | `plots/fig_s04_spacetime_heatmap.png` |
-| **Figure S5** | Model selection and heterogeneity | `plots/fig_s05_statistical_transparency.png` |
-| **Figure S6** | Site-level appendix (5 taxa-specific panels) | `plots/fig_s06_appendix_*.png` |
+| **Figure S3** | Species-level GAM recovery curves | `plots/fig_s03_recovery_curves.pdf` |
+| **Figure S4** | Species-pair phase portraits | `plots/fig_s04_cascade_phase.pdf` |
+| **Figure S5** | Species-level space-time heatmaps | `plots/fig_s05_triptych_heatmap.pdf` |
+| **Figure S6** | Per-MPA slope comparison and cascade consistency | `plots/fig_s06_slope_comparison.pdf` |
+| **Figure S7** | Model selection and heterogeneity | `plots/fig_s07_statistical_transparency.pdf` |
+| **Figure S8** | Site-level appendix (5 taxa-specific panels) | `plots/fig_s08_appendix_*.pdf` |
+| **Figure S9** | Combined moderator comparisons: (a) SMR vs SMCA, (b) Islands vs mainland | `plots/fig_s09_moderator_comparisons.pdf` |
 
 ### Tables
 
@@ -276,6 +298,9 @@ source(here::here("code", "R", "run_all.R"))
 |-------|-------------|-------------|
 | **Table 1** | Average density/biomass by taxa | `data/average_responses.csv` |
 | **Table 2** | Meta-analysis summary statistics | `data/table_02_meta_analysis.csv` |
+| **Table S2** | Temporal meta-regression coefficients | `data/table_s_temporal_meta_regression.csv` |
+| **Table S3** | Cascade consistency scores by MPA | `data/table_s_cascade_consistency.csv` |
+| **Table S4** | Moderator meta-regression (type, size, location) | `data/table_s_moderator_meta_regression.csv` |
 
 ---
 
@@ -328,9 +353,10 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 ## Documentation
 
 - **`CLAUDE.md`** - Project conventions for AI assistants
-- **`docs/STATISTICAL_AUDIT_REPORT.md`** - Comprehensive statistical validation
-- **`docs/methodology_review.md`** - Historical issue tracking and fixes
+- **`docs/methodology_review.md`** - Historical issue tracking and methodology fixes (28 issues, 19 fixed)
+- **`docs/CHANGELOG_FOR_EMILY.md`** - Collaborator changelog with action items
 - **`docs/MPA_Kelp_MS_V5.pdf`** - Current manuscript draft
+- **`.agent-review/SYNTHESIS.md`** - Multi-agent review synthesis
 
 ---
 ## Citation

@@ -142,6 +142,26 @@ SHEEPHEAD_BIOMASS_ALLOMETRIC_B <- 3.04
 
 
 # =============================================================================
+# SECTION 7: TROPHIC LEVEL ASSIGNMENTS
+# =============================================================================
+# Maps species names (both full and abbreviated forms) to trophic levels.
+# Used by temporal analysis (10), figures (11), and other scripts.
+
+trophic_assignment <- c(
+  "Panulirus interruptus" = "Predators",
+  "Semicossyphus pulcher" = "Predators",
+  "P. interruptus" = "Predators",
+  "S. pulcher" = "Predators",
+  "Strongylocentrotus purpuratus" = "Urchins",
+  "Mesocentrotus franciscanus" = "Urchins",
+  "S. purpuratus" = "Urchins",
+  "M. franciscanus" = "Urchins",
+  "Macrocystis pyrifera" = "Kelp",
+  "M. pyrifera" = "Kelp"
+)
+
+
+# =============================================================================
 # Confirmation message
 # =============================================================================
 cat("Analysis constants loaded.\n")

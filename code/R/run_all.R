@@ -27,8 +27,10 @@
 #'   07  - Combine all data sources
 #'   08  - Calculate effect sizes (pBACIPS)
 #'   09  - Multilevel meta-analysis
-#'   10  - Publication figures
-#'   11  - Results summary (CSVs and markdown)
+#'   10  - Temporal dynamics appendix
+#'   11  - Publication figures (Figs 1-5, S1-S2, S7-S8)
+#'   13  - Additional analyses (Fig S9, moderator meta-regression)
+#'   12  - Results summary (CSVs and markdown)
 
 ####################################################################################################
 ## Setup ###########################################################################################
@@ -207,11 +209,17 @@ snap_msg <- paste0("  Figures snapshot saved to: ", snapshot_path, "\n\n")
 cat(snap_msg)
 log_message(snap_msg)
 
-# --- 10: Figures ----------------------------------------------------------------------------------
-source_module("10_figures.R", "10")
+# --- 10: Temporal dynamics appendix --------------------------------------------------------
+source_module("10_temporal_analysis.R", "10")
 
-# --- 11: Results Summary --------------------------------------------------------------------------
-source_module("11_results_summary.R", "11")
+# --- 11: Figures ----------------------------------------------------------------------------------
+source_module("11_figures.R", "11")
+
+# --- 13: Additional analyses (moderator comparisons, supplemental fig S9) ---
+source_module("13_additional_analyses.R", "13")
+
+# --- 12: Results Summary --------------------------------------------------------------------------
+source_module("12_results_summary.R", "12")
 
 ####################################################################################################
 ## Pipeline summary ################################################################################

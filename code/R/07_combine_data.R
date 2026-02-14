@@ -53,6 +53,12 @@
 # - LTER.lob (LTER lobsters), Short.lter.macro (LTER kelp), LTER.fish (LTER sheephead)
 # - kfm.fish (KFM sheephead)
 # Now we combine them into one master dataset for the meta-analysis.
+#
+# NOTE on cross-program overlap: Some MPAs (e.g., Campus Point SMCA, Naples
+# SMCA) have data from both PISCO and LTER. These are intentionally retained
+# as separate observations because they represent independent estimates from
+# different monitoring methods. The `source` column distinguishes them, and the
+# meta-analysis accounts for this via a Source random effect.
 
 # Ensure consistent column structure before binding
 # Different sources may have extra columns that need to be removed:

@@ -397,7 +397,11 @@ VRG.PANINT.site.all$Density <- VRG.PANINT.site.all$count / 60
 VRG.PANINT.site.all$y <- "PANINT"
 
 VRG.PANINT <- VRG.PANINT.site.all
-VRG.PANINT <- VRG.PANINT[, colnames(VRG.PANINT)[c(1:6, 10, 7:9)]]
+# Reorder columns to match PANINT.All.sub.mean structure for rbind
+# FIXED: Replaced fragile column indices c(1:6, 10, 7:9) with explicit column names
+VRG.PANINT <- dplyr::select(VRG.PANINT,
+  year, site, CA_MPA_Name_Short, site_designation, site_status, BaselineRegion,
+  y, count, biomass, Density)
 VRG.PANINT$campus <- "VRG"
 
 ####################################################################################################
@@ -405,7 +409,11 @@ VRG.PANINT$campus <- "VRG"
 ####################################################################################################
 
 PANINT.all <- rbind(VRG.PANINT, PANINT.All.sub.mean)
-PANINT.all <- PANINT.all[, colnames(PANINT.all)[c(2, 1, 7, 8, 11, 3:6, 10, 9)]]
+# Reorder columns for downstream rbind with Swath.ave.site.PISCO.subset
+# FIXED: Replaced fragile column indices c(2, 1, 7, 8, 11, 3:6, 10, 9) with explicit column names
+PANINT.all <- dplyr::select(PANINT.all,
+  site, year, y, count, campus, CA_MPA_Name_Short, site_designation,
+  site_status, BaselineRegion, Density, biomass)
 
 Swath.PISCO.subset <- rbind(PANINT.all, Swath.ave.site.PISCO.subset)
 Swath.PISCO <- Swath.PISCO.subset[!is.na(Swath.PISCO.subset$count), ]
@@ -525,7 +533,14 @@ PISCO.Urchin.site.merge <- merge(Urchin.site, sites.short,
                                   by.y = c("site", "CA_MPA_Name_Short", "site_new"),
                                   all.x = TRUE)
 
-PISCO.Urchin.site.merge <- PISCO.Urchin.site.merge[, colnames(PISCO.Urchin.site.merge)[c(2, 1, 3, 17, 5:10, 16, 20)]]
+# Select and reorder columns from merge result
+# FIXED: Replaced fragile column indices c(2, 1, 3, 17, 5:10, 16, 20) with explicit column names
+# site_status.y comes from sites.short (the authoritative source); site_designation and
+# BaselineRegion also come from sites.short via the merge
+PISCO.Urchin.site.merge <- dplyr::select(PISCO.Urchin.site.merge,
+  CA_MPA_Name_Short, site, site_new, site_status.y,
+  year, zone, transect, count, biomass, y,
+  site_designation, BaselineRegion)
 # Zero-fill only numeric columns; preserve NAs in character/factor columns
 num_cols <- sapply(PISCO.Urchin.site.merge, is.numeric)
 PISCO.Urchin.site.merge[num_cols][is.na(PISCO.Urchin.site.merge[num_cols])] <- 0
@@ -570,14 +585,18 @@ Swath.PISCO.allbio$biomass.x <- ifelse(is.na(Swath.PISCO.allbio$biomass.x),
                                        Swath.PISCO.allbio$biomass.y,
                                        Swath.PISCO.allbio$biomass.x)
 
-Swath.PISCO <- Swath.PISCO.allbio
-Swath.PISCO <- Swath.PISCO[, colnames(Swath.PISCO)[c(1:11, 15)]]
-names(Swath.PISCO)[names(Swath.PISCO) == "biomass.x"] <- "biomass"
-names(Swath.PISCO)[names(Swath.PISCO) == "count.x"] <- "count"
-names(Swath.PISCO)[names(Swath.PISCO) == "Density.x"] <- "Density"
-names(Swath.PISCO)[names(Swath.PISCO) == "site_designation.x"] <- "site_designation"
-names(Swath.PISCO)[names(Swath.PISCO) == "site_status.x"] <- "site_status"
-names(Swath.PISCO)[names(Swath.PISCO) == "BaselineRegion.x"] <- "BaselineRegion"
+# Keep merge keys + left-side (.x) columns, rename to drop .x suffix
+# Also keep count.y (urchin count) for completeness
+# FIXED: Replaced fragile column indices c(1:11, 15) with explicit column names and renames
+Swath.PISCO <- dplyr::select(Swath.PISCO.allbio,
+  site, year, y, CA_MPA_Name_Short,
+  count = count.x, campus,
+  site_designation = site_designation.x,
+  site_status = site_status.x,
+  BaselineRegion = BaselineRegion.x,
+  Density = Density.x,
+  biomass = biomass.x,
+  count.y)
 
 ####################################################################################################
 ## 8. Import and process PISCO fish data (sheephead, SPUL)
@@ -630,7 +649,12 @@ Fish.sub <- dplyr::select(Fish.merged, classcode, year, month, site, zone, level
 # Join with site table
 Fish.sub.site <- merge(Fish.sub, sites.short, by.x = c("site"), by.y = c("site"),
                        all.x = TRUE)
-Fish.sub.site <- Fish.sub.site[, colnames(Fish.sub.site)[c(1:13, 20:22, 25)]]
+# Keep original Fish.sub columns + key site metadata from sites.short
+# FIXED: Replaced fragile column indices c(1:13, 20:22, 25) with explicit column names
+Fish.sub.site <- dplyr::select(Fish.sub.site,
+  site, classcode, year, month, zone, level, transect, count, fish_tl,
+  TrophicGroup, BroadTrophic, Targeted, biomass,
+  CA_MPA_Name_Short, site_designation, site_status, BaselineRegion)
 
 # Remove canopy level (irrelevant for sheephead) and filter to study region
 Fish.sub.site.NOcanopy <- subset(Fish.sub.site, level == "BOT")

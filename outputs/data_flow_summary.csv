@@ -1,9 +1,9 @@
 "Taxa","Resp","Stage1_Generated","Stage2_SiteMerge","Stage3_TypeFilter","Stage4_SumStatsFinal","Stage6_FinalK"
-"M. franciscanus","Bio",23,23,12,12,2
+"M. franciscanus","Bio",24,24,13,13,3
 "M. franciscanus","Den",28,28,13,13,1
-"M. pyrifera","Bio",49,49,36,33,17
+"M. pyrifera","Bio",50,50,37,34,18
 "P. interruptus","Bio",12,12,7,7,2
-"P. interruptus","Den",28,28,16,16,2
+"P. interruptus","Den",29,29,17,17,2
 "S. pulcher","Bio",35,35,18,18,10
 "S. pulcher","Den",41,41,21,21,10
 "S. purpuratus","Bio",20,20,10,10,3

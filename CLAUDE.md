@@ -7,12 +7,70 @@ This project analyzes the effects of California Marine Protected Areas (MPAs) on
 **Target Journal:** Conservation Letters
 **Manuscript Title:** Restoration of trophic cascades within kelp forests following the establishment of a network of marine protected areas
 
+## Conservation Letters Figure & Design Specifications
+
+Sourced from [Wiley Electronic Artwork Guidelines](https://authorservices.wiley.com/asset/photos/electronic_artwork_guidelines.pdf) and [Conservation Letters Author Guidelines](https://conbio.onlinelibrary.wiley.com/hub/journal/1755263x/homepage/forauthors.html).
+
+### Dimensions
+- **Single-column (small):** 80 mm width (quarter-page figures)
+- **Double-column (large):** 180 mm width (half-page or full-page figures)
+- **Minimum pixel width:** 1800 px at any size
+- Figures must be created between 80-180 mm width; figures outside this range will be modified during composition (may decrease quality)
+
+### Resolution
+- **Line art** (graphs, scatter plots, flowcharts): **600-1000 DPI** preferred (must be legible at 80 mm / 1800 px unmagnified)
+- **Images** (photographs, maps): **300 DPI** minimum
+- If a figure contains both line art and images, follow the line art (higher) resolution guidelines
+
+### File Formats
+| Stage | Line Art | Images |
+|-------|----------|--------|
+| Peer review | EPS, PDF (preferred); any standard type acceptable | TIFF, PNG, EPS (preferred) |
+| Post-acceptance | EPS, PDF (preferred) | TIFF, PNG, EPS (preferred) |
+
+- When in doubt, submit a PDF
+- 1 figure per file preferred; name files `Figure_1.tiff`, `Figure_2.pdf`, etc.
+
+### Typography & Line Weights
+- **Minimum font size:** 8 pt at final printed size — all words and symbols must be large enough for easy reading
+- **Font:** Sans-serif preferred (Helvetica, Arial); use consistent font throughout all figures
+- **Line thickness:** No less than 0.5 pt (0.2 mm); evenly balanced stroke weights
+- Larger fonts improve readability, especially for line art at 80 mm width
+
+### File Size
+- **Individual figures:** < 10 MB each
+- **Complete submission (zipped):** < 500 MB total
+- Remove excess white space around figures to reduce file size
+
+### Legends & Captions
+- Use Arabic numerals in order of appearance in text
+- Place figure legends in a **separate section in the manuscript, after references** (preferred) — acceptable anywhere that clearly indicates which figure it explains
+- Legends should succinctly describe content and explain all abbreviations/symbols
+- All figures must be cited in main text in the order they appear
+
+### Conservation Letters-Specific Requirements
+- **Error bars required:** All figures showing statistical data must display error bars (95% CIs preferred); authors must state what error bars represent
+- **95% CIs in text and figures:** Any article reporting p-values must also report 95% CIs
+- **Max figures+tables:** ~8 combined in main text (additional in Supporting Information)
+- **Supporting Information:** Submit in separate files
+- **Cover/social media image:** Provide an image for social media promotion; if selected for cover, 300 DPI at reproduction size in CMYK required
+
+### Submission Checklist (from Wiley)
+- [ ] All figures included as separate files or in a single PDF/Word document
+- [ ] Each figure has an accompanying legend explaining content, abbreviations, and symbols
+- [ ] All figures cited in main text in numbered order
+- [ ] All text/symbols large enough for easy reading (min 8 pt at final size)
+- [ ] Figures saved in preferred file types (EPS/PDF for line art, TIFF/PNG for images)
+- [ ] Each figure file < 10 MB
+- [ ] Figures created between 80-180 mm width at 300-600 DPI
+- [ ] Figure files named with figure number only (e.g., `Figure_1.tiff`)
+
 ## Directory Structure
 
 ```
 Donham-Stier-CA-MPA-2026/
 ├── code/
-│   └── R/                    # R scripts (numbered 00-11)
+│   └── R/                    # R scripts (numbered 00-13)
 ├── data/
 │   ├── cache/                # Bootstrap and intermediate results (.rds)
 │   ├── LANDSAT/              # Satellite kelp canopy data
@@ -20,9 +78,10 @@ Donham-Stier-CA-MPA-2026/
 │   ├── MBON/                 # KFM/MBON monitoring data
 │   └── PISCO/                # PISCO monitoring data
 ├── docs/                     # Documentation and manuscript
-├── plots/                    # Generated figures
+├── plots/                    # Generated figures (PDF + PNG at 600 DPI)
+├── outputs/                  # Filter audits, data flow summaries, replicate effects
 ├── logs/                     # Pipeline execution logs
-└── outputs/                  # Additional analysis outputs
+└── .agent-review/            # Multi-agent review synthesis
 ```
 
 ## Manuscript Figure Mapping
@@ -31,10 +90,11 @@ Donham-Stier-CA-MPA-2026/
 
 | MS Figure | Description | Code Output File | Script |
 |-----------|-------------|------------------|--------|
-| Figure 1 | Map of MPAs with Channel Islands + inset kelp time series | `fig_01_mpa_map.pdf` | 10_figures.R |
-| Figure 2 | Data processing pipeline (raw → proportion → lnRR) | `fig_02_data_processing.pdf` | 10_figures.R |
-| Figure 3 | Meta-analytic mean effect sizes by taxa | `fig_03_mean_effects.pdf` | 10_figures.R |
-| Figure 4 | Trophic cascade scatter: 4-panel (a) predator biomass vs urchin biomass, (b) urchin biomass vs kelp biomass, (c) predator density vs urchin density, (d) urchin density vs kelp biomass | `fig_04_trophic_scatter.pdf` | 10_figures.R |
+| Figure 1 | Map of MPAs with Channel Islands + inset kelp time series | `fig_01_mpa_map.pdf` | 11_figures.R |
+| Figure 2 | Data processing pipeline (raw → proportion → lnRR) | `fig_02_data_processing.pdf` | 11_figures.R |
+| Figure 3 | Meta-analytic mean effect sizes by taxa (RR-scaled axis) | `fig_03_mean_effects.pdf` | 11_figures.R |
+| Figure 4 | Trophic cascade scatter: 4-panel (a) predator biomass vs urchin biomass, (b) urchin biomass vs kelp biomass, (c) predator density vs urchin density, (d) urchin density vs kelp biomass | `fig_04_trophic_scatter.pdf` | 11_figures.R |
+| Figure 5 | Recovery trajectories: linear trends of lnRR over time for all 5 species, with lmer slopes and t=11 marker | `fig_05_recovery_curves.pdf` | 11_figures.R |
 
 **Figure 1 Details:**
 - Base map: Southern California coastline with Channel Islands
@@ -45,12 +105,15 @@ Donham-Stier-CA-MPA-2026/
 
 | MS Figure | Description | Code Output File | Script |
 |-----------|-------------|------------------|--------|
-| Figure S1 | Forest plot: effect sizes by MPA for each taxa | `fig_s01_forest_plot.pdf` | 10_figures.R |
-| Figure S2 | All taxa time series at example MPAs | `fig_s02_all_taxa_timeseries.pdf` | 10_figures.R |
-| Figure S3 | Temporal dynamics of trophic cascade recovery | `fig_s03_temporal_dynamics.pdf` | 10_figures.R |
-| Figure S4 | Space-time heatmap of urchin response across MPAs | `fig_s04_spacetime_heatmap.pdf` | 10_figures.R |
-| Figure S5 | Model selection distribution and variance components | `fig_s05_statistical_transparency.pdf` | 10_figures.R |
-| Figure S6 | Site-level appendix: lnRR time series per taxa (5 files) | `fig_s06_appendix_*.pdf` | 10_figures.R |
+| Figure S1 | Forest plot: effect sizes by MPA for each taxa (RR-scaled axis) | `fig_s01_forest_plot.pdf` | 11_figures.R |
+| Figure S2 | All taxa time series at example MPAs | `fig_s02_all_taxa_timeseries.pdf` | 11_figures.R |
+| Figure S3 | Species-level GAM recovery curves with MPA spaghetti | `fig_s03_recovery_curves.pdf` | 10_temporal_analysis.R |
+| Figure S4 | Species-pair phase portraits of trophic cascade | `fig_s04_cascade_phase.pdf` | 10_temporal_analysis.R |
+| Figure S5 | Species-level space-time heatmaps (5 panels) | `fig_s05_triptych_heatmap.pdf` | 10_temporal_analysis.R |
+| Figure S6 | Per-MPA slope comparison and cascade consistency | `fig_s06_slope_comparison.pdf` | 10_temporal_analysis.R |
+| Figure S7 | Model selection distribution and variance components | `fig_s07_statistical_transparency.pdf` | 11_figures.R |
+| Figure S8 | Site-level appendix: lnRR time series per taxa (5 files) | `fig_s08_appendix_*.pdf` | 11_figures.R |
+| Figure S9 | Combined moderator comparisons: (a) SMR vs SMCA protection level, (b) Channel Islands vs mainland | `fig_s09_moderator_comparisons.pdf` | 13_additional_analyses.R |
 
 ### Tables
 
@@ -59,6 +122,10 @@ Donham-Stier-CA-MPA-2026/
 | Table 1 | Average density/biomass by taxa and source | `average_responses.csv` | 07_combine_data.R |
 | Table 2 | Meta-analysis summary statistics | `table_02_meta_analysis.csv` | 09_meta_analysis.R |
 | Table S1 | Data availability matrix | (in manuscript) | N/A |
+| Table S2 | Temporal meta-regression coefficients | `table_s_temporal_meta_regression.csv` | 10_temporal_analysis.R |
+| Table S3 | Cascade consistency scores by MPA | `table_s_cascade_consistency.csv` | 10_temporal_analysis.R |
+| Table S4 | Moderator meta-regression (type, size, location) | `table_s_moderator_meta_regression.csv` | 13_additional_analyses.R |
+| Table S5 | AR1 sensitivity: Durbin-Watson diagnostics | `table_s_ar1_sensitivity.csv` | 10_temporal_analysis.R |
 
 ## File Naming Conventions
 
@@ -78,7 +145,7 @@ Examples:
 - `fig_s01_forest_plot.pdf` (Supplemental Figure S1)
 
 Guidelines:
-- Always export both PDF (vector) and PNG (300 DPI raster)
+- Always export both PDF (vector) and PNG (600 DPI raster)
 - Use zero-padded two-digit figure numbers
 - Main text: `fig_01`, `fig_02`, etc.
 - Supplemental: `fig_s01`, `fig_s02`, etc.
@@ -125,9 +192,12 @@ Pipeline order:
 07_combine_data.R        - Combine all sources
 08_effect_sizes.R        - Calculate effect sizes
 09_meta_analysis.R       - Multilevel meta-analysis
-10_figures.R             - Publication figures (Figs 1-4, S1-S6)
-11_results_summary.R     - Generate results CSVs and markdown summary
+10_temporal_analysis.R   - Temporal dynamics appendix (Figs S3-S6)
+11_figures.R             - Publication figures (Figs 1-5, S1-S2, S7-S8)
+13_additional_analyses.R - Moderator analyses (Fig S9, moderator table)
+12_results_summary.R     - Generate results CSVs and markdown summary
 run_all.R                - Pipeline orchestration
+run_figures_only.R       - Fast figure regeneration (~17s all, ~4s single)
 ```
 
 ## Code Style Guidelines
@@ -149,6 +219,9 @@ run_all.R                - Pipeline orchestration
 - Use `emmeans::pairs()` for contrasts (proper covariance handling)
 - Use confidence intervals (not prediction intervals) for effect sizes
 - Report heterogeneity statistics (I², τ²) for meta-analyses
+- NLS effect size SEs use delta method (`nls_difference_se()` in `08_effect_sizes.R`)
+- Non-NLS fallback models are excluded from AICc competition
+- Temporal meta-regression includes AR1 sensitivity analysis (Section C2 in `10_temporal_analysis.R`)
 
 ### R Code Style
 - Use tidyverse style (pipes, dplyr verbs)
@@ -225,8 +298,10 @@ When adding new figures or outputs:
 ## Documentation
 
 - `docs/MPA_Kelp_MS_V5.pdf` - Current manuscript draft
-- `docs/STATISTICAL_AUDIT_REPORT.md` - Comprehensive statistical validation (agent review)
-- `docs/methodology_review.md` - Historical issue tracking and fixes
+- `docs/methodology_review.md` - Historical issue tracking and fixes (28 issues, 19 fixed)
+- `docs/CHANGELOG_FOR_EMILY.md` - Collaborator changelog with action items
+- `docs/ADDITIONAL_ANALYSES_PLAN.md` - Plan and rationale for supplemental analyses
+- `.agent-review/SYNTHESIS.md` - Multi-agent review synthesis with prioritized action items
 - This file (`CLAUDE.md`) - Project conventions for AI assistants
 
 ## Contact

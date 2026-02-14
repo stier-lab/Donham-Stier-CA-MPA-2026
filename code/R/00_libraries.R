@@ -61,10 +61,11 @@ library(lme4)
 library(lmerTest)
 library(car)
 # library(MuMIn)     # Not currently used - uncomment if needed
-# library(mgcv)      # Not currently used - uncomment if needed
+library(mgcv)        # GAMs for temporal recovery curves (10_temporal_analysis.R)
 library(emmeans)
 library(stats)
 library(lmtest)      # Used for Durbin-Watson autocorrelation diagnostics in 08_effect_sizes.R
+library(nlme)        # AR1 temporal autocorrelation correction in 10_temporal_analysis.R (base R package)
 
 # DHARMa: Residual diagnostics for hierarchical (multi-level/mixed) regression
 #         models using simulation-based quantile residuals.

@@ -98,7 +98,7 @@ ModelDiagnostics <- data.frame(
 #' @param source Character data source
 #' @param model_type Character model type (Step, Linear, etc.)
 #' @return One-row dataframe with diagnostic results
-run_dharma_diagnostics <- function(model, taxa, mpa, source, model_type) {
+dharma_diagnostics_to_row <- function(model, taxa, mpa, source, model_type) {
   if (!DHARMA_AVAILABLE || is.null(model)) {
     return(data.frame(
       Taxa = taxa, MPA = mpa, Source = source, Model_Type = model_type,
@@ -288,6 +288,132 @@ SumStats <- data.frame(
 ####################################################################################################
 ## Helper functions for repeated analysis patterns #################################################
 ####################################################################################################
+
+#' Compute SE of the difference f(t1) - f(t0) from an NLS model using the delta method
+#'
+#' For predictions from the same NLS model, Var(f(t1) - f(t0)) != Var(f(t1)) + Var(f(t0))
+#' because the predictions share parameters. The correct formula is:
+#'   Var(f(t1) - f(t0)) = g' * V * g
+#' where g = grad(f, t1) - grad(f, t0) is the gradient of the difference w.r.t. parameters,
+#' and V = vcov(model) is the parameter variance-covariance matrix.
+#'
+#' This function uses numerical differentiation to compute the gradient, then applies
+#' the delta method. Falls back to the independence assumption if the delta method fails.
+#'
+#' STATISTICAL CONTEXT (2026-02-12):
+#' Previously, the SE of the difference was computed as sqrt(SE_before^2 + SE_after^2),
+#' which assumes independence between predictions at t=0 and t=11. However, because both
+#' predictions come from the same NLS model and share parameters, they have positive
+#' covariance. The independence assumption therefore OVERESTIMATES the SE, which
+#' systematically down-weights NLS effect sizes in the meta-analysis. The delta method
+#' correctly accounts for the shared parameter covariance.
+#'
+#' @param model Fitted NLS (or compatible) model object
+#' @param newdata_0 Data frame for the "before" prediction point
+#' @param newdata_1 Data frame for the "after" prediction point
+#' @param n_obs Integer, number of observations (for df calculation in fallback)
+#' @return List with components:
+#'   \item{se}{Standard error of the difference f(t1) - f(t0)}
+#'   \item{method}{Character: "delta_method" or "independence_fallback"}
+nls_difference_se <- function(model, newdata_0, newdata_1, n_obs) {
+  result <- tryCatch({
+    # Get the variance-covariance matrix of the estimated parameters
+    V <- vcov(model)
+    theta <- coef(model)
+    p <- length(theta)
+
+    # Numerical gradient of prediction w.r.t. parameters at each time point
+    # Uses central differences: df/dtheta_i approx (f(theta+h) - f(theta-h)) / (2h)
+    eps <- sqrt(.Machine$double.eps)  # approximately 1.5e-8
+
+    # We need a function that predicts from perturbed parameter values.
+    # For nls objects, we evaluate the RHS of the formula in a controlled environment.
+    grad_0 <- numeric(p)
+    grad_1 <- numeric(p)
+
+    # Get the model formula and its environment
+    model_env <- model$m$getEnv()
+
+    for (i in seq_len(p)) {
+      # Perturb parameter i by a small step h
+      h <- max(abs(theta[i]) * eps, eps)
+      theta_plus <- theta
+      theta_minus <- theta
+      theta_plus[i] <- theta[i] + h
+      theta_minus[i] <- theta[i] - h
+
+      # Create temporary environments with perturbed parameters
+      env_plus <- new.env(parent = model_env)
+      env_minus <- new.env(parent = model_env)
+
+      # Copy newdata variables and perturbed parameters into environments
+      for (nm in names(newdata_0)) {
+        assign(nm, newdata_0[[nm]], envir = env_plus)
+        assign(nm, newdata_0[[nm]], envir = env_minus)
+      }
+      for (j in seq_len(p)) {
+        assign(names(theta)[j], theta_plus[j], envir = env_plus)
+        assign(names(theta)[j], theta_minus[j], envir = env_minus)
+      }
+
+      # Evaluate model formula RHS at the "before" point with perturbed params
+      rhs <- model$m$formula()[[3]]
+      pred_0_plus <- base::eval(rhs, envir = env_plus)
+      pred_0_minus <- base::eval(rhs, envir = env_minus)
+      grad_0[i] <- (pred_0_plus - pred_0_minus) / (2 * h)
+
+      # Now evaluate at the "after" point
+      for (nm in names(newdata_1)) {
+        assign(nm, newdata_1[[nm]], envir = env_plus)
+        assign(nm, newdata_1[[nm]], envir = env_minus)
+      }
+      for (j in seq_len(p)) {
+        assign(names(theta)[j], theta_plus[j], envir = env_plus)
+        assign(names(theta)[j], theta_minus[j], envir = env_minus)
+      }
+
+      pred_1_plus <- base::eval(rhs, envir = env_plus)
+      pred_1_minus <- base::eval(rhs, envir = env_minus)
+      grad_1[i] <- (pred_1_plus - pred_1_minus) / (2 * h)
+    }
+
+    # Gradient of the difference f(t1) - f(t0) w.r.t. parameters
+    g <- grad_1 - grad_0
+
+    # Variance of the difference via delta method: g' V g
+    var_diff <- as.numeric(t(g) %*% V %*% g)
+
+    if (!is.finite(var_diff) || var_diff <= 0) {
+      stop("Non-positive variance from delta method")
+    }
+
+    list(se = sqrt(var_diff), method = "delta_method")
+  }, error = function(e) {
+    # Fallback: use predFit CIs and assume independence (conservative).
+    # This path is taken for non-NLS fallback models (lm, gam) where
+    # the delta method machinery above may not work.
+    warning("nls_difference_se: delta method failed (", e$message,
+            "), falling back to independence assumption (conservative)")
+
+    interval <- tryCatch({
+      rbind_data <- rbind(newdata_0, newdata_1)
+      data.frame(investr::predFit(model, newdata = rbind_data, interval = "confidence"))
+    }, error = function(e2) NULL)
+
+    if (!is.null(interval) && nrow(interval) == 2) {
+      n_params <- length(coef(model))
+      df_approx <- max(n_obs - n_params, 1)
+      t_crit <- qt(0.975, df_approx)
+      se_0 <- abs((interval$lwr[1] - interval$fit[1]) / t_crit)
+      se_1 <- abs((interval$lwr[2] - interval$fit[2]) / t_crit)
+      list(se = sqrt(se_0^2 + se_1^2), method = "independence_fallback")
+    } else {
+      list(se = NA, method = "failed")
+    }
+  })
+
+  result
+}
 
 #' Add time.model and time.true columns to a subset of RR data
 #'
@@ -512,7 +638,7 @@ run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "
 
       # Run DHARMa diagnostics and add to global tracking
       if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
-        diag_result <- run_dharma_diagnostics(Lm.Ab, taxa_name, mpas[i], source_name, "CI_Linear")
+        diag_result <- dharma_diagnostics_to_row(Lm.Ab, taxa_name, mpas[i], source_name, "CI_Linear")
         ModelDiagnostics <<- rbind(ModelDiagnostics, diag_result)
       }
 
@@ -532,6 +658,12 @@ run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "
       # naturally show larger effect sizes simply due to longer protection duration.
       # t=11 corresponds to the youngest MPA age in 2023 (MLPA South Coast, implemented 2012).
       actual_time_after <- if (is.null(time_after)) EFFECT_SIZE_TIME_YEARS else time_after
+      # Flag if t=11 exceeds observed data range (extrapolation)
+      max_time_obs <- max(sub_dat[[time_var]], na.rm = TRUE)
+      if (actual_time_after > max_time_obs) {
+        cat(sprintf("    NOTE: %s extrapolating to t=%d (max observed t=%d)\n",
+                    mpas[i], actual_time_after, max_time_obs))
+      }
       es <- calculate_effect_size_from_contrast(Lm.Ab, time_var, time_before = 0, time_after = actual_time_after)
       mean_val <- es$mean
 
@@ -593,15 +725,19 @@ run_ci_analysis <- function(dat, taxa_name, source_name, resp_name, time_var = "
 # - Step and linear models: SE from emmeans::pairs() contrast (uses t-distribution,
 #   accounts for model covariance structure). This is the preferred approach as it
 #   correctly handles Var(A-B) = Var(A) + Var(B) - 2*Cov(A,B).
-# - NLS models (asymptotic/sigmoid): SE back-calculated from investr::predFit()
-#   confidence intervals as CI_width / (2 * 1.96). This assumes normality (z-distribution)
-#   rather than t-distribution, making it slightly anti-conservative for small samples.
-#   The independence assumption between t=0 and t=11 predictions makes the SE
-#   slightly conservative (overestimated).
-# - Net effect: These biases approximately cancel, but readers should note the
-#   methodological difference. All effect sizes are downstream weighted by 1/SE^2
-#   in the meta-analysis (09_meta_analysis.R), so any SE inflation for NLS models
-#   results in slightly lower weight, which is conservative.
+# - NLS models (asymptotic/sigmoid): SE of the difference f(t=11) - f(t=0) is
+#   computed using the delta method with the NLS model's variance-covariance matrix.
+#   This correctly accounts for the positive covariance between predictions at
+#   different time points from the same model (shared parameters), yielding:
+#     Var(f(t1) - f(t0)) = g' * vcov(model) * g
+#   where g = grad(f, t1) - grad(f, t0) is the gradient of the difference with
+#   respect to model parameters. If the delta method fails (e.g., for fallback
+#   non-NLS model types), we fall back to the independence assumption
+#   (sqrt(SE_before^2 + SE_after^2)), which is conservative (overestimates SE).
+# - HISTORY: Prior to 2026-02-12, NLS SEs used the independence assumption
+#   (sqrt(SE_before^2 + SE_after^2)), which overestimated SE because predictions
+#   from the same NLS model share parameters and thus have positive covariance.
+#   This systematically down-weighted NLS effect sizes in the meta-analysis.
 # =============================================================================
 
 #' Add a single step-model (BACI) effect size row
@@ -644,7 +780,7 @@ add_step_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_nam
 
     # Run DHARMa diagnostics and add to global tracking
     if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
-      diag_result <- run_dharma_diagnostics(mod1, taxa_name, mpa_name, source_name, "Step")
+      diag_result <- dharma_diagnostics_to_row(mod1, taxa_name, mpa_name, source_name, "Step")
       ModelDiagnostics <<- rbind(ModelDiagnostics, diag_result)
     }
 
@@ -731,7 +867,7 @@ add_linear_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_n
 
     # Run DHARMa diagnostics and add to global tracking
     if (run_diagnostics && exists("ModelDiagnostics", envir = .GlobalEnv)) {
-      diag_result <- run_dharma_diagnostics(mod1, taxa_name, mpa_name, source_name, "Linear")
+      diag_result <- dharma_diagnostics_to_row(mod1, taxa_name, mpa_name, source_name, "Linear")
       ModelDiagnostics <<- rbind(ModelDiagnostics, diag_result)
     }
 
@@ -1066,6 +1202,16 @@ if (nrow(KFM.mfran.harris) >= 5) {
     }
   )
   if (!is.null(sigmoid.Model)) {
+    # Check if a fallback model was substituted for the true sigmoid NLS.
+    # If so, record the actual model type for transparency.
+    sig_fallback <- attr(sigmoid.Model, "model_fallback")
+    is_true_sigmoid <- is.null(sig_fallback) || sig_fallback %in% c("4pl_reparam", "selfstart")
+    model_label <- if (is_true_sigmoid) "Sigmoid" else paste0("Sigmoid_fallback_", sig_fallback)
+    if (!is_true_sigmoid) {
+      warning("Harris Point M. franciscanus: sigmoid used fallback '", sig_fallback,
+              "'. Recording as '", model_label, "'.")
+    }
+
     # STATISTICAL FIX (2026-02-06): Extract effect size at standardized time point (t=11)
     # rather than at maximum observed time to ensure comparability across MPAs.
     # Create prediction data at time.model = 0 (before) and time.model = 11 (after)
@@ -1073,8 +1219,10 @@ if (nrow(KFM.mfran.harris) >= 5) {
     time.model.of.impact_original <- max(which(KFM.mfran.harris$time.model == 0))
 
     # Create standardized prediction points: time 0 (before) and time 11 (after)
+    # Include time_offset for sigmoid models (time.model + 0.01 offset)
     pred_data <- data.frame(
       time.model = c(0, EFFECT_SIZE_TIME_YEARS),
+      time_offset = c(0.01, EFFECT_SIZE_TIME_YEARS + 0.01),
       time.true = c(time.model.of.impact_original, time.model.of.impact_original + EFFECT_SIZE_TIME_YEARS)
     )
 
@@ -1087,23 +1235,32 @@ if (nrow(KFM.mfran.harris) >= 5) {
       # Calculate effect size as difference between t=11 and t=0
       mean_es <- interval$fit[2] - interval$fit[1]
 
-      # Calculate SE from confidence interval width (95% CI)
-      se_before <- abs((interval$lwr[1] - interval$fit[1]) / 1.96)
-      se_after <- abs((interval$lwr[2] - interval$fit[2]) / 1.96)
+      # STATISTICAL FIX (2026-02-12): Use delta method to compute SE of the difference
+      # f(t=11) - f(t=0), properly accounting for shared parameter covariance.
+      # The old approach (sqrt(se_before^2 + se_after^2)) assumed independence and
+      # overestimated SE, systematically down-weighting NLS effect sizes in meta-analysis.
+      n_params <- length(coef(sigmoid.Model))
+      df_approx <- max(n_obs_original - n_params, 1)
+      t_crit <- qt(0.975, df_approx)
 
-      # Pooled SE for the difference (conservative: assumes independence)
-      # Note: This may slightly overestimate SE but is conservative
-      pSE <- sqrt(se_before^2 + se_after^2)
-      pCI <- pSE * 1.96
+      # Split pred_data into before (row 1) and after (row 2) for the delta method
+      se_result <- nls_difference_se(
+        model = sigmoid.Model,
+        newdata_0 = pred_data[1, , drop = FALSE],
+        newdata_1 = pred_data[2, , drop = FALSE],
+        n_obs = n_obs_original
+      )
+      pSE <- se_result$se
+      pCI <- pSE * t_crit
 
       # Approximate SD from SE (for backward compatibility with meta-analysis)
-      # Use original sample size for df approximation
-      n_params <- length(coef(sigmoid.Model))
-      df_approx <- n_obs_original - n_params
       pSD <- pSE * sqrt(df_approx + 1)
 
+      cat(sprintf("    Harris Point M. franciscanus sigmoid SE: method=%s, SE=%.4f\n",
+                  se_result$method, pSE))
+
       SumStats[nrow(SumStats) + 1, ] <- c("M. franciscanus", "Harris Point SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original,
+                                            model_label, "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original,
                                             NA, NA)  # DW_stat, DW_pval: not applicable for NLS models
     }
   }
@@ -1151,14 +1308,25 @@ if (nrow(KFM.macro.stipe) >= 5) {
     }
   )
   if (!is.null(sigmoid.Model)) {
+    # Check if a fallback model was substituted for the true sigmoid NLS
+    sig_fallback <- attr(sigmoid.Model, "model_fallback")
+    is_true_sigmoid <- is.null(sig_fallback) || sig_fallback %in% c("4pl_reparam", "selfstart")
+    model_label <- if (is_true_sigmoid) "Sigmoid" else paste0("Sigmoid_fallback_", sig_fallback)
+    if (!is_true_sigmoid) {
+      warning("Scorpion M. pyrifera: sigmoid used fallback '", sig_fallback,
+              "'. Recording as '", model_label, "'.")
+    }
+
     # STATISTICAL FIX (2026-02-06): Extract effect size at standardized time point (t=11)
     # rather than at maximum observed time to ensure comparability across MPAs.
     n_obs_original <- nrow(KFM.macro.stipe)
     time.model.of.impact_original <- max(which(KFM.macro.stipe$time.model == 0))
 
     # Create standardized prediction points: time 0 (before) and time 11 (after)
+    # Include time_offset for sigmoid models (time.model + 0.01 offset)
     pred_data <- data.frame(
       time.model = c(0, EFFECT_SIZE_TIME_YEARS),
+      time_offset = c(0.01, EFFECT_SIZE_TIME_YEARS + 0.01),
       time.true = c(time.model.of.impact_original, time.model.of.impact_original + EFFECT_SIZE_TIME_YEARS)
     )
 
@@ -1171,21 +1339,29 @@ if (nrow(KFM.macro.stipe) >= 5) {
       # Calculate effect size as difference between t=11 and t=0
       mean_es <- interval$fit[2] - interval$fit[1]
 
-      # Calculate SE from confidence interval width
-      se_before <- abs((interval$lwr[1] - interval$fit[1]) / 1.96)
-      se_after <- abs((interval$lwr[2] - interval$fit[2]) / 1.96)
+      # STATISTICAL FIX (2026-02-12): Use delta method to compute SE of the difference
+      # f(t=11) - f(t=0), properly accounting for shared parameter covariance.
+      n_params <- length(coef(sigmoid.Model))
+      df_approx <- max(n_obs_original - n_params, 1)
+      t_crit <- qt(0.975, df_approx)
 
-      # Pooled SE for the difference (conservative: assumes independence)
-      pSE <- sqrt(se_before^2 + se_after^2)
-      pCI <- pSE * 1.96
+      se_result <- nls_difference_se(
+        model = sigmoid.Model,
+        newdata_0 = pred_data[1, , drop = FALSE],
+        newdata_1 = pred_data[2, , drop = FALSE],
+        n_obs = n_obs_original
+      )
+      pSE <- se_result$se
+      pCI <- pSE * t_crit
 
       # Approximate SD from SE (for backward compatibility)
-      n_params <- length(coef(sigmoid.Model))
-      df_approx <- n_obs_original - n_params
       pSD <- pSE * sqrt(df_approx + 1)
 
+      cat(sprintf("    Scorpion M. pyrifera sigmoid SE: method=%s, SE=%.4f\n",
+                  se_result$method, pSE))
+
       SumStats[nrow(SumStats) + 1, ] <- c("M. pyrifera", "Scorpion SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original,
+                                            model_label, "KFM", "Bio", "Y", "Y", "pBACIPS", "N", n_obs_original,
                                             NA, NA)  # DW_stat, DW_pval: not applicable for NLS models
     }
   }
@@ -1230,14 +1406,25 @@ if (nrow(KFM.lob.gull) >= 5) {
     }
   )
   if (!is.null(sigmoid.Model)) {
+    # Check if a fallback model was substituted for the true sigmoid NLS
+    sig_fallback <- attr(sigmoid.Model, "model_fallback")
+    is_true_sigmoid <- is.null(sig_fallback) || sig_fallback %in% c("4pl_reparam", "selfstart")
+    model_label <- if (is_true_sigmoid) "Sigmoid" else paste0("Sigmoid_fallback_", sig_fallback)
+    if (!is_true_sigmoid) {
+      warning("Gull Island P. interruptus: sigmoid used fallback '", sig_fallback,
+              "'. Recording as '", model_label, "'.")
+    }
+
     # STATISTICAL FIX (2026-02-06): Extract effect size at standardized time point (t=11)
     # rather than at maximum observed time to ensure comparability across MPAs.
     n_obs_original <- nrow(KFM.lob.gull)
     time.model.of.impact_original <- max(which(KFM.lob.gull$time == 0))
 
     # Create standardized prediction points: time 0 (before) and time 11 (after)
+    # Include time_offset for sigmoid models (time.model + 0.01 offset)
     pred_data <- data.frame(
       time.model = c(0, EFFECT_SIZE_TIME_YEARS),
+      time_offset = c(0.01, EFFECT_SIZE_TIME_YEARS + 0.01),
       time.true = c(time.model.of.impact_original, time.model.of.impact_original + EFFECT_SIZE_TIME_YEARS)
     )
 
@@ -1250,21 +1437,29 @@ if (nrow(KFM.lob.gull) >= 5) {
       # Calculate effect size as difference between t=11 and t=0
       mean_es <- interval$fit[2] - interval$fit[1]
 
-      # Calculate SE from confidence interval width
-      se_before <- abs((interval$lwr[1] - interval$fit[1]) / 1.96)
-      se_after <- abs((interval$lwr[2] - interval$fit[2]) / 1.96)
+      # STATISTICAL FIX (2026-02-12): Use delta method to compute SE of the difference
+      # f(t=11) - f(t=0), properly accounting for shared parameter covariance.
+      n_params <- length(coef(sigmoid.Model))
+      df_approx <- max(n_obs_original - n_params, 1)
+      t_crit <- qt(0.975, df_approx)
 
-      # Pooled SE for the difference (conservative: assumes independence)
-      pSE <- sqrt(se_before^2 + se_after^2)
-      pCI <- pSE * 1.96
+      se_result <- nls_difference_se(
+        model = sigmoid.Model,
+        newdata_0 = pred_data[1, , drop = FALSE],
+        newdata_1 = pred_data[2, , drop = FALSE],
+        n_obs = n_obs_original
+      )
+      pSE <- se_result$se
+      pCI <- pSE * t_crit
 
       # Approximate SD from SE (for backward compatibility)
-      n_params <- length(coef(sigmoid.Model))
-      df_approx <- n_obs_original - n_params
       pSD <- pSE * sqrt(df_approx + 1)
 
+      cat(sprintf("    Gull Island P. interruptus sigmoid SE: method=%s, SE=%.4f\n",
+                  se_result$method, pSE))
+
       SumStats[nrow(SumStats) + 1, ] <- c("P. interruptus", "Gull Island SMR", mean_es, pSE, pSD, pCI,
-                                            "Sigmoid", "KFM", "Den", "Y", "Y", "pBACIPS", "N", n_obs_original,
+                                            model_label, "KFM", "Den", "Y", "Y", "pBACIPS", "N", n_obs_original,
                                             NA, NA)  # DW_stat, DW_pval: not applicable for NLS models
     }
   }
@@ -1331,7 +1526,7 @@ if (exists("Landsat.RR") && nrow(Landsat.RR) > 0) {
 ## Finalize SumStats ###############################################################################
 ####################################################################################################
 
-# Convert numeric columns
+# Convert numeric columns (necessary because c() in row assignment coerces to character)
 SumStats$Mean <- as.numeric(SumStats$Mean)
 SumStats$SE <- as.numeric(SumStats$SE)
 SumStats$CI <- as.numeric(SumStats$CI)
@@ -1658,6 +1853,62 @@ if (nrow(dw_available) > 0) {
     cat("\nNo models show significant temporal autocorrelation. The independence\n")
     cat("assumption for residuals appears reasonable across all effect size models.\n")
   }
+}
+
+####################################################################################################
+## Model Fallback Audit ############################################################################
+####################################################################################################
+# Write a diagnostic CSV documenting which pBACIPS model fits used fallback strategies.
+# This lets the authors assess whether any effect sizes in SumStats.Final are based on
+# substituted model classes (piecewise, quadratic, GAM) rather than true NLS fits.
+
+cat("\n")
+cat("==========================================\n")
+cat("MODEL FALLBACK AUDIT\n")
+cat("==========================================\n")
+
+# Collect fallback info from the global MODEL_FIT_LOG
+fallback_log <- get_model_fit_summary()
+if (nrow(fallback_log) > 0) {
+  cat(sprintf("Total model fit log entries: %d\n", nrow(fallback_log)))
+
+  # Filter to entries mentioning fallback or exclusion
+  fallback_entries <- fallback_log[grepl("fallback|EXCLUDED|Excluded", fallback_log$message, ignore.case = TRUE), ]
+  if (nrow(fallback_entries) > 0) {
+    cat(sprintf("Entries involving fallback models: %d\n", nrow(fallback_entries)))
+    for (i in seq_len(nrow(fallback_entries))) {
+      cat(sprintf("  - %s (%s): %s\n",
+                  fallback_entries$model_type[i],
+                  ifelse(fallback_entries$mpa[i] != "unknown", fallback_entries$mpa[i], "pBACIPS loop"),
+                  fallback_entries$message[i]))
+    }
+  } else {
+    cat("No fallback models were used in any fit.\n")
+  }
+
+  # Write full log to CSV for audit trail
+  fallback_audit_file <- here::here("outputs", "model_fallback_audit.csv")
+  write.csv(fallback_log, fallback_audit_file, row.names = FALSE)
+  cat(sprintf("\nFull model fit log saved to: %s\n", fallback_audit_file))
+} else {
+  cat("No model fit log entries recorded.\n")
+}
+
+# Check SumStats for any fallback-labeled models
+fallback_models_in_sumstats <- SumStats.sub[grepl("fallback", SumStats.sub$Model, ignore.case = TRUE), ]
+if (nrow(fallback_models_in_sumstats) > 0) {
+  cat(sprintf("\nWARNING: %d effect sizes in SumStats use fallback model labels:\n",
+              nrow(fallback_models_in_sumstats)))
+  for (i in seq_len(nrow(fallback_models_in_sumstats))) {
+    row <- fallback_models_in_sumstats[i, ]
+    cat(sprintf("  - %s %s (%s): Model=%s, Effect=%.3f\n",
+                row$Taxa, row$MPA, row$Source, row$Model, row$Mean))
+  }
+  cat("These effect sizes are from non-NLS fallback models (piecewise/quadratic/GAM)\n")
+  cat("substituted when the intended sigmoid/asymptotic NLS failed to converge.\n")
+  cat("They should be interpreted with caution or excluded from publication.\n")
+} else {
+  cat("\nNo fallback-labeled models in SumStats. All nonlinear effect sizes are from true NLS fits.\n")
 }
 
 ####################################################################################################
