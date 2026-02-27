@@ -1,0 +1,764 @@
+/* ==========================================================================
+   Analysis Revisions — Standalone Document Stylesheet
+   Aesthetic: Scientific Editorial — Nature/Science meets refined research memo
+   Marine ecology theme: deep ocean palette, editorial typography
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Ocean palette — deep to light */
+  --ocean-950: #071421;
+  --ocean-900: #0b1d2e;
+  --ocean-800: #0f2a3f;
+  --ocean-700: #163a54;
+  --ocean-600: #1d4e6e;
+  --ocean-500: #2b6d93;
+  --ocean-400: #3a8fb8;
+  --ocean-300: #5eb0d4;
+  --ocean-200: #93cde6;
+  --ocean-100: #c9e6f2;
+  --ocean-50:  #e8f4fa;
+
+  /* Kelp accent */
+  --kelp-600:  #2d6a4f;
+  --kelp-500:  #3a8463;
+  --kelp-400:  #52b788;
+  --kelp-300:  #74c69d;
+  --kelp-200:  #a7dbb8;
+  --kelp-100:  #d8f3dc;
+  --kelp-50:   #eef8f0;
+
+  /* Warm neutrals */
+  --sand-100:  #f5f0e8;
+  --sand-50:   #fdfbf7;
+  --coral-500: #c44536;
+  --coral-400: #d66853;
+
+  /* Text */
+  --text-primary:   #1a1a2e;
+  --text-secondary:  #4a4a5e;
+  --text-muted:     #7a7a8e;
+
+  /* Borders */
+  --border-light:   #e2e6ea;
+  --border-medium:  #cbd2d9;
+
+  /* Surfaces */
+  --bg-page:        #faf9f7;
+  --bg-surface:     #ffffff;
+  --bg-inset:       #f3f1ec;
+
+  /* Fonts */
+  --serif:      'Newsreader', Georgia, 'Times New Roman', serif;
+  --sans:       'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:       'JetBrains Mono', 'Fira Code', Menlo, monospace;
+
+  /* Motion */
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: 0.25s var(--ease-in-out);
+
+  /* Sidebar */
+  --sidebar-width: 272px;
+}
+
+
+/* ==========================================================================
+   Animations
+   ========================================================================== */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes progressGrow {
+  from { transform: scaleX(0); }
+}
+
+@keyframes subtlePulse {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 24px;
+}
+
+body {
+  font-family: var(--sans);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.75;
+  color: var(--text-primary);
+  background: var(--bg-page);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* ==========================================================================
+   Layout: sidebar TOC + main content
+   ========================================================================== */
+
+body {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  gap: 0;
+  min-height: 100vh;
+}
+
+/* Force TOC to column 1, everything else to column 2 */
+nav#TOC {
+  grid-column: 1;
+  grid-row: 1 / 999;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--ocean-950);
+  padding: 0 0 2rem;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  z-index: 100;
+}
+
+header#title-block-header,
+body > *:not(nav#TOC) {
+  grid-column: 2;
+}
+
+
+/* ==========================================================================
+   TOC: Sidebar navigation
+   ========================================================================== */
+
+/* TOC branding header */
+nav#TOC::before {
+  content: 'Analysis Revisions';
+  display: block;
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ocean-200);
+  letter-spacing: 0.01em;
+  padding: 1.6rem 1.4rem 0.6rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  opacity: 0.85;
+}
+
+nav#TOC ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+nav#TOC > ul {
+  padding: 0.5rem 0.6rem;
+}
+
+nav#TOC > ul > li {
+  margin-bottom: 2px;
+}
+
+nav#TOC a {
+  display: block;
+  color: rgba(147, 205, 230, 0.75);
+  text-decoration: none;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  border-left: 2px solid transparent;
+  transition: all 0.2s var(--ease-out);
+  position: relative;
+}
+
+nav#TOC a:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.07);
+  border-left-color: var(--kelp-400);
+  transform: translateX(2px);
+}
+
+/* Active TOC item (set by JS scroll spy) */
+nav#TOC a.active {
+  color: #fff;
+  background: rgba(82, 183, 136, 0.12);
+  border-left-color: var(--kelp-400);
+  font-weight: 500;
+}
+
+nav#TOC > ul > li > a {
+  font-weight: 500;
+  font-size: 13.5px;
+  color: rgba(201, 230, 242, 0.9);
+  margin-top: 4px;
+  padding: 8px 12px;
+}
+
+nav#TOC > ul > li:first-child > a { margin-top: 0; }
+
+nav#TOC ul ul {
+  padding-left: 0.6rem;
+  margin-top: 2px;
+  margin-left: 10px;
+  border-left: 1px solid rgba(255,255,255,0.06);
+}
+
+nav#TOC ul ul a {
+  font-size: 12px;
+  color: rgba(147, 205, 230, 0.6);
+  padding: 4px 10px;
+}
+
+/* TOC scrollbar */
+nav#TOC::-webkit-scrollbar { width: 4px; }
+nav#TOC::-webkit-scrollbar-track { background: transparent; }
+nav#TOC::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+nav#TOC::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+
+/* ==========================================================================
+   Reading progress bar
+   ========================================================================== */
+
+#reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 9999;
+  pointer-events: none;
+  background: transparent;
+}
+
+#reading-progress .bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--ocean-400), var(--kelp-400));
+  transition: width 0.15s ease-out;
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px rgba(82, 183, 136, 0.4);
+}
+
+
+/* ==========================================================================
+   Main content area
+   ========================================================================== */
+
+/* Content column elements */
+header, section, p, h1, h2, h3, h4, h5, h6, table, pre, blockquote, ul, ol, hr, dl,
+div.sourceCode {
+  max-width: 760px;
+  margin-left: 0;
+  margin-right: auto;
+  padding-left: 3.5rem;
+  padding-right: 2.5rem;
+}
+
+/* Tables can be wider */
+table {
+  max-width: 880px;
+  margin-left: 0;
+}
+
+
+/* ==========================================================================
+   Title block
+   ========================================================================== */
+
+header#title-block-header {
+  padding-top: 3.5rem;
+  padding-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
+  max-width: 760px;
+  margin-left: 0;
+  margin-right: auto;
+  padding-left: 3.5rem;
+  padding-right: 2.5rem;
+  border-bottom: none;
+  position: relative;
+  animation: fadeUp 0.6s var(--ease-out) both;
+}
+
+header#title-block-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 3.5rem;
+  right: 2.5rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--ocean-400), var(--kelp-400) 40%, transparent 100%);
+}
+
+header#title-block-header h1.title {
+  font-family: var(--serif);
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--ocean-800);
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+  padding: 0;
+  border: none;
+}
+
+header#title-block-header h1.title::after { display: none; }
+
+
+/* ==========================================================================
+   Typography
+   ========================================================================== */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--serif);
+  color: var(--ocean-800);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h1 {
+  font-size: 1.7rem;
+  margin-top: 3.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: none;
+  position: relative;
+}
+
+h1::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 3.5rem;
+  right: 60%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--ocean-400), var(--kelp-400));
+  border-radius: 1px;
+}
+
+h2 {
+  font-size: 1.3rem;
+  margin-top: 2.4rem;
+  margin-bottom: 0.7rem;
+  color: var(--ocean-700);
+  position: relative;
+  padding-left: calc(3.5rem + 6px);
+}
+
+h2::before {
+  content: '';
+  position: absolute;
+  left: 3.5rem;
+  top: 0.2em;
+  width: 3px;
+  height: 0.9em;
+  background: linear-gradient(to bottom, var(--ocean-400), var(--kelp-400));
+  border-radius: 2px;
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin-top: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: var(--ocean-600);
+  font-weight: 500;
+  font-style: italic;
+}
+
+p {
+  margin-bottom: 0.85rem;
+}
+
+strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+em {
+  font-style: italic;
+}
+
+/* First paragraph after title — the "From: Adrian" metadata line */
+header#title-block-header + p,
+header#title-block-header + section > p:first-child {
+  font-size: 13px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  margin-bottom: 1.2rem;
+  animation: fadeUp 0.6s var(--ease-out) 0.15s both;
+}
+
+
+/* ==========================================================================
+   Code
+   ========================================================================== */
+
+code {
+  font-family: var(--mono);
+  font-size: 0.8em;
+  background: var(--ocean-50);
+  color: var(--ocean-700);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  border: 1px solid var(--ocean-100);
+  font-weight: 500;
+}
+
+pre {
+  background: var(--ocean-900);
+  color: #d4dce4;
+  border-radius: 10px;
+  padding: 1.4rem 1.6rem;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  border: 1px solid rgba(255,255,255,0.05);
+  box-shadow:
+    0 4px 16px rgba(11,29,46,0.1),
+    inset 0 1px 0 rgba(255,255,255,0.03);
+  position: relative;
+}
+
+/* Pre inside div.sourceCode — parent handles outer padding */
+div.sourceCode > pre {
+  max-width: none;
+  padding-left: 1.6rem;
+  padding-right: 1.6rem;
+  margin: 0;
+}
+
+pre.r::before,
+pre.sourceCode::before {
+  content: 'R';
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.2);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+pre code {
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  font-weight: 400;
+}
+
+
+/* ==========================================================================
+   Tables
+   ========================================================================== */
+
+table {
+  font-family: var(--sans);
+  font-size: 0.84rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid var(--border-light);
+  margin: 1.5rem 0;
+  box-shadow: 0 1px 4px rgba(11,29,46,0.04);
+}
+
+thead {
+  background: var(--ocean-800);
+}
+
+thead th {
+  color: rgba(255,255,255,0.95);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  padding: 0.7rem 0.9rem;
+  border: none;
+  border-bottom: 2px solid var(--ocean-500);
+  white-space: nowrap;
+  text-align: left;
+  text-transform: none;
+}
+
+tbody td {
+  padding: 0.55rem 0.9rem;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+  vertical-align: top;
+}
+
+tbody tr {
+  transition: background 0.15s ease;
+}
+
+tbody tr:nth-child(even) {
+  background: rgba(253, 251, 247, 0.6);
+}
+
+tbody tr:hover {
+  background: var(--ocean-50);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Bold text in tables — significance markers */
+tbody td strong {
+  color: var(--ocean-700);
+  font-weight: 600;
+}
+
+/* Highlight cells with "New" or "Gained" keywords via font color already in md */
+
+
+/* ==========================================================================
+   Blockquotes — Suggested manuscript text
+   ========================================================================== */
+
+blockquote {
+  max-width: 760px;
+  margin: 1.8rem 0 1.8rem 3.5rem;
+  padding: 1.4rem 1.6rem 1.4rem 1.6rem;
+  background: var(--kelp-50);
+  border-left: 3px solid var(--kelp-400);
+  border-radius: 0 10px 10px 0;
+  font-size: 0.91rem;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  position: relative;
+  box-shadow: 0 1px 4px rgba(58, 132, 99, 0.06);
+}
+
+blockquote::before {
+  content: 'SUGGESTED TEXT';
+  display: block;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--kelp-500);
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+}
+
+blockquote p { margin-bottom: 0.6rem; padding: 0; }
+blockquote p:last-child { margin-bottom: 0; }
+
+
+/* ==========================================================================
+   Horizontal rules — Section dividers
+   ========================================================================== */
+
+hr {
+  border: none;
+  height: 0;
+  margin: 3rem auto 3rem 3.5rem;
+  max-width: 760px;
+  position: relative;
+  padding: 0;
+}
+
+hr::before {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--ocean-300), var(--kelp-400));
+  border-radius: 1px;
+  opacity: 0.5;
+}
+
+
+/* ==========================================================================
+   Links
+   ========================================================================== */
+
+a {
+  color: var(--ocean-500);
+  text-decoration: none;
+  transition: color var(--transition);
+  border-bottom: 1px solid transparent;
+}
+
+a:hover {
+  color: var(--ocean-400);
+  border-bottom-color: var(--ocean-200);
+}
+
+
+/* ==========================================================================
+   Lists
+   ========================================================================== */
+
+ul, ol {
+  margin-bottom: 1rem;
+  /* 3.5rem base (matches p) + extra for marker */
+  padding-left: calc(3.5rem + 1.4rem);
+}
+
+/* Ensure double-digit numbered lists don't clip */
+ol {
+  padding-left: calc(3.5rem + 1.8rem);
+}
+
+li {
+  margin-bottom: 0.45rem;
+  line-height: 1.7;
+}
+
+ol > li::marker {
+  font-weight: 600;
+  font-family: var(--sans);
+  color: var(--ocean-500);
+}
+
+ul > li::marker {
+  color: var(--ocean-300);
+}
+
+/* Nested lists — reset padding since parent already positioned */
+li > ul, li > ol {
+  margin-top: 0.3rem;
+  padding-left: 1.4rem;
+}
+
+
+/* ==========================================================================
+   Selection
+   ========================================================================== */
+
+::selection {
+  background: var(--ocean-200);
+  color: var(--ocean-900);
+}
+
+
+/* ==========================================================================
+   Scrollbar (main content)
+   ========================================================================== */
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ocean-400); }
+
+
+/* ==========================================================================
+   Sections — Scroll-triggered animations
+   ========================================================================== */
+
+/* Sections animate in on scroll (JS adds .visible) */
+body > section,
+body > section > section {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+}
+
+body > section.visible,
+body > section > section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Fallback for no-JS: show everything */
+body.no-js > section,
+body.no-js > section > section {
+  opacity: 1;
+  transform: none;
+}
+
+
+/* ==========================================================================
+   Print
+   ========================================================================== */
+
+@media print {
+  body { display: block; font-size: 11pt; color: black; background: white; }
+  nav#TOC { display: none; }
+  #reading-progress { display: none; }
+  h1 { font-size: 16pt; } h2 { font-size: 13pt; } h3 { font-size: 11pt; }
+  table { box-shadow: none; }
+  thead { background: #333; -webkit-print-color-adjust: exact; }
+  body > section, body > section > section {
+    opacity: 1; transform: none;
+  }
+  blockquote::before { content: 'Suggested text:'; }
+}
+
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 960px) {
+  body { grid-template-columns: 1fr; }
+
+  nav#TOC {
+    position: relative;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 1rem 1rem 0.8rem;
+  }
+
+  nav#TOC::before {
+    padding: 0.5rem 0.6rem 0.5rem;
+    margin-bottom: 0.3rem;
+  }
+
+  h1, h2, h3, p, table, pre, blockquote, hr, dl, div.sourceCode,
+  header#title-block-header {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  ul, ol {
+    padding-left: calc(1.5rem + 1.4rem);
+    padding-right: 1.5rem;
+  }
+
+  ol {
+    padding-left: calc(1.5rem + 1.8rem);
+  }
+
+  h1 { font-size: 1.4rem; }
+  h1::after { left: 1.5rem; }
+  h2 { padding-left: calc(1.5rem + 6px); }
+  h2::before { left: 1.5rem; }
+  header#title-block-header h1.title { font-size: 1.7rem; }
+  header#title-block-header::after { left: 1.5rem; right: 1.5rem; }
+
+  blockquote { margin-left: 1.5rem; }
+  hr { margin-left: 1.5rem; }
+
+  body > section, body > section > section {
+    opacity: 1; transform: none;
+  }
+}

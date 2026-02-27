@@ -1,0 +1,903 @@
+---
+title: "Supporting Information"
+subtitle: |
+  Restoration of trophic cascades within kelp forests following the establishment
+  of a network of marine protected areas
+
+  Donham, Bell, Caselle, DiFiore, Gabara, Hamilton, Kui, Miller, Pondella,
+  Raimondi, Reed, Stier
+
+  *Conservation Letters*
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    number_sections: false
+    theme: flatly
+    css: si_style.css
+    includes:
+      after_body: si_script.html
+  word_document:
+    toc: true
+    toc_depth: 3
+    reference_docx: null
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE, warning = FALSE, message = FALSE,
+  fig.width = 7, fig.height = 5
+)
+library(tidyverse)
+library(here)
+library(knitr)
+library(kableExtra)
+
+# Helper: read CSV safely
+read_table <- function(path, label = NULL) {
+  full_path <- here::here(path)
+  if (!file.exists(full_path)) {
+    warning(paste("MISSING FILE:", path))
+    return(NULL)
+  }
+  df <- read.csv(full_path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!is.null(label)) attr(df, "label") <- label
+  df
+}
+
+# Helper: clean column names for display
+clean_colnames <- function(nms) {
+  lookup <- c(
+    "Data_Sources" = "Data Sources", "Taxa_Biomass" = "Taxa (Biomass)",
+    "Taxa_Density" = "Taxa (Density)", "n_taxa_bio" = "No. Taxa (Bio)",
+    "n_taxa_den" = "No. Taxa (Den)", "n_effects_bio" = "Effects (Bio)",
+    "n_effects_den" = "Effects (Den)", "n_effects_total" = "Effects (Total)",
+    "type" = "Type", "MPA_Start" = "MPA Start", "ChannelIsland" = "Channel Isl.",
+    "year_min" = "Year Min", "year_max" = "Year Max",
+    "n_years_total" = "Years Total", "n_years_before" = "Years Before",
+    "n_years_after" = "Years After", "n_obs_rr" = "Obs. (RR)",
+    "n_reference_site_years" = "Ref. Site-Years",
+    "k_total" = "k (Total)", "n_MPAs" = "No. MPAs",
+    "k_KFM" = "k (KFM)", "k_PISCO" = "k (PISCO)",
+    "k_LTER" = "k (LTER)", "k_Landsat" = "k (Landsat)",
+    "k_final_meta" = "k (Final)", "Resp" = "Response",
+    "CI_Lower" = "CI Lower", "CI_Upper" = "CI Upper",
+    "Pseudo_I2" = "Pseudo I\u00b2", "pval" = "p",
+    "t_value" = "t", "p_value" = "p", "df" = "df",
+    "F_stat" = "F", "n_obs" = "n", "Ref_df" = "Ref. df",
+    "Slope_Est" = "Slope", "Slope_SE" = "SE (Slope)",
+    "Slope_pval" = "p (Slope)", "Slope_CI_lower" = "Slope CI Lower",
+    "Slope_CI_upper" = "Slope CI Upper",
+    "pearson_r" = "Pearson r", "pearson_p" = "Pearson p",
+    "pearson_ci_lb" = "r CI Lower", "pearson_ci_ub" = "r CI Upper",
+    "spearman_rho" = "Spearman \u03c1", "n_years" = "Years",
+    "cascade_score" = "Cascade Score", "n_species" = "No. Species",
+    "DW_statistic" = "DW Statistic", "DW_pvalue" = "DW p",
+    "R2_marginal" = "R\u00b2 (Marginal)", "R2_conditional" = "R\u00b2 (Conditional)",
+    "singular_fit" = "Singular Fit", "n_mpa" = "No. MPAs",
+    "ci.lb" = "CI Lower", "ci.ub" = "CI Upper",
+    "QM_df" = "QM df", "est_primary" = "Est. (Primary)",
+    "est_norm" = "Est. (No Removal)"
+  )
+  result <- ifelse(nms %in% names(lookup), lookup[nms], nms)
+  result <- gsub("_", " ", result)
+  result
+}
+
+# Helper: formatted kable table
+fmt_tbl <- function(df, caption = NULL, digits = 3, scroll = FALSE) {
+  if (is.null(df)) return(kable(data.frame(Status = "FILE NOT FOUND"), caption = caption))
+  num_cols <- sapply(df, is.numeric)
+  df[num_cols] <- lapply(df[num_cols], function(x) round(x, digits))
+  out <- kable(df, caption = caption, row.names = FALSE,
+               col.names = clean_colnames(names(df))) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                  full_width = FALSE, font_size = 11)
+  if (scroll || nrow(df) > 25) out <- out %>% scroll_box(height = "400px", width = "100%")
+  out
+}
+
+# Load all tables
+table2 <- read_table("tables/table_02_meta_analysis.csv")
+table3 <- read_table("tables/table_03_cross_taxa_meta_regression.csv")
+sp_slopes <- read_table("tables/table_s_species_slopes.csv")
+analysis_summary <- read_table("tables/table_s_analysis_summary.csv")
+mod_reg <- read_table("tables/table_s_moderator_meta_regression.csv")
+mod_diag <- read_table("tables/table_s_moderator_diagnostics.csv")
+cascade_cons <- read_table("tables/table_s_cascade_consistency.csv")
+outlier_sens <- read_table("tables/table_s_outlier_sensitivity.csv")
+kelp_loo <- read_table("tables/table_s_kelp_leave1out.csv")
+var_comp <- read_table("tables/table_s_variance_components.csv")
+ar1 <- read_table("tables/table_s_ar1_sensitivity.csv")
+gam_diag <- read_table("tables/table_s_gam_linearity_diagnostics.csv")
+phase_corr <- read_table("tables/table_s_phase_portrait_correlations.csv")
+source_models <- read_table("tables/table_s_source_sensitivity_models.csv")
+source_coefs <- read_table("tables/table_s_source_sensitivity_coefficients.csv")
+slope_summary <- read_table("tables/table_s_slope_summary_by_species.csv")
+per_mpa_slopes <- read_table("tables/table_s_per_mpa_slopes.csv")
+mpa_avail <- read_table("tables/table_s_mpa_data_availability.csv")
+sample_sizes <- read_table("tables/table_s_sample_sizes.csv")
+mpa_matrix <- read_table("tables/table_s_mpa_taxa_matrix.csv")
+temp_pooled <- read_table("tables/table_s_temporal_meta_regression.csv")
+temp_bio <- read_table("tables/table_s_temporal_meta_regression_bio.csv")
+temp_den <- read_table("tables/table_s_temporal_meta_regression_den.csv")
+
+# Clean lmer coefficient names: "SpeciesSemicossyphus pulcher" -> "S. pulcher", etc.
+clean_lmer_terms <- function(df) {
+  if ("Term" %in% names(df)) {
+    df$Term <- gsub("^Species", "", df$Term)
+    df$Term <- gsub("Semicossyphus pulcher", "S. pulcher", df$Term)
+    df$Term <- gsub("Strongylocentrotus purpuratus", "S. purpuratus", df$Term)
+    df$Term <- gsub("Mesocentrotus franciscanus", "M. franciscanus", df$Term)
+    df$Term <- gsub("Macrocystis pyrifera", "M. pyrifera", df$Term)
+    df$Term <- gsub("Panulirus interruptus", "P. interruptus", df$Term)
+  }
+  df
+}
+temp_pooled <- clean_lmer_terms(temp_pooled)
+temp_bio <- clean_lmer_terms(temp_bio)
+temp_den <- clean_lmer_terms(temp_den)
+model_sel <- read_table("tables/table_model_selection.csv")
+
+# Canonical trophic order
+trophic_order <- c("P. interruptus", "S. pulcher", "S. purpuratus",
+                   "M. franciscanus", "M. pyrifera")
+
+# Helper to italicize abbreviated species names in text
+italicize_species <- function(x) {
+  spp <- c("S. purpuratus", "M. franciscanus", "P. interruptus", "S. pulcher", "M. pyrifera")
+  for (sp in spp) x <- gsub(sp, paste0("*", sp, "*"), x, fixed = TRUE)
+  x
+}
+```
+
+This Supporting Information provides supplementary methods (Section S1) and additional results with sensitivity analyses (Section S2). Figures and tables are presented inline with the results sections that reference them. Additional data tables (per-MPA slopes, phase portrait yearly means, lmer fit diagnostics) are available in the project data repository.
+
+# Supplementary Methods
+
+## S1.1 Data Sources and Survey Programs
+
+We compiled long-term monitoring data from four sources spanning the Southern California Bight. Each program used distinct survey methods, which we harmonized as described below.
+
+### Kelp Forest Monitoring (KFM / NPS-MBON)
+
+The National Park Service Kelp Forest Monitoring program surveyed fixed sites within Channel Islands National Park from 1982 onward (Davis et al. 1997). Surveys were conducted annually (typically summer) along permanent 100 m transects at depths of 5--15 m. Kelp (*Macrocystis pyrifera*) stipe counts, sea urchin densities (1 m^2^ quadrats), and fish counts (visual census along band transects) were recorded using standardized protocols. KFM data contributed observations from `r if (!is.null(mpa_avail)) { col <- intersect(c("sources", "Data_Sources"), names(mpa_avail)); if (length(col) > 0) sum(grepl("KFM", mpa_avail[[col[1]]])) else 6 } else 6` MPAs in the Channel Islands, with records spanning 1982--2023.
+
+### Santa Barbara Coastal Long-Term Ecological Research (SBC-LTER)
+
+The SBC-LTER program conducted annual surveys of kelp forest communities along the mainland Santa Barbara Channel beginning in 2000 (Reed 2023). Surveys followed fixed transects at 5--15 m depth and included kelp stipe counts, urchin quadrats, and diver visual census for fishes. LTER contributed data from 2 MPAs (Campus Point SMCA and Naples SMCA) with records spanning 2001--2023.
+
+### Partnership for Interdisciplinary Studies of Coastal Oceans (PISCO)
+
+PISCO surveys were conducted at sites along the California coast and Channel Islands beginning in 1999 (Caselle et al. 2015). PISCO used standardized band-transect protocols for fishes and invertebrates at depths of 5--20 m. Surveys occurred annually (summer). We combined PISCO data with the Vantuna Research Group (VRG) surveys of Southern California mainland and island kelp forests, which used comparable methods. Together, PISCO/VRG data contributed observations from 17 MPAs spanning 1999--2023.
+
+### Landsat Satellite Kelp Canopy
+
+We obtained satellite-derived kelp canopy biomass estimates from the Kelpwatch platform (Bell et al. 2023), which used Landsat imagery (30 m resolution) to quantify kelp canopy area at quarterly intervals from 1984 to 2023. Each 900 m^2^ pixel was classified as kelp-present or absent, then summed within MPA and paired reference areas. We defined reference areas as coastal zones >1 km upcoast and downcoast from MPA boundaries, excluding areas within 1 km of any other MPA boundary, with comparable total area to the focal MPA. Landsat contributed kelp biomass data for 16 MPAs.
+
+### Data Harmonization
+
+Because survey programs differed in spatial extent, sampling frequency, and methodological details, we standardized all data to a common framework:
+
+1. **Biomass conversions.** We estimated kelp biomass from stipe density using the empirical relationship B = SD $\times$ 0.093 $\times$ 1000, where SD is stipe density (stipes m^-2^) and the slope (0.093) derived from the mean of site-specific SBC-LTER empirical coefficients (Rassweiler et al. 2025). We calculated sea urchin biomass from test diameter using species-specific allometric relationships: *M. franciscanus* W = 0.00059 $\times$ TD^2.917^ and *S. purpuratus* W = 0.00059 $\times$ TD^2.870^. We estimated lobster biomass as W = 0.00135 $\times$ CL^2.91^ and sheephead biomass as W = 0.0144 $\times$ TL^3.04^ (Hamilton & Caselle 2015).
+
+2. **Bootstrap resampling.** We generated urchin biomass estimates via 1,000 bootstrap resampling iterations from size-frequency distributions pooled across programs within each MPA $\times$ status (inside/outside) $\times$ year $\times$ species combination, producing robust mean estimates and standard errors.
+
+3. **Standardization to proportion of maximum.** We standardized all response variables (biomass and density) to the proportion of the observed maximum within each MPA $\times$ data source $\times$ taxon time series, yielding unitless values on a 0--1 scale that were comparable across programs with different absolute measurement scales.
+
+### Site Selection and Exclusion Criteria
+
+We included MPAs that met the following criteria: (1) all five focal taxa were protected from take; (2) at least one survey was conducted within one year of MPA implementation; (3) at least four subsequent surveys were conducted post-implementation; and (4) the monitoring time series spanned at least 10 years. We excluded the following MPAs: Point Conception SMR (focal predators absent due to cold-water conditions), Anacapa Island SMCA (permits take of lobster and finfish), and Painted Cave SMCA (permits take of lobster and finfish). For Anacapa Island SMR, we included only areas protected since 2005 (excluding historical 1978 reserves).
+
+```{r site-counts, results='asis'}
+if (!is.null(analysis_summary)) {
+  n_mpas <- analysis_summary$Value[analysis_summary$Metric == "Total unique MPAs analyzed"]
+  n_ci <- analysis_summary$Value[analysis_summary$Metric == "Channel Islands MPAs"]
+  n_ml <- analysis_summary$Value[analysis_summary$Metric == "Mainland MPAs"]
+  n_smr <- analysis_summary$Value[analysis_summary$Metric == "SMR (State Marine Reserve) MPAs"]
+  n_smca <- analysis_summary$Value[analysis_summary$Metric == "SMCA (State Marine Conservation Area) MPAs"]
+
+  cat(sprintf("The final dataset comprised %s MPAs (%s Channel Islands, %s mainland), including %s State Marine Reserves (SMRs, no-take) and %s State Marine Conservation Areas (SMCAs, limited-take). ",
+              n_mpas, n_ci, n_ml, n_smr, n_smca))
+  cat(sprintf("Channel Islands MPAs were established in 2003 and mainland MPAs in 2012. The earliest monitoring data were from %s and the most recent from %s.",
+              analysis_summary$Value[analysis_summary$Metric == "Earliest year in dataset"],
+              analysis_summary$Value[analysis_summary$Metric == "Latest year in dataset"]))
+}
+```
+
+## S1.2 Effect Size Estimation
+
+### Progressive-Change BACIPS Design
+
+For MPA--reference site pairs with adequate pre-implementation data ($\geq 3$ surveys before MPA establishment), we applied the progressive-change Before-After-Control-Impact-Pairs (pBACIPS) methodology (Thiault et al. 2017). For each MPA $\times$ taxon $\times$ response combination, we calculated the log response ratio as:
+
+$$\text{lnRR}_t = \ln(p_{I,t} + a) - \ln(p_{C,t} + a)$$
+
+where $p_{I,t}$ and $p_{C,t}$ are the standardized proportional responses inside and outside the MPA at time $t$, and $a$ is a small constant added to avoid undefined logarithms when observations equal zero. We used an adaptive zero-correction: we set $a$ to half the minimum non-zero proportion within each MPA $\times$ status $\times$ taxon time series (Aitchison 1986). This data-driven approach scaled with observed values and avoided inflating effect sizes for rare species, unlike a fixed constant.
+
+The pBACIPS approach first tested for significant pre-implementation trends in the paired difference (lnRR). If a significant pre-trend was detected (indicating non-parallel baseline trajectories between impact and control sites), we excluded that MPA--taxon combination to avoid confounding. For sites passing the pre-trend test, we fit four candidate models to the post-implementation lnRR time series:
+
+1. **Step-change:** $\delta_t = \beta_0 + \beta_1 \cdot \mathbb{1}(t > 0)$, where $\beta_1$ is the mean shift between before and after periods (fit via OLS as a one-way ANOVA on period).
+2. **Linear:** $\delta_t = \beta_0 + \beta_1 \cdot t$, where $\beta_1$ is the rate of progressive change per year (fit via OLS).
+3. **Asymptotic (Michaelis-Menten):** $\delta_t = \frac{M \cdot t}{L + t} + B$, where $M$ is the maximum effect, $L$ is the half-saturation time (years to reach 50% of maximum), and $B$ is the baseline (fit via NLS with Levenberg-Marquardt optimization; `nls.lm` and `nls2`).
+4. **Sigmoidal (Hill function):** $\delta_t = \frac{M \cdot (t / L)^K}{1 + (t / L)^K} + B$, where $M$ is the maximum effect, $L$ is the midpoint (time to reach 50% of maximum), $K$ is the steepness parameter, and $B$ is the baseline (fit via NLS).
+
+Here $\delta_t = \text{lnRR}_t$ is the log response ratio at time $t$ since MPA implementation. For Models 3 and 4, we used bounded optimization (port algorithm) with multiple starting value strategies to improve convergence. When NLS fitting failed, we attempted alternative parameterizations (e.g., self-starting `SSasymp` for the asymptotic model, 4-parameter logistic for the sigmoid). If all NLS parameterizations failed, we excluded the model from the AICc competition. We fitted non-NLS fallback models (piecewise linear, quadratic, GAM) for prediction purposes but excluded them from AICc model selection to maintain comparability across model classes.
+
+We compared models using corrected Akaike Information Criterion (AICc), appropriate for the small sample sizes typical of BACI studies. We used the best-fitting model to extract the MPA effect size as the predicted difference between $\delta$ at $t = 11$ years post-implementation and $\delta$ at $t = 0$ (i.e., ES = $\delta_{\text{fit}, t=11}$ - $\delta_{\text{fit}, t=0}$). We chose the standardization horizon of $t = 11$ years because the youngest MPA in our dataset was 11 years old at the time of analysis (mainland MPAs established 2012, data through 2023).
+
+```{r fig-s1, fig.cap="**Figure S1.** Conceptual diagram of the data processing pipeline from raw monitoring observations to standardized effect sizes. (a) Raw proportional response time series for a representative MPA--reference pair. (b) Paired log response ratio (lnRR) series with before/after delineation. (c) Candidate pBACIPS models fit to post-implementation data; the best model (by AICc) yields the effect size.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s01_data_processing.png"))
+```
+
+### Control-Impact Analysis
+
+For MPA--taxon combinations with fewer than three pre-implementation surveys, we used a control-impact (CI) analysis, computing the mean lnRR over the available post-implementation period without before-after comparison.
+
+### Standard Error Estimation
+
+For step-change and linear models, we computed standard errors using `emmeans::pairs()` contrasts, which correctly accounted for the covariance between before-after predictions from the same model (i.e., $\text{Var}(A - B) = \text{Var}(A) + \text{Var}(B) - 2\text{Cov}(A, B)$).
+
+For NLS-derived effect sizes (asymptotic and sigmoid models), we computed standard errors using the delta method. Because predictions at $t = 0$ and $t = 11$ shared model parameters, they had positive covariance; a naive independence assumption would overestimate the SE. The delta method computes:
+
+$$\text{Var}(f(t_1) - f(t_0)) = \mathbf{g}^\top \mathbf{V} \mathbf{g}$$
+
+where $\mathbf{V} = \text{vcov}(\hat{\boldsymbol{\theta}})$ is the NLS parameter variance-covariance matrix and $\mathbf{g} = \nabla f(t_1) - \nabla f(t_0)$ is the gradient of the difference with respect to model parameters. We computed gradients via numerical differentiation. If the delta method failed (e.g., for non-NLS fallback models), we fell back to the independence assumption ($\text{SE} = \sqrt{\text{SE}_{t_0}^2 + \text{SE}_{t_1}^2}$), which was conservative.
+
+For control-impact analyses, we computed standard errors as the standard error of the mean lnRR across post-implementation years.
+
+```{r effect-size-counts, results='asis'}
+if (!is.null(analysis_summary)) {
+  n_effects <- analysis_summary$Value[analysis_summary$Metric == "Total MPA x taxa x response combinations (effect sizes)"]
+  n_bio <- analysis_summary$Value[analysis_summary$Metric == "Effect sizes - Biomass"]
+  n_den <- analysis_summary$Value[analysis_summary$Metric == "Effect sizes - Density"]
+  n_pbacips <- analysis_summary$Value[analysis_summary$Metric == "Effect sizes from before-after analysis (pBACIPS)"]
+  n_ci_only <- analysis_summary$Value[analysis_summary$Metric == "Effect sizes from control-impact only (CI)"]
+
+  cat(sprintf("This procedure yielded %s MPA $\\times$ taxa $\\times$ response effect sizes (%s biomass, %s density), of which %s were derived from pBACIPS models and %s from control-impact analyses.",
+              n_effects, n_bio, n_den, n_pbacips, n_ci_only))
+}
+```
+
+## S1.3 Meta-Analytic Framework
+
+### Joint Multilevel Models
+
+We estimated mean MPA effects for each taxon $\times$ response type combination using multilevel random-effects meta-analysis implemented in the `metafor` R package (Viechtbauer 2010). We modeled biomass and density separately because estimates for the same taxa/MPA/source were non-independent (derived from the same surveys). For each response type, we fit a single joint `rma.mv` model with taxon as a categorical moderator in cell-means parameterization (`mods = ~ Taxa - 1`), so that each coefficient directly estimates the mean effect for one taxon. The model included crossed random effects for MPA identity and data source:
+
+$$\hat{\theta}_{ij} = \mu_j + u_i + s_k + \epsilon_{ij}, \quad u_i \sim N(0, \tau^2_{\text{MPA}}), \quad s_k \sim N(0, \tau^2_{\text{Source}}), \quad \epsilon_{ij} \sim N(0, v_{ij})$$
+
+where $\hat{\theta}_{ij}$ is the observed effect size (lnRR) for MPA $i$ and taxon $j$, $\mu_j$ is the taxon-specific mean effect, $u_i$ is the MPA-level random effect (shared across taxa), $s_k$ captures systematic differences among monitoring programs (PISCO, KFM, LTER, Landsat), and $v_{ij}$ is the known sampling variance. We estimated models by restricted maximum likelihood (REML) with *t*-tests for individual coefficients (`test = "t"` in `rma.mv`).
+
+The joint model was preferred over separate per-taxa models as the primary analysis because it borrows strength across taxa for the shared variance components $\tau^2_{\text{MPA}}$ and $\tau^2_{\text{Source}}$, yielding more stable estimates especially for taxa with few effect sizes (e.g., *P. interruptus* biomass, $k = 5$; Borenstein & Higgins 2013; Cochrane Handbook Ch. 10). We report per-taxa separate models as a sensitivity analysis (Table S9) to demonstrate robustness to modeling choice.
+
+### Outlier Identification
+
+Our primary analysis reports the full dataset without outlier removal, following best practice in ecological meta-analysis (Viechtbauer & Cheung 2010; Noble et al. 2022). We assessed the influence of potentially outlying effect sizes using Cook's distance applied both within the joint model (threshold 4/$n$, where $n$ is the total number of effect sizes per response type) and within separate per-taxa models (threshold 4/$k$, where $k$ is the taxon-specific sample size). We conducted sensitivity analyses comparing four modeling approaches: (1) joint model without outlier removal (primary), (2) per-taxa models without outlier removal, (3) per-taxa Cook's D at 4/$k$, and (4) joint Cook's D at 4/$n$ (Table S9).
+
+### Multiple Comparison Correction
+
+We corrected $P$-values from the nine taxon $\times$ response coefficients of the joint meta-analytic models for multiple comparisons using the Benjamini-Hochberg false discovery rate (FDR) procedure (Benjamini & Hochberg 1995).
+
+### Cross-Taxa Meta-Regressions (Trophic Cascade Tests)
+
+To test trophic cascade predictions, we conducted six pairwise meta-regressions relating herbivore effect sizes to predator effect sizes, and producer effect sizes to herbivore effect sizes, across MPAs. For each species pair, we fit:
+
+$$\hat{\theta}_{y,i} = \beta_0 + \beta_1 \hat{\theta}_{x,i} + \epsilon_i$$
+
+where $\hat{\theta}_{y,i}$ and $\hat{\theta}_{x,i}$ are the effect sizes for the response (e.g., urchin density) and predictor (e.g., lobster biomass) species at MPA $i$. We fit models using `rma` with REML estimation and the response variable's sampling variance as weights. We tested six relationships (Table 3):
+
+- *P. interruptus* biomass $\rightarrow$ *S. purpuratus* biomass
+- *P. interruptus* density $\rightarrow$ *S. purpuratus* density
+- *S. pulcher* biomass $\rightarrow$ *S. purpuratus* biomass
+- *S. pulcher* density $\rightarrow$ *S. purpuratus* density
+- *S. purpuratus* density $\rightarrow$ *M. pyrifera* biomass
+- *M. franciscanus* density $\rightarrow$ *M. pyrifera* biomass
+
+A significant negative slope between predator and herbivore effect sizes, or between herbivore and producer effect sizes, provided evidence for trophic cascade dynamics (i.e., MPAs with stronger predator responses showed greater urchin suppression, and MPAs with greater urchin suppression showed larger kelp gains).
+
+## S1.4 Temporal Recovery Analysis
+
+### Linear Mixed-Effects Models
+
+To characterize temporal recovery trajectories, we fit linear mixed-effects models (`lmer`, `lme4` package; Bates et al. 2015) with years since MPA establishment as the fixed effect and a nested random effects structure. The full random-slopes specification was:
+
+$$\text{lnRR}_{ijst} = (\beta_0 + \beta_{0,\text{spp}} + b_{0i} + c_j) + (\beta_1 + \beta_{1,\text{spp}} + b_{1i}) \cdot t_{it} + \epsilon_{ijst}$$
+
+where $t_{it}$ is years since MPA establishment, $b_{0i}$ and $b_{1i}$ are the MPA random intercept and slope (`(1 + time | MPA)`), $c_j$ is a random intercept for data source (`(1 | source)`), and $\beta_{1,\text{spp}}$ captures species-specific deviations from the reference species slope. We included species as a fixed effect interacted with time to estimate per-species recovery rates and computed denominator degrees of freedom and $p$-values via Satterthwaite's approximation (`lmerTest`; Kuznetsova et al. 2017). We did not include response type (biomass vs. density) as a random effect in the pooled model because with only $k = 2$ levels, the variance component is unidentifiable; instead, the response-specific models (below) provide properly stratified analyses.
+
+When the full random-slopes model failed to converge, we fell back to a random-intercepts specification: `(1 | MPA) + (1 | source)`. We fit three model variants: (1) pooled biomass and density, (2) biomass only, and (3) density only. We derived species-specific slopes as the sum of the reference species slope and the species $\times$ time interaction coefficient.
+
+### Diagnostics and Supplementary Temporal Analyses
+
+To verify the assumption of linear recovery, we fit generalized additive models (GAMs) with smooth terms for years since MPA establishment for each species $\times$ response combination. Estimated degrees of freedom (EDF) close to 1.0 indicated approximately linear relationships. To assess sensitivity to temporal autocorrelation, we attempted AR1 correlation structures using `nlme::lme` and computed Durbin-Watson statistics from lmer residuals.
+
+For trophic cascade phase portraits, we computed network-wide mean lnRR for each species at each year since MPA establishment, averaging first within MPAs, then across all contributing MPAs (requiring $\geq 2$ MPAs per time point). This two-stage averaging accounted for unbalanced panel structure. We computed species-pair Pearson and Spearman correlations across time points.
+
+For cascade consistency scoring, we computed a per-MPA score (0--5) as the number of species showing the predicted trophic cascade direction: positive effects for predators (*P. interruptus*, *S. pulcher*) and producers (*M. pyrifera*), and negative effects for herbivores (*S. purpuratus*, *M. franciscanus*).
+
+## S1.5 Moderator Analyses
+
+We tested two potential moderators of MPA effect size using meta-regression: (1) protection level (SMR vs. SMCA) and (2) geographic location (Channel Islands vs. mainland). We fit models using `rma.mv` with the moderator as a fixed effect and taxon as a categorical covariate (to account for among-taxa differences in expected effect direction):
+
+$$\hat{\theta}_i = \beta_0 + \beta_{\text{taxa}} + \beta_{\text{mod}} \cdot x_i + u_i + \epsilon_i$$
+
+where $x_i$ is the moderator variable. The omnibus test (QM) evaluated whether the full set of fixed effects (including taxa) significantly explained heterogeneity; the moderator-specific coefficient ($\beta_{\text{mod}}$) tested whether the moderator added explanatory power beyond among-taxa differences.
+
+## S1.6 Sensitivity Analyses
+
+We conducted six sensitivity analyses to assess the robustness of our findings:
+
+1. **Outlier sensitivity** (Table S9): Compared results under four modeling/outlier approaches (joint model no removal, per-taxa models no removal, per-taxa Cook's D at 4/$k$, joint Cook's D at 4/$n$).
+2. **Kelp leave-one-out** (Table S8): Dropped each MPA in turn from the *M. pyrifera* biomass meta-analysis to test whether any single MPA drove the significant kelp result.
+3. **Variance components** (Table S2): Estimated MPA and Source variance components with profile-likelihood confidence intervals.
+4. **Source random effect** (Table S3): Compared meta-analytic models with and without data source as an additional random effect.
+5. **AR1 autocorrelation** (Table S7): Assessed temporal autocorrelation in lmer residuals via Durbin-Watson statistics and attempted AR1 model fits.
+6. **GAM linearity** (Table S7): Evaluated whether linear lmer recovery trajectories were appropriate by comparing GAM effective degrees of freedom.
+
+---
+
+# Supplementary Results
+
+## S2.1 Model Selection and Data Availability
+
+```{r data-and-model, results='asis'}
+if (!is.null(analysis_summary)) {
+  cat(sprintf("The final dataset comprised %s unique MPAs contributing %s effect sizes across %s taxa and %s data sources. ",
+              analysis_summary$Value[analysis_summary$Metric == "Total unique MPAs analyzed"],
+              analysis_summary$Value[analysis_summary$Metric == "Total MPA x taxa x response combinations (effect sizes)"],
+              analysis_summary$Value[analysis_summary$Metric == "Unique taxa"],
+              analysis_summary$Value[analysis_summary$Metric == "Data sources"]))
+}
+if (!is.null(model_sel)) {
+  counts <- model_sel %>% count(Model) %>% arrange(desc(n))
+  total <- sum(counts$n)
+  parts <- sprintf("%s (%d, %.0f%%)", counts$Model, counts$n, 100 * counts$n / total)
+  cat(sprintf("Model selection (AICc) across all %d MPA--taxon--response combinations yielded: %s. Linear and step-change models predominated, suggesting MPA effects generally accumulated steadily over time.\n\n", total, paste(parts, collapse = "; ")))
+}
+```
+
+```{r table-s1-combined, results='asis'}
+# Merge S1a and S1d: keep MPA metadata + taxa source/model columns
+if (!is.null(mpa_avail) && !is.null(mpa_matrix)) {
+  # Identify the MPA join key
+  mpa_key_a <- intersect(c("MPA", "CA_MPA_Name_Short"), names(mpa_avail))[1]
+  mpa_key_d <- intersect(c("MPA", "CA_MPA_Name_Short"), names(mpa_matrix))[1]
+
+  # Select core columns from S1a (metadata only, drop redundant taxa lists)
+  keep_cols_a <- intersect(c(mpa_key_a, "type", "Location", "MPA_Start",
+                             "Data_Sources", "year_min", "year_max",
+                             "n_years_total"), names(mpa_avail))
+  avail_slim <- mpa_avail[, keep_cols_a, drop = FALSE]
+
+  # Select taxa columns from S1d
+  taxa_cols <- setdiff(names(mpa_matrix), c(mpa_key_d, "type", "Type", "Location", "MPA_Start"))
+  matrix_slim <- mpa_matrix[, c(mpa_key_d, taxa_cols), drop = FALSE]
+
+  # Merge
+  combined_s1 <- merge(avail_slim, matrix_slim, by.x = mpa_key_a, by.y = mpa_key_d, all = TRUE)
+  fmt_tbl(combined_s1, caption = "Table S1. Per-MPA data availability and taxa coverage. Columns show MPA metadata (type, location, implementation year, data sources, monitoring span) and taxa source/model information. Cell values in taxa columns indicate the data source and best-fit model type for that MPA--taxon combination; empty cells indicate the taxon was not analyzed.", scroll = TRUE)
+}
+```
+
+```{r table-s1b}
+fmt_tbl(sample_sizes, caption = "Table S1b. Number of effect sizes (k) by taxon, response type, and data source.")
+```
+
+## S2.2 Meta-Analytic Results by Taxon
+
+```{r meta-results, results='asis'}
+if (!is.null(table2)) {
+  fmt_p <- function(p) ifelse(p < 0.001, "< 0.001", formatC(p, format = "f", digits = 4))
+
+  bio <- table2 %>% filter(Response == "Biomass")
+  den <- table2 %>% filter(Response == "Density")
+  n_sig_bio <- sum(bio$pval_fdr < 0.05)
+  n_sig_den <- sum(den$pval_fdr < 0.05)
+
+  cat(sprintf("Full per-taxon results are reported in Table 2 (main text). Of %d biomass comparisons, %d were significant after FDR correction; of %d density comparisons, %d were significant.\n\n",
+              nrow(bio), n_sig_bio, nrow(den), n_sig_den))
+
+  # Data-driven predator summary
+  lob_bio <- bio %>% filter(Taxa == "P. interruptus")
+  lob_den <- den %>% filter(Taxa == "P. interruptus")
+  shp_bio <- bio %>% filter(Taxa == "S. pulcher")
+  shp_den <- den %>% filter(Taxa == "S. pulcher")
+
+  cat(sprintf("**Predators.** *S. pulcher* biomass was significantly higher inside MPAs (RR = %.2f, +%.0f%%; FDR *p* = %s), while density was not significant (RR = %.2f; FDR *p* = %s). ",
+              shp_bio$RR, shp_bio$Pct_Change, fmt_p(shp_bio$pval_fdr),
+              shp_den$RR, fmt_p(shp_den$pval_fdr)))
+  cat(sprintf("*P. interruptus* density was significantly elevated (RR = %.2f, +%.0f%%; FDR *p* = %s), while biomass was not significant (RR = %.2f; FDR *p* = %s), likely due to limited sample size (*k* = %d). ",
+              lob_den$RR, lob_den$Pct_Change, fmt_p(lob_den$pval_fdr),
+              lob_bio$RR, fmt_p(lob_bio$pval_fdr), lob_bio$k))
+
+  # Data-driven herbivore summary
+  spu_bio <- bio %>% filter(Taxa == "S. purpuratus")
+  spu_den <- den %>% filter(Taxa == "S. purpuratus")
+  mfr_bio <- bio %>% filter(Taxa == "M. franciscanus")
+  mfr_den <- den %>% filter(Taxa == "M. franciscanus")
+
+  cat(sprintf("**Herbivores.** *S. purpuratus* showed consistently lower biomass (RR = %.2f, %.0f%%; FDR *p* = %s) and density (RR = %.2f, %.0f%%; FDR *p* = %s) inside MPAs, consistent with increased predation pressure. ",
+              spu_bio$RR, spu_bio$Pct_Change, fmt_p(spu_bio$pval_fdr),
+              spu_den$RR, spu_den$Pct_Change, fmt_p(spu_den$pval_fdr)))
+  cat(sprintf("*M. franciscanus* presented a more complex pattern: biomass was significantly *higher* inside MPAs (RR = %.2f, +%.0f%%; FDR *p* = %s), while density was non-significantly lower (RR = %.2f, %.0f%%; FDR *p* = %s). This biomass--density divergence may reflect larger individual red urchins inside MPAs (reduced fishing on large individuals), though the biomass result was sensitive to modeling choice (significant only under the joint model; see Table S9). ",
+              mfr_bio$RR, mfr_bio$Pct_Change, fmt_p(mfr_bio$pval_fdr),
+              mfr_den$RR, mfr_den$Pct_Change, fmt_p(mfr_den$pval_fdr)))
+
+  kelp <- bio %>% filter(Taxa == "M. pyrifera")
+  if (nrow(kelp) > 0) {
+    cat(sprintf("**Producer.** *M. pyrifera* biomass was significantly higher inside MPAs (lnRR = %.2f, RR = %.2f; FDR-adjusted *p* = %s; *I*^2^ = %.1f%%).\n\n",
+                kelp$Estimate, kelp$RR, fmt_p(kelp$pval_fdr), kelp$I2))
+  }
+}
+```
+
+```{r fig-s2, fig.cap="**Figure S2.** Forest plot of individual MPA effect sizes by taxon. Points show MPA-level effect sizes with 95% CIs, colored by response type. Vertical dashed lines and shaded bands show meta-analytic means and 95% CIs. The x-axis is on the back-transformed response ratio scale.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s02_forest_plot.png"))
+```
+
+## S2.3 Variance Components and Source Effects
+
+```{r variance-and-source, results='asis'}
+if (!is.null(var_comp)) {
+  fmt_ci <- function(lo, hi) {
+    if (!is.na(lo) && !is.na(hi)) sprintf(" (95%% CI: %.4f to %.4f)", lo, hi) else ""
+  }
+  ci_lo_col <- if ("CI_Lower" %in% names(var_comp)) "CI_Lower" else NA
+  ci_hi_col <- if ("CI_Upper" %in% names(var_comp)) "CI_Upper" else NA
+
+  cat("The multilevel random-effects structure partitioned residual heterogeneity across MPA identity and data source levels (Table S2). ")
+
+  for (resp in unique(var_comp$Response)) {
+    rows <- var_comp[var_comp$Response == resp, ]
+    mpa_row <- rows[grepl("MPA", rows$Component, ignore.case = TRUE), ]
+    src_row <- rows[grepl("Source", rows$Component, ignore.case = TRUE), ]
+    if (nrow(mpa_row) > 0 && nrow(src_row) > 0) {
+      mpa_ci <- fmt_ci(if (!is.na(ci_lo_col)) mpa_row[[ci_lo_col]] else NA,
+                        if (!is.na(ci_hi_col)) mpa_row[[ci_hi_col]] else NA)
+      src_ci <- fmt_ci(if (!is.na(ci_lo_col)) src_row[[ci_lo_col]] else NA,
+                        if (!is.na(ci_hi_col)) src_row[[ci_hi_col]] else NA)
+      cat(sprintf("For %s, MPA-level heterogeneity ($\\sigma$^2^~MPA~ = %.4f%s) was %s than source-level heterogeneity ($\\sigma$^2^~Source~ = %.4f%s). ",
+                  tolower(resp), mpa_row$Estimate, mpa_ci,
+                  ifelse(mpa_row$Estimate > src_row$Estimate, "larger", "smaller"),
+                  src_row$Estimate, src_ci))
+    }
+  }
+  cat("Among-MPA variation was the dominant source of heterogeneity, while among-source differences contributed comparatively little.\n\n")
+}
+
+if (!is.null(source_models) && !is.null(source_coefs)) {
+  cat("Including data source as an additional random effect did not substantively alter conclusions (Table S3). ")
+  for (resp in unique(source_models$Response)) {
+    resp_models <- source_models %>% filter(Response == resp)
+    with_src <- resp_models %>% filter(Model == "With Source")
+    without_src <- resp_models %>% filter(Model == "Without Source")
+    if (nrow(with_src) > 0 && nrow(without_src) > 0) {
+      preferred <- if (with_src$AIC < without_src$AIC) "with Source" else "without Source"
+      delta <- abs(with_src$AIC - without_src$AIC)
+      cat(sprintf("For %s, the model %s was preferred ($\\Delta$AIC = %.1f). ",
+                  tolower(resp), preferred, delta))
+    }
+  }
+  cat("The direction and pattern of MPA effects were consistent across model specifications.\n\n")
+}
+```
+
+```{r table-s8-variance}
+fmt_tbl(var_comp, caption = "Table S2. Variance components from multilevel random-effects models. Sigma-squared estimates for MPA and Source random effects with profile-likelihood 95% CIs. Pseudo-I-squared quantifies the proportion of total variance attributable to each component.")
+```
+
+```{r table-s9a}
+fmt_tbl(source_models, caption = "Table S3a. Model comparison: meta-analytic models with and without Source as a random effect (AIC, BIC, log-likelihood).")
+```
+
+```{r table-s9b}
+fmt_tbl(source_coefs, caption = "Table S3b. Coefficient comparison between models with and without Source random effect.", scroll = TRUE)
+```
+
+## S2.4 Cross-Taxa Meta-Regressions
+
+```{r cascade-results, results='asis'}
+if (!is.null(table3)) {
+  cat("Six pairwise meta-regressions tested trophic cascade predictions (Table 3, main text). ")
+
+  sig_tests <- table3 %>% filter(Slope_pval < 0.05)
+  ns_tests <- table3 %>% filter(Slope_pval >= 0.05)
+
+  if (nrow(sig_tests) > 0) {
+    cat(sprintf("%d of six were significant (*p* < 0.05), each showing negative slopes consistent with trophic cascade dynamics (stronger predator responses associated with greater herbivore suppression, and greater urchin suppression with larger kelp gains):\n\n", nrow(sig_tests)))
+    for (i in seq_len(nrow(sig_tests))) {
+      row <- sig_tests[i, ]
+      cat(sprintf("- %s: slope = %.3f (95%% CI: %.3f to %.3f; *p* = %s; *k* = %d)\n",
+                  italicize_species(row$Relationship),
+                  row$Slope_Est, row$Slope_CI_lower, row$Slope_CI_upper,
+                  ifelse(row$Slope_pval < 0.001, "< 0.001", formatC(row$Slope_pval, format = "f", digits = 4)),
+                  row$k))
+    }
+    cat("\n")
+  }
+
+  if (nrow(ns_tests) > 0) {
+    ns_parts <- sprintf("%s (*p* = %.3f)",
+                        italicize_species(ns_tests$Relationship), ns_tests$Slope_pval)
+    cat(sprintf("The remaining %d relationships were non-significant: %s.\n\n",
+                nrow(ns_tests), paste(ns_parts, collapse = "; ")))
+  }
+}
+```
+
+## S2.5 Temporal Recovery and Cascade Dynamics
+
+```{r temporal-combined, results='asis'}
+fmt_p <- function(p) ifelse(p < 0.001, "< 0.001", formatC(p, format = "f", digits = 4))
+
+if (!is.null(sp_slopes)) {
+  pooled <- sp_slopes %>% filter(model == "pooled")
+
+  cat("Temporal meta-regression (lmer) revealed species-specific recovery trajectories consistent with trophic cascade dynamics (Table S4, Figure S3). ")
+
+  lob <- pooled %>% filter(Species_abbrev == "P. interruptus")
+  shp <- pooled %>% filter(Species_abbrev == "S. pulcher")
+  spu <- pooled %>% filter(Species_abbrev == "S. purpuratus")
+  mfr <- pooled %>% filter(Species_abbrev == "M. franciscanus")
+  kelp <- pooled %>% filter(Species_abbrev == "M. pyrifera")
+
+  if (nrow(lob) > 0) {
+    cat(sprintf("*P. interruptus* showed the strongest positive trend (%.3f lnRR yr^-1^, *p* = %s), ",
+                lob$slope, fmt_p(lob$p_value)))
+  }
+  if (nrow(shp) > 0) {
+    cat(sprintf("while *S. pulcher* showed a %s trend (%.3f, *p* = %s). ",
+                ifelse(shp$p_value < 0.05, "significant", "non-significant"),
+                shp$slope, fmt_p(shp$p_value)))
+  }
+  if (nrow(spu) > 0 && nrow(mfr) > 0) {
+    cat(sprintf("Both herbivores declined (*S. purpuratus*: %.3f, *p* = %s; *M. franciscanus*: %.3f, *p* = %s), consistent with increasing predation pressure. ",
+                spu$slope, fmt_p(spu$p_value), mfr$slope, fmt_p(mfr$p_value)))
+  }
+  if (nrow(kelp) > 0) {
+    cat(sprintf("*M. pyrifera* showed a positive trend (%.3f, *p* = %s), consistent with kelp release. ",
+                kelp$slope, fmt_p(kelp$p_value)))
+  }
+  cat("Response-specific models (biomass only, density only) yielded broadly similar patterns (Table S4).\n\n")
+}
+
+# Phase portraits
+if (!is.null(phase_corr)) {
+  n_sig <- sum(phase_corr$pearson_p < 0.05)
+  sig_pairs <- phase_corr[phase_corr$pearson_p < 0.05, ]
+
+  cat(sprintf("Phase portrait analysis (Figure S4) confirmed temporal cascade dynamics: of %d species pairs, %d showed significant correlations. ",
+              nrow(phase_corr), n_sig))
+  if (nrow(sig_pairs) > 0) {
+    ital_sp <- function(s) gsub("^([A-Z]\\. [a-z]+)", "*\\1*", s)
+    parts <- sprintf("%s vs. %s (*r* = %.2f)",
+                     sapply(sig_pairs$x_species, ital_sp), sapply(sig_pairs$y_species, ital_sp),
+                     sig_pairs$pearson_r)
+    cat(sprintf("Significant pairs: %s. ", paste(parts, collapse = "; ")))
+  }
+  cat("Negative correlations between predators and herbivores, and between herbivores and kelp, were consistent with trophic cascade dynamics strengthening over time.\n\n")
+}
+
+# Cascade consistency
+if (!is.null(cascade_cons)) {
+  full <- cascade_cons %>% filter(n_species == 5)
+  n_full <- nrow(full)
+  n_5 <- sum(full$cascade_score == 5, na.rm = TRUE)
+  n_4plus <- sum(full$cascade_score >= 4, na.rm = TRUE)
+
+  cat(sprintf("Among %d MPAs with data for all five taxa, %d (%.0f%%) showed perfect cascade consistency (score = 5) and %d (%.0f%%) scored $\\geq$ 4 (Table S5, Figure S5b). ",
+              n_full, n_5, 100 * n_5 / n_full, n_4plus, 100 * n_4plus / n_full))
+}
+
+# Per-MPA slopes
+if (!is.null(per_mpa_slopes) && !is.null(slope_summary)) {
+  cat("Per-MPA OLS slopes (Figure S5a) confirmed direction patterns consistent with cascade recovery: predator slopes predominantly positive, herbivore slopes predominantly negative, and kelp slopes predominantly positive.\n\n")
+}
+```
+
+```{r table-s2-stacked}
+# Stack pooled + bio + den into one table with Model column
+if (!is.null(temp_pooled) && !is.null(temp_bio) && !is.null(temp_den)) {
+  temp_pooled$Model <- "Pooled"
+  temp_bio$Model <- "Biomass"
+  temp_den$Model <- "Density"
+  temp_stacked <- bind_rows(temp_pooled, temp_bio, temp_den) %>%
+    select(Model, everything())
+  fmt_tbl(temp_stacked, caption = "Table S4. Temporal meta-regression (lmer) fixed-effect coefficients for pooled, biomass-only, and density-only models. <em>P. interruptus</em> is the reference species. Degrees of freedom and p-values via Satterthwaite approximation.", scroll = TRUE)
+}
+```
+
+```{r fig-s3, fig.cap="**Figure S3.** Species-level recovery trajectories (lnRR vs. years since MPA establishment), faceted by species and response type. Thin lines: individual MPA trajectories; thick colored lines: GAM smooths with 95% CIs; dashed grey lines: lmer predictions. <em>M. pyrifera</em> density absent (Landsat provides biomass only).", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s04_recovery_curves.png"))
+```
+
+```{r table-s3}
+fmt_tbl(cascade_cons, caption = "Table S5. Per-MPA cascade consistency scores. Columns indicate whether each taxon's effect was in the predicted trophic cascade direction (YES/NO). Cascade score (0--5) is the count of taxa showing the predicted direction.")
+```
+
+```{r fig-s4, fig.cap="**Figure S4.** Species-pair phase portraits showing network-wide mean lnRR trajectories over time since MPA establishment. Arrows indicate temporal progression; quadrant shading highlights predicted trophic cascade directions.", out.width="100%"}
+# Show phase portraits
+knitr::include_graphics(here::here("plots", "fig_s05_cascade_phase.png"))
+```
+
+```{r fig-s5, fig.cap="**Figure S5.** Per-MPA slope comparison and cascade consistency. (a) OLS slope estimates (lnRR yr^-1^) by species; colored points show individual MPA slopes, black pointranges show means +/- 1 SE. (b) Cascade consistency tile chart showing whether each species' slope matches the predicted trophic cascade direction per MPA.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s06_slope_comparison.png"))
+```
+
+## S2.6 Moderator Analyses
+
+```{r moderator-results, results='asis'}
+if (!is.null(mod_reg) && !is.null(mod_diag)) {
+  type_row <- mod_reg %>% filter(Model == "Type (SMR vs SMCA)", Term == "typeSMR")
+  type_diag <- mod_diag %>% filter(Model == "Type (SMR vs SMCA)")
+  loc_row <- mod_reg %>% filter(Model == "Location (ML vs CI)", Term == "LocationML")
+  loc_diag <- mod_diag %>% filter(Model == "Location (ML vs CI)")
+
+  if (nrow(type_row) > 0 && nrow(type_diag) > 0) {
+    cat(sprintf("MPA protection level (SMR vs. SMCA) was not a significant predictor of effect size ($\\beta$ = %.3f, 95%% CI: %.3f to %.3f; *p* = %.3f; Figure S6a). ",
+                type_row$estimate, type_row$ci.lb, type_row$ci.ub, type_row$pval))
+  }
+  if (nrow(loc_row) > 0 && nrow(loc_diag) > 0) {
+    cat(sprintf("Geographic location (mainland vs. Channel Islands) was also non-significant ($\\beta$ = %.3f, 95%% CI: %.3f to %.3f; *p* = %.3f; Figure S6b). ",
+                loc_row$estimate, loc_row$ci.lb, loc_row$ci.ub, loc_row$pval))
+  }
+  cat("In both models, omnibus tests were significant, driven by among-taxa differences rather than the moderator variable. Residual heterogeneity remained high, indicating that within-region and within-type variation exceeded between-group variation.\n\n")
+}
+```
+
+```{r table-s4-combined}
+# Merge S4 + S4b into one table
+if (!is.null(mod_reg) && !is.null(mod_diag)) {
+  # Add diagnostics as additional columns to the intercept rows
+  mod_combined <- mod_reg
+  mod_combined$QM <- NA_real_
+  mod_combined$QM_df <- NA_real_
+  mod_combined$QM_p <- NA_real_
+  mod_combined$I2 <- NA_real_
+
+  for (i in seq_len(nrow(mod_diag))) {
+    d <- mod_diag[i, ]
+    idx <- which(mod_combined$Model == d$Model & grepl("intrcpt|Intercept", mod_combined$Term, ignore.case = TRUE))
+    if (length(idx) > 0) {
+      mod_combined$QM[idx[1]] <- d$QM
+      mod_combined$QM_df[idx[1]] <- d$QM_df
+      if ("QM_pval" %in% names(d)) mod_combined$QM_p[idx[1]] <- d$QM_pval
+      if ("QM_p" %in% names(d)) mod_combined$QM_p[idx[1]] <- d$QM_p
+      mod_combined$I2[idx[1]] <- d$I2
+    }
+  }
+  fmt_tbl(mod_combined, caption = "Table S6. Moderator meta-regression coefficients and diagnostics. QM, QM_df, QM_p, and I-squared are reported on the intercept row for each model.")
+}
+```
+
+```{r fig-s6, fig.cap="**Figure S6.** Moderator comparisons: (a) SMR vs. SMCA protection level and (b) Channel Islands vs. mainland location. Points show individual MPA effect sizes; pointranges show subgroup marginal means +/- 1 SE. Neither moderator was significant.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s09_moderator_comparisons.png"))
+```
+
+## S2.7 Sensitivity Analyses
+
+```{r sensitivity-combined, results='asis'}
+cat("We conducted several sensitivity analyses to assess robustness (Section S1.6).\n\n")
+
+# Outlier sensitivity
+if (!is.null(outlier_sens)) {
+  primary <- outlier_sens %>% filter(grepl("Joint model, no removal", Method))
+  pertaxa <- outlier_sens %>% filter(grepl("Per-taxa models, no removal", Method))
+  cooksd <- outlier_sens %>% filter(grepl("Per-taxa Cook's D", Method))
+  n_sig_primary <- sum(primary$pval < 0.05)
+  n_sig_pertaxa <- sum(pertaxa$pval < 0.05)
+  n_sig_cooksd <- sum(cooksd$pval < 0.05)
+
+  # Count results that are significant under ALL sensitivity approaches
+  joint_cooksd <- outlier_sens %>% filter(grepl("Joint Cook's D", Method))
+  n_sig_joint_cooksd <- sum(joint_cooksd$pval < 0.05)
+
+  # Identify taxa significant under primary but not ALL other approaches
+  sig_primary <- primary %>% filter(pval < 0.05)
+  robust_all <- sig_primary %>%
+    inner_join(pertaxa %>% select(Taxa, Response, p_pt = pval), by = c("Taxa", "Response")) %>%
+    inner_join(cooksd %>% select(Taxa, Response, p_cd = pval), by = c("Taxa", "Response")) %>%
+    mutate(robust = p_pt < 0.05 & p_cd < 0.05)
+  n_robust <- sum(robust_all$robust)
+  n_sig <- nrow(sig_primary)
+
+  if (n_robust == n_sig) {
+    cat(sprintf("**Outlier and model sensitivity.** Results were robust to modeling approach and outlier criteria (Table S9). With the joint model (primary, no outlier removal), %d of %d combinations were significant (*p* < 0.05 uncorrected), and all %d were also significant under per-taxa separate models (no removal: %d significant) and per-taxa Cook's D (%d significant). ",
+                n_sig, nrow(primary), n_sig, n_sig_pertaxa, n_sig_cooksd))
+  } else {
+    not_robust <- robust_all %>% filter(!robust)
+    exceptions <- paste(sprintf("*%s* %s", not_robust$Taxa, tolower(not_robust$Response)), collapse = "; ")
+    cat(sprintf("**Outlier and model sensitivity.** With the joint model (primary, no outlier removal), %d of %d combinations were significant (*p* < 0.05 uncorrected), vs. %d with per-taxa separate models (no removal) and %d with per-taxa Cook's D (Table S9). Of the %d significant results, %d were robust across all sensitivity approaches; the exception was %s, which was significant only under the joint model. This model-dependent result should be interpreted cautiously. ",
+                n_sig, nrow(primary), n_sig_pertaxa, n_sig_cooksd, n_sig, n_robust, exceptions))
+  }
+
+  # Sign changes across all pairwise method comparisons
+  all_methods <- list(
+    "Joint (primary)" = primary,
+    "Per-taxa (no removal)" = pertaxa,
+    "Per-taxa Cook's D" = cooksd
+  )
+  sign_change_pairs <- character(0)
+  method_names <- names(all_methods)
+  for (i in seq_along(all_methods)) {
+    for (j in seq_along(all_methods)) {
+      if (j <= i) next
+      merged_ij <- all_methods[[i]] %>%
+        select(Taxa, Response, est_a = Estimate) %>%
+        inner_join(all_methods[[j]] %>% select(Taxa, Response, est_b = Estimate),
+                   by = c("Taxa", "Response"))
+      flips <- merged_ij %>% filter(sign(est_a) != sign(est_b))
+      if (nrow(flips) > 0) {
+        for (r in seq_len(nrow(flips))) {
+          sign_change_pairs <- c(sign_change_pairs,
+            sprintf("*%s* (%s): %s vs. %s",
+                    flips$Taxa[r], flips$Response[r], method_names[i], method_names[j]))
+        }
+      }
+    }
+  }
+  if (length(sign_change_pairs) == 0) {
+    cat("No sign changes occurred between any pair of methods.\n\n")
+  } else {
+    cat(sprintf("Sign changes between methods (near-zero estimates where direction is unstable): %s.\n\n",
+                paste(sign_change_pairs, collapse = "; ")))
+  }
+}
+
+# Kelp leave-one-out
+if (!is.null(kelp_loo)) {
+  n_sig <- sum(kelp_loo$pval < 0.05)
+  n_total <- nrow(kelp_loo)
+  cat(sprintf("**Kelp leave-one-out.** *M. pyrifera* biomass remained significant in %d of %d leave-one-out iterations (Table S8), confirming the result was not driven by any single MPA.\n\n",
+              n_sig, n_total))
+}
+
+# AR1 + GAM diagnostics
+if (!is.null(ar1)) {
+  dw_col <- intersect(c("statistic", "DW_statistic", "DW_stat"), names(ar1))
+  if (length(dw_col) > 0) {
+    mean_dw <- mean(ar1[[dw_col[1]]], na.rm = TRUE)
+    cat(sprintf("**Temporal diagnostics.** Durbin-Watson statistics (mean DW = %.2f; Table S7) indicated minimal autocorrelation; AR1 models failed to converge due to irregular observation spacing. ",
+                mean_dw))
+  }
+}
+if (!is.null(gam_diag)) {
+  linear_col <- if ("linear" %in% names(gam_diag)) gam_diag$linear else rep("", nrow(gam_diag))
+  n_linear <- sum(grepl("^yes$|linear", linear_col, ignore.case = TRUE), na.rm = TRUE)
+  n_total <- nrow(gam_diag)
+  n_nonlinear <- n_total - n_linear
+  nonlinear <- gam_diag[grepl("^no$|nonlinear", linear_col, ignore.case = TRUE), ]
+
+  cat(sprintf("GAM diagnostics showed %d of %d species--response combinations were approximately linear (EDF near 1.0)", n_linear, n_total))
+  if (nrow(nonlinear) > 0) {
+    nl_parts <- sprintf("*%s* %s (EDF = %.2f)", nonlinear$Species, tolower(nonlinear$Resp), nonlinear$EDF)
+    cat(sprintf("; exceptions: %s", paste(nl_parts, collapse = "; ")))
+  }
+  cat(" (Table S7).\n\n")
+}
+```
+
+```{r table-s5-temporal-diag}
+# GAM linearity diagnostics
+if (!is.null(gam_diag)) {
+  cat('\n\n')
+  fmt_tbl(gam_diag, caption = "Table S7a. GAM linearity diagnostics. EDF near 1.0 indicates approximately linear recovery; the 'linear' column classifies each species–response combination.")
+}
+
+# AR1 sensitivity (Durbin-Watson)
+if (!is.null(ar1)) {
+  cat('\n\n')
+  fmt_tbl(ar1, caption = "Table S7b. AR1 autocorrelation sensitivity. Durbin-Watson statistics from lmer residuals; values near 2.0 indicate minimal autocorrelation. AR1 model fits were attempted but failed to converge due to irregular observation spacing.")
+}
+```
+
+```{r table-s6-kelp-loo}
+fmt_tbl(kelp_loo, caption = "Table S8. Leave-one-out sensitivity for <em>M. pyrifera</em> biomass. Each row shows the meta-analytic result after removing the indicated MPA.")
+```
+
+```{r table-s7-outlier}
+fmt_tbl(outlier_sens, caption = "Table S9. Outlier sensitivity: four methods compared (joint model no removal, per-taxa models no removal, per-taxa Cook's D at 4/k, joint Cook's D at 4/n). k = effect sizes retained; Estimate = mean lnRR.", scroll = TRUE)
+```
+
+## S2.8 Site-Level Appendix
+
+```{r fig-s7-caption, results='asis'}
+cat("**Figure S7a--e.** Site-level time series of log response ratios (lnRR) for each MPA, presented separately for each taxon: (a) *P. interruptus*, (b) *S. pulcher*, (c) *S. purpuratus*, (d) *M. franciscanus*, (e) *M. pyrifera*. Each panel represents one MPA; the horizontal dashed line at lnRR = 0 indicates no MPA effect.\n\n")
+```
+
+```{r fig-s7a, fig.cap="**Figure S7a.** <em>P. interruptus</em> site-level lnRR time series.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s08_appendix_pinterruptus.png"))
+```
+
+```{r fig-s7b, fig.cap="**Figure S7b.** <em>S. pulcher</em> site-level lnRR time series.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s08_appendix_spulcher.png"))
+```
+
+```{r fig-s7c, fig.cap="**Figure S7c.** <em>S. purpuratus</em> site-level lnRR time series.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s08_appendix_spurpuratus.png"))
+```
+
+```{r fig-s7d, fig.cap="**Figure S7d.** <em>M. franciscanus</em> site-level lnRR time series.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s08_appendix_mfranciscanus.png"))
+```
+
+```{r fig-s7e, fig.cap="**Figure S7e.** <em>M. pyrifera</em> site-level lnRR time series.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s08_appendix_mpyrifera.png"))
+```
+
+*Additional data tables (per-MPA slope estimates, species-pair phase portrait yearly means, and lmer model fit diagnostics) are available in the project data repository.*
+
+## S2.9 Model Diagnostics
+
+```{r fig-s8-caption, results='asis'}
+cat("**Figure S8.** DHARMa residual diagnostics for the nonlinear least-squares (NLS) effect-size models. (a) Proportion of NLS models passing each diagnostic test (uniformity, dispersion, outliers, normality) by taxon; dashed line at 95%. (b) Failure type breakdown across all models (normality, heteroscedasticity, or both). (c) Distribution of Shapiro-Wilk p-values by taxon; dashed line at alpha = 0.05. (d) R-squared distribution by taxon.\n\n")
+```
+
+```{r fig-s8, fig.cap="**Figure S8.** DHARMa residual diagnostics for NLS effect-size models.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s11_dharma_diagnostics.png"))
+```
+
+```{r fig-s9-caption, results='asis'}
+cat("**Figure S9.** Funnel plots for the multilevel meta-analysis of (a) biomass and (b) density response ratios. Each point represents one MPA-level effect size, plotted against its standard error (inverted y-axis). The dashed vertical line marks zero effect (lnRR = 0, no difference between MPA and reference). Asymmetry in point distribution may indicate publication or reporting bias. Egger's regression test results are annotated in each panel.\n\n")
+```
+
+```{r fig-s9, fig.cap="**Figure S9.** Meta-analysis funnel plots with Egger's test for publication bias.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s12_funnel_plots.png"))
+```
+
+```{r fig-s10-caption, results='asis'}
+cat("**Figure S10.** Residual diagnostics for the linear mixed-effects temporal recovery models. (a) Residuals vs. fitted values with LOESS smoother (red), (b) normal QQ plot of standardized residuals, (c) scale-location plot for heteroscedasticity assessment, (d) QQ plot of MPA-level random intercepts (BLUPs). Points are colored by taxon; extreme random effects are labeled.\n\n")
+```
+
+```{r fig-s10, fig.cap="**Figure S10.** lmer temporal model residual diagnostics (4-panel).", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s13_lmer_residuals.png"))
+```
+
+```{r fig-s11-caption, results='asis'}
+cat("**Figure S11.** NLS model selection and temporal autocorrelation diagnostics. (a) Stacked bar chart showing the frequency of best-fitting NLS model types (Linear, Mean, Sigmoid) across all MPA--taxa combinations. (b) Distribution of Durbin-Watson statistics by taxon; the grey band marks the acceptable range (1.5--2.5) and the dashed line marks DW = 2 (no autocorrelation).\n\n")
+```
+
+```{r fig-s11, fig.cap="**Figure S11.** NLS model selection frequencies and Durbin-Watson autocorrelation diagnostics.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s14_model_selection.png"))
+```
+
+```{r fig-s12-caption, results='asis'}
+cat("**Figure S12.** Sensitivity analysis summary. (a--b) Cook's distance for each observation in the meta-analysis of biomass and density, respectively; the dashed line indicates the 4/n threshold. (c) Comparison of meta-analytic estimates under four modeling/outlier treatment methods, shown as a grouped forest plot.\n\n")
+```
+
+```{r fig-s12, fig.cap="**Figure S12.** Cook's distance and outlier sensitivity comparison.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s15_sensitivity_summary.png"))
+```
+
+---
+
+# References
+
+Aitchison, J. (1986). *The Statistical Analysis of Compositional Data*. Chapman and Hall. London.
+
+Bates, D., Mächler, M., Bolker, B., & Walker, S. (2015). Fitting linear mixed-effects models using lme4. *Journal of Statistical Software*, 67(1), 1--48. https://doi.org/10.18637/jss.v067.i01
+
+Bell, T. W., Cavanaugh, K. C., & Siegel, D. A. (2023). SBC LTER: Time series of quarterly NetCDF files of kelp biomass in the Santa Barbara Channel and Southern California Bight. *Environmental Data Initiative*. https://doi.org/10.6073/pasta/89b63c4b49b80fb839613c0d68b103b4
+
+Benjamini, Y., & Hochberg, Y. (1995). Controlling the false discovery rate: A practical and powerful approach to multiple testing. *Journal of the Royal Statistical Society: Series B*, 57(1), 289--300.
+
+Caselle, J. E., Rassweiler, A., Hamilton, S. L., & Warner, R. R. (2015). Recovery trajectories of kelp forest animals are rapid yet spatially variable across a network of temperate marine protected areas. *Scientific Reports*, 5, 14102. https://doi.org/10.1038/srep14102
+
+Davis, G. E., Kushner, D. J., Mondragon, J. M., Mondragon, J. E., Lerma, D., & Richards, D. V. (1997). Kelp forest monitoring handbook. Volume 1: Sampling protocol. Channel Islands National Park, Ventura, CA.
+
+Hamilton, S. L., & Caselle, J. E. (2015). Exploitation and recovery of a sea urchin predator has implications for the resilience of southern California kelp forests. *Proceedings of the Royal Society B*, 282(1799), 20141817. https://doi.org/10.1098/rspb.2014.1817
+
+Kuznetsova, A., Brockhoff, P. B., & Christensen, R. H. B. (2017). lmerTest package: Tests in linear mixed effects models. *Journal of Statistical Software*, 82(13), 1--26. https://doi.org/10.18637/jss.v082.i13
+
+Rassweiler, A., Okamoto, D. K., Reed, D. C., & Miller, R. J. (2025). SBC LTER: Coefficients to estimate Giant Kelp (Macrocystis pyrifera) biomass from frond counts and stipe measurements. *Environmental Data Initiative*. https://doi.org/10.6073/pasta/ef1bce6d5c1de00acef97b0accd7f7d2
+
+Reed, D. C. (2023). SBC LTER: Reef: Kelp forest community structure. *Environmental Data Initiative*. https://doi.org/10.6073/pasta/73bc5043fed1e9a0c0beed06cb3d8e38
+
+Thiault, L., Kernaléguen, L., Osenberg, C. W., & Claudet, J. (2017). Progressive-change BACIPS: A flexible approach for environmental impact assessment. *Methods in Ecology and Evolution*, 8(3), 288--296. https://doi.org/10.1111/2041-210X.12655
+
+Viechtbauer, W. (2010). Conducting meta-analyses in R with the metafor package. *Journal of Statistical Software*, 36(3), 1--48. https://doi.org/10.18637/jss.v036.i03

@@ -1,0 +1,59 @@
+# OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# R specific
+.Rhistory
+.Rdata
+.RData
+.Ruserdata
+.Rproj.user/
+
+# Temporary R plot files
+Rplots.pdf
+
+# Pipeline logs (keep directory, ignore contents)
+logs/*.log
+
+# Large data files (download from Dryad or symlink from Google Drive — see README.md)
+data/MBON
+data/PISCO
+data/LTER
+data/LANDSAT
+data/MPA
+data/ALL_sizefreq_2024.csv
+
+# Cache files: tracked in git so figures can be regenerated without raw data
+# (bootstrap .rds ~8 MB total — enables run_figures_only.R for anyone who clones)
+# data/cache/*.rds  # <-- REMOVED: these are now tracked
+data_cache/
+
+# Marmap bathymetry cache (downloaded at runtime)
+marmap_coord_*.csv
+
+# Firebase logs
+firebase-debug.log
+
+# Debug/temp plots
+plots/debug_*
+
+# Diagnostic plots (not for publication)
+plots/diagnostics/
+
+# Large rendered HTML reports (regenerate from .Rmd/.md source)
+docs/results_report.html
+
+# Archive directories (historical code/figures, not for publication)
+code/archive/
+plots/archive/
+
+# IDE
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*~

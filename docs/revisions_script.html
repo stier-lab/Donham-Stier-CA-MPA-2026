@@ -1,0 +1,90 @@
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+  /* ---- Reading progress bar ---- */
+  var progressContainer = document.createElement('div');
+  progressContainer.id = 'reading-progress';
+  var progressBar = document.createElement('div');
+  progressBar.className = 'bar';
+  progressContainer.appendChild(progressBar);
+  document.body.prepend(progressContainer);
+
+  function updateProgress() {
+    var scrollTop = window.scrollY;
+    var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    var pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    progressBar.style.width = pct + '%';
+  }
+
+  /* ---- Scroll spy for TOC ---- */
+  var tocLinks = document.querySelectorAll('nav#TOC a');
+  var sections = [];
+
+  tocLinks.forEach(function(link) {
+    var href = link.getAttribute('href');
+    if (href && href.startsWith('#')) {
+      var target = document.getElementById(href.slice(1));
+      if (target) {
+        sections.push({ link: link, target: target });
+      }
+    }
+  });
+
+  function updateScrollSpy() {
+    var scrollPos = window.scrollY + 100;
+
+    var current = null;
+    for (var i = 0; i < sections.length; i++) {
+      if (sections[i].target.offsetTop <= scrollPos) {
+        current = sections[i];
+      }
+    }
+
+    tocLinks.forEach(function(l) { l.classList.remove('active'); });
+    if (current) {
+      current.link.classList.add('active');
+      /* Scroll TOC to keep active item visible */
+      var toc = document.querySelector('nav#TOC');
+      var linkRect = current.link.getBoundingClientRect();
+      var tocRect = toc.getBoundingClientRect();
+      if (linkRect.bottom > tocRect.bottom - 40 || linkRect.top < tocRect.top + 60) {
+        current.link.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    }
+  }
+
+  /* ---- Section reveal on scroll ---- */
+  var revealSections = document.querySelectorAll('body > section, body > section > section');
+
+  function revealOnScroll() {
+    var trigger = window.innerHeight * 0.88;
+    revealSections.forEach(function(s) {
+      if (s.getBoundingClientRect().top < trigger) {
+        s.classList.add('visible');
+      }
+    });
+  }
+
+  /* ---- Throttled scroll handler ---- */
+  var ticking = false;
+  window.addEventListener('scroll', function() {
+    if (!ticking) {
+      window.requestAnimationFrame(function() {
+        updateProgress();
+        updateScrollSpy();
+        revealOnScroll();
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+
+  /* Initial calls */
+  updateProgress();
+  updateScrollSpy();
+  revealOnScroll();
+
+  /* Reveal first sections immediately */
+  setTimeout(revealOnScroll, 100);
+});
+</script>

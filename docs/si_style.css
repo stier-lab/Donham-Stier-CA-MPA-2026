@@ -1,0 +1,943 @@
+/* ==========================================================================
+   Supporting Information — Custom Stylesheet
+   Marine ecology theme: deep ocean palette, editorial typography
+   ========================================================================== */
+
+/* ---------- Google Fonts ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ---------- CSS Variables ---------- */
+:root {
+  --ocean-900: #0b1d2e;
+  --ocean-800: #0f2a3f;
+  --ocean-700: #163a54;
+  --ocean-600: #1d4e6e;
+  --ocean-500: #2b6d93;
+  --ocean-400: #3a8fb8;
+  --ocean-300: #5eb0d4;
+  --ocean-200: #93cde6;
+  --ocean-100: #c9e6f2;
+  --ocean-50:  #e8f4fa;
+  --kelp-600:  #2d6a4f;
+  --kelp-500:  #3a8463;
+  --kelp-400:  #52b788;
+  --kelp-300:  #74c69d;
+  --kelp-100:  #d8f3dc;
+  --sand-500:  #c2956a;
+  --sand-400:  #d4a97a;
+  --sand-300:  #e6c9a0;
+  --sand-200:  #f0dfc4;
+  --sand-100:  #faf3ea;
+  --sand-50:   #fdfbf7;
+  --coral-500: #c44536;
+  --coral-400: #d66853;
+  --text-primary:   #1a1a2e;
+  --text-secondary:  #4a4a5e;
+  --text-muted:     #7a7a8e;
+  --border-light:   #e2e6ea;
+  --border-medium:  #cbd2d9;
+  --bg-page:        #fdfcfa;
+  --bg-surface:     #ffffff;
+  --bg-inset:       #f5f3ef;
+  --shadow-sm:  0 1px 3px rgba(11,29,46,0.06);
+  --shadow-md:  0 4px 12px rgba(11,29,46,0.08);
+  --shadow-lg:  0 8px 30px rgba(11,29,46,0.10);
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --serif:      'Crimson Pro', Georgia, 'Times New Roman', serif;
+  --sans:       'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:       'JetBrains Mono', 'Fira Code', Menlo, monospace;
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------- Base ---------- */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  font-family: var(--sans) !important;
+  font-size: 15px !important;
+  line-height: 1.72 !important;
+  color: var(--text-primary) !important;
+  background: var(--bg-page) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Main Content ---------- */
+.container-fluid {
+  max-width: 1320px !important;
+  padding: 0 2rem !important;
+}
+
+.container-fluid > .row > .col-xs-12.col-sm-8.col-md-9 {
+  max-width: 800px;
+  padding-left: 3rem !important;
+}
+
+/* ---------- Title Block ---------- */
+.title {
+  font-family: var(--serif) !important;
+  font-size: 2.6rem !important;
+  font-weight: 600 !important;
+  color: var(--ocean-800) !important;
+  letter-spacing: -0.02em;
+  line-height: 1.2 !important;
+  margin-bottom: 0.3rem !important;
+  border-bottom: none !important;
+}
+
+.subtitle {
+  font-family: var(--sans) !important;
+  font-size: 1.05rem !important;
+  font-weight: 400 !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.65 !important;
+  margin-bottom: 0.4rem !important;
+  border-left: 3px solid var(--ocean-400);
+  padding-left: 1rem;
+}
+
+.subtitle em {
+  font-style: italic;
+  color: var(--ocean-600);
+  font-weight: 500;
+}
+
+.date {
+  font-family: var(--sans) !important;
+  font-size: 0.85rem !important;
+  color: var(--text-muted) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 2rem !important;
+}
+
+/* ---------- Typography ---------- */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--serif) !important;
+  color: var(--ocean-800) !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+}
+
+/* Section headings (h1) */
+h1 {
+  font-size: 2rem !important;
+  margin-top: 3.5rem !important;
+  margin-bottom: 1.5rem !important;
+  padding-bottom: 0.6rem;
+  border-bottom: 2px solid var(--ocean-400) !important;
+  position: relative;
+}
+
+h1::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background: var(--kelp-400);
+}
+
+/* Subsection headings (h2) */
+h2 {
+  font-size: 1.5rem !important;
+  margin-top: 2.5rem !important;
+  margin-bottom: 1rem !important;
+  color: var(--ocean-700) !important;
+  border-bottom: none !important;
+}
+
+h2::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 0.85em;
+  background: var(--ocean-400);
+  border-radius: 2px;
+  margin-right: 0.6rem;
+  vertical-align: middle;
+  position: relative;
+  top: -0.05em;
+}
+
+/* Sub-subsection headings (h3) */
+h3 {
+  font-size: 1.2rem !important;
+  margin-top: 2rem !important;
+  margin-bottom: 0.8rem !important;
+  color: var(--ocean-600) !important;
+  font-weight: 500 !important;
+}
+
+h4 {
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  color: var(--ocean-600) !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+  font-family: var(--sans) !important;
+  letter-spacing: 0.01em;
+}
+
+p {
+  margin-bottom: 1rem !important;
+  color: var(--text-primary);
+}
+
+/* Italic species names */
+em {
+  font-style: italic;
+  color: var(--text-primary);
+}
+
+/* Bold text */
+strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* Lists */
+ul, ol {
+  margin-bottom: 1rem;
+  padding-left: 1.3rem;
+}
+
+li {
+  margin-bottom: 0.5rem;
+  line-height: 1.65;
+}
+
+/* Math */
+.MathJax, .MathJax_Display {
+  font-size: 1em !important;
+}
+
+.MathJax_Display {
+  margin: 1.5rem 0 !important;
+  padding: 1rem 1.5rem;
+  background: var(--bg-inset);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--ocean-300);
+  overflow-x: auto;
+}
+
+/* Code */
+code {
+  font-family: var(--mono) !important;
+  font-size: 0.82em !important;
+  background: var(--ocean-50) !important;
+  color: var(--ocean-700) !important;
+  padding: 0.15em 0.4em !important;
+  border-radius: var(--radius-sm) !important;
+  border: 1px solid var(--ocean-100) !important;
+}
+
+pre {
+  background: var(--ocean-900) !important;
+  color: #e2e8f0 !important;
+  border-radius: var(--radius-md) !important;
+  border: none !important;
+  padding: 1.2rem !important;
+  box-shadow: var(--shadow-md);
+}
+
+pre code {
+  background: none !important;
+  color: inherit !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+/* Horizontal rules / section dividers */
+hr {
+  border: none !important;
+  height: 1px !important;
+  background: linear-gradient(to right, transparent, var(--border-medium), transparent) !important;
+  margin: 3rem 0 !important;
+}
+
+/* ---------- Floating TOC ---------- */
+
+/* Widen the TOC sidebar column */
+.col-xs-12.col-sm-4.col-md-3 {
+  width: 32% !important;
+  flex: 0 0 32% !important;
+  max-width: 420px;
+}
+
+/* Narrow main content column to compensate */
+.col-xs-12.col-sm-8.col-md-9 {
+  width: 68% !important;
+  flex: 0 0 68% !important;
+}
+
+#TOC {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-md) !important;
+  padding: 1.8rem 1.4rem !important;
+  font-family: var(--sans) !important;
+  font-size: 15px !important;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  width: 100% !important;
+}
+
+/* ---- tocify plugin overrides ---- */
+/* Reset Bootstrap list-group defaults that shrink text */
+#TOC .list-group-item {
+  font-size: inherit !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#TOC .tocify-header {
+  padding-left: 0 !important;
+  margin-bottom: 0.15rem;
+}
+
+/* All TOC items */
+#TOC .tocify-item {
+  font-size: 15px !important;
+  color: var(--text-secondary) !important;
+  padding: 5px 8px !important;
+  border-radius: var(--radius-sm) !important;
+  transition: all var(--transition) !important;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  line-height: 1.4 !important;
+}
+
+#TOC .tocify-item:hover {
+  color: var(--ocean-600) !important;
+  background: var(--ocean-50) !important;
+  border-left-color: var(--ocean-400);
+}
+
+/* Active / current section */
+#TOC .tocify-item.active {
+  color: #ffffff !important;
+  background: var(--ocean-700) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid var(--kelp-400) !important;
+  border-radius: var(--radius-sm) !important;
+}
+
+/* Level 1 items */
+#TOC > .tocify-header > .tocify-item {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: var(--ocean-800) !important;
+  padding: 6px 8px !important;
+  margin-top: 6px;
+  letter-spacing: -0.01em;
+}
+
+#TOC > .tocify-header:first-child > .tocify-item {
+  margin-top: 0;
+}
+
+/* Level 2 sub-items */
+#TOC .tocify-subheader[data-tag="2"] {
+  padding-left: 14px !important;
+  border-left: 2px solid var(--border-light);
+  margin-left: 6px;
+  margin-bottom: 4px;
+}
+
+#TOC .tocify-subheader[data-tag="2"] > .tocify-item {
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  color: var(--text-secondary) !important;
+  padding: 5px 8px !important;
+}
+
+/* Level 3 sub-sub-items */
+#TOC .tocify-subheader[data-tag="3"] {
+  padding-left: 12px !important;
+  border-left: 1px solid var(--border-light);
+  margin-left: 4px;
+}
+
+#TOC .tocify-subheader[data-tag="3"] > .tocify-item {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  color: var(--text-muted) !important;
+  padding: 4px 7px !important;
+}
+
+/* Legacy fallback — if standard <a>-based TOC is used instead of tocify */
+#TOC > ul {
+  padding-left: 0 !important;
+}
+
+#TOC ul {
+  list-style: none !important;
+}
+
+#TOC li {
+  margin-bottom: 0.2rem !important;
+  line-height: 1.5;
+}
+
+#TOC a {
+  color: var(--text-secondary) !important;
+  text-decoration: none !important;
+  padding: 5px 8px !important;
+  display: block !important;
+  border-radius: var(--radius-sm) !important;
+  transition: all var(--transition) !important;
+  border-left: 3px solid transparent;
+  font-size: 15px !important;
+}
+
+#TOC a:hover {
+  color: var(--ocean-600) !important;
+  background: var(--ocean-50) !important;
+  border-left-color: var(--ocean-400);
+}
+
+#TOC .active a,
+#TOC > .active > a {
+  color: var(--ocean-700) !important;
+  background: var(--ocean-50) !important;
+  font-weight: 600 !important;
+  border-left: 3px solid var(--ocean-500) !important;
+}
+
+/* Level 1 items (legacy) */
+#TOC > ul > li > a {
+  font-weight: 600 !important;
+  color: var(--ocean-800) !important;
+  font-size: 18px !important;
+  padding: 6px 8px !important;
+  margin-top: 6px;
+}
+
+/* Sub-items indent (legacy) */
+#TOC > ul > li > ul {
+  padding-left: 14px !important;
+  border-left: 2px solid var(--border-light);
+  margin-left: 6px;
+}
+
+/* ---------- Figures ---------- */
+.figure, div.figure {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 1rem;
+  margin: 2rem 0;
+  transition: box-shadow var(--transition);
+  overflow: hidden;
+}
+
+.figure:hover, div.figure:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.figure img, div.figure img, p img {
+  border-radius: var(--radius-md);
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.caption, .figure .caption, p.caption {
+  font-family: var(--sans) !important;
+  font-size: 0.88rem !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.6 !important;
+  padding: 0.9rem 0.8rem 0.3rem !important;
+  margin-top: 0.5rem !important;
+  border-top: 1px solid var(--border-light);
+}
+
+.caption strong, p.caption strong {
+  color: var(--ocean-700) !important;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+/* ---------- Tables ---------- */
+.table-condensed, table {
+  font-family: var(--sans) !important;
+  font-size: 0.82rem !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border-radius: var(--radius-md) !important;
+  overflow: hidden;
+  width: 100% !important;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light) !important;
+}
+
+thead {
+  background: linear-gradient(to bottom, var(--ocean-700), var(--ocean-800)) !important;
+}
+
+thead th {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  text-transform: none !important;
+  letter-spacing: 0.02em;
+  padding: 0.65rem 0.8rem !important;
+  border: none !important;
+  border-bottom: 2px solid var(--ocean-400) !important;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+tbody td {
+  padding: 0.5rem 0.8rem !important;
+  border: none !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  color: var(--text-primary) !important;
+  vertical-align: top;
+}
+
+tbody tr {
+  transition: background var(--transition);
+}
+
+tbody tr:nth-child(even) {
+  background: var(--sand-50) !important;
+}
+
+tbody tr:hover {
+  background: var(--ocean-50) !important;
+}
+
+/* Table caption */
+caption {
+  font-family: var(--sans) !important;
+  font-size: 0.88rem !important;
+  color: var(--text-secondary) !important;
+  caption-side: top !important;
+  padding: 0.8rem 0.5rem !important;
+  text-align: left !important;
+  line-height: 1.55;
+  font-weight: 400;
+  max-width: 700px;
+}
+
+/* Table container — prevent tiny tables from over-stretching */
+.kable-table {
+  overflow-x: auto;
+}
+
+/* Scrollable table containers (kableExtra scroll_box) */
+div[style*="overflow"] {
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-light);
+}
+
+div[style*="overflow"] thead th {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 2 !important;
+  background: var(--ocean-700) !important;
+  color: #ffffff !important;
+}
+
+/* kableExtra specific */
+.kable-table {
+  margin: 1.5rem 0;
+}
+
+/* ---------- Section Decorators ---------- */
+div.section.level1 {
+  padding-top: 1rem;
+}
+
+div.section.level2 {
+  padding-left: 0;
+}
+
+/* Figure section special treatment */
+div.section.level2[id^="figure-s"] {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.8rem;
+  margin: 1.5rem 0;
+  box-shadow: var(--shadow-sm);
+}
+
+div.section.level2[id^="figure-s"] h2 {
+  margin-top: 0 !important;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+
+div.section.level2[id^="figure-s"] h2::before {
+  background: var(--kelp-400);
+}
+
+/* Table section styling */
+div.section.level2[id^="table-s"] {
+  margin: 1.5rem 0;
+  padding: 1rem 0 0.5rem;
+  border-top: 1px solid var(--border-light);
+}
+
+div.section.level2[id^="table-s"]:first-of-type {
+  border-top: none;
+}
+
+/* Table description text (paragraphs above kable output) */
+div.section.level2[id^="table-s"] > p:first-of-type {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 680px;
+  margin-bottom: 1rem !important;
+}
+
+/* ---------- Back-to-Top Button ---------- */
+.back-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  width: 44px;
+  height: 44px;
+  background: var(--ocean-600);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all var(--transition);
+  z-index: 999;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.back-to-top:hover {
+  background: var(--ocean-500);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* ---------- Reading Progress Bar ---------- */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: linear-gradient(to right, var(--ocean-500), var(--kelp-400));
+  z-index: 9999;
+  transition: width 0.1s linear;
+}
+
+/* ---------- Figure Lightbox ---------- */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 29, 46, 0.92);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  cursor: zoom-out;
+  backdrop-filter: blur(8px);
+}
+
+.lightbox-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.lightbox-overlay img {
+  max-width: 92vw;
+  max-height: 90vh;
+  border-radius: var(--radius-md);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.lightbox-overlay.active img {
+  transform: scale(1);
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.lightbox-close:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+.lightbox-hint {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.6);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+/* Clickable figure cursor hint */
+.figure img, div.figure img, p img {
+  cursor: zoom-in;
+}
+
+/* ---------- Stat highlights ---------- */
+/* Style species-specific result blocks */
+div.section.level2[id*="meta-analytic"] p,
+div.section.level2[id*="temporal-recovery"] li,
+div.section.level2[id*="cross-taxa"] li {
+  line-height: 1.75;
+}
+
+/* Results section paragraphs — subtle visual breathing room */
+div.section.level1[id*="supplementary-results"] div.section.level2 > p {
+  margin-bottom: 1.15rem !important;
+}
+
+/* Results subsection headings (h3 like "Biomass", "Density") — tighter coupling to content */
+div.section.level1[id*="supplementary-results"] h3 {
+  margin-top: 1.6rem !important;
+  margin-bottom: 0.5rem !important;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border-light) !important;
+}
+
+/* ---------- References Section ---------- */
+div.section.level1[id="references"] p {
+  padding-left: 2em;
+  text-indent: -2em;
+  margin-bottom: 0.5rem !important;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(226, 230, 234, 0.5);
+}
+
+div.section.level1[id="references"] p:last-child {
+  border-bottom: none;
+}
+
+div.section.level1[id="references"] a {
+  color: var(--ocean-500);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--transition);
+}
+
+div.section.level1[id="references"] a:hover {
+  border-bottom-color: var(--ocean-400);
+}
+
+/* ---------- Links ---------- */
+a {
+  color: var(--ocean-500) !important;
+  text-decoration: none !important;
+  transition: color var(--transition) !important;
+}
+
+a:hover {
+  color: var(--ocean-400) !important;
+}
+
+/* ---------- Print ---------- */
+@media print {
+  .reading-progress,
+  .back-to-top,
+  .lightbox-overlay,
+  #TOC {
+    display: none !important;
+  }
+
+  body {
+    font-size: 11pt !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  h1 { font-size: 18pt !important; }
+  h2 { font-size: 14pt !important; }
+  h3 { font-size: 12pt !important; }
+
+  .figure, div.figure {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    break-inside: avoid;
+  }
+
+  table {
+    box-shadow: none !important;
+  }
+
+  thead {
+    background: #333 !important;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 992px) {
+  .container-fluid > .row > .col-xs-12.col-sm-8.col-md-9 {
+    padding-left: 1rem !important;
+  }
+
+  h1 { font-size: 1.6rem !important; }
+  h2 { font-size: 1.3rem !important; }
+
+  .title { font-size: 2rem !important; }
+}
+
+/* ---------- Navbar override (Flatly) ---------- */
+.navbar {
+  display: none !important;
+}
+
+/* ---------- Smooth Section Transitions ---------- */
+div.section {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0.85;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- Title area decoration ---------- */
+.title + .subtitle {
+  margin-top: 0.5rem !important;
+}
+
+/* Subtle separator after the title block before first section */
+.date {
+  padding-bottom: 1.5rem !important;
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Subtle top accent bar */
+body::before {
+  content: '';
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(to right, var(--ocean-500), var(--kelp-400), var(--ocean-400));
+  z-index: 9998;
+  pointer-events: none;
+}
+
+/* When reading progress is active, hide the static bar */
+.reading-progress[style*="width"] ~ body::before {
+  display: none;
+}
+
+/* ---------- Footer ---------- */
+.container-fluid > .row > div:last-child > hr:last-of-type ~ p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 1rem 0;
+  border-top: 1px solid var(--border-light);
+  margin-top: 2rem;
+}
+
+/* ---------- List styling ---------- */
+ol {
+  padding-left: 1.5rem;
+}
+
+ol > li {
+  padding-left: 0.3rem;
+}
+
+ol > li::marker {
+  font-weight: 600;
+  color: var(--ocean-500);
+}
+
+/* Unordered lists */
+ul > li {
+  position: relative;
+  padding-left: 0.3rem;
+}
+
+ul > li::marker {
+  color: var(--ocean-400);
+}
+
+/* ---------- Selection Color ---------- */
+::selection {
+  background: var(--ocean-200);
+  color: var(--ocean-900);
+}
+
+/* ---------- Scrollbar ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-inset);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ocean-400);
+}

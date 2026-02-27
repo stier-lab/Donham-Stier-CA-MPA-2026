@@ -1,0 +1,4 @@
+"model","model_type","n_obs","n_mpa","AIC","BIC","logLik","R2_marginal","R2_conditional","variance_components","singular_fit"
+"pooled","random-slopes",2421,17,10036.95,10123.83,-5003.47,0.1187,0.2415,"CA_MPA_Name_Short|(Intercept): 0.1618; CA_MPA_Name_Short|time: 0.0040; CA_MPA_Name_Short|(Intercept): -0.0010; source|(Intercept): 0.0027; Residual|NA: 3.5280",FALSE
+"bio","random-slopes",955,17,4367.77,4440.7,-2168.89,0.0967,0.1967,"CA_MPA_Name_Short|(Intercept): 0.0000; CA_MPA_Name_Short|time: 0.0063; CA_MPA_Name_Short|(Intercept): 0.0003; source|(Intercept): 0.0149; Residual|NA: 5.2379",FALSE
+"den","random-slopes",1102,17,3818.9,3883.96,-1896.45,0.2075,0.3999,"CA_MPA_Name_Short|(Intercept): 0.3763; CA_MPA_Name_Short|time: 0.0011; CA_MPA_Name_Short|(Intercept): 0.0019; source|(Intercept): 0.0092; Residual|NA: 1.7054",FALSE

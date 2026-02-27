@@ -1,0 +1,10 @@
+Taxa,Resp,n_MPAs,n_effects,sources,models_used,mean_N_per_effect,min_N,max_N
+P. interruptus,Bio,5,5,"LTER, PISCO","Linear, Mean",11,7,12
+P. interruptus,Den,11,17,"KFM, LTER, PISCO","Linear, Mean, Sigmoid",18.9,7,40
+S. pulcher,Bio,17,18,"LTER, PISCO","Linear, Mean",13.4,6,22
+S. pulcher,Den,17,22,"KFM, LTER, PISCO","Linear, Mean, Step",15.9,6,38
+S. purpuratus,Bio,9,10,"KFM, PISCO","Linear, Mean",14.9,13,18
+S. purpuratus,Den,11,13,"KFM, PISCO","Linear, Mean, Step",17.2,7,41
+M. franciscanus,Bio,9,14,"KFM, LTER, PISCO","Linear, Mean, Sigmoid, Step",19.3,12,37
+M. franciscanus,Den,10,16,"KFM, LTER, PISCO","Linear, Mean, Step",20.1,7,40
+M. pyrifera,Bio,11,17,"KFM, LTER, PISCO","Linear, Mean, Sigmoid",19.6,7,37

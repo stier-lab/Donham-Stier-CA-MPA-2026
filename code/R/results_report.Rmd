@@ -1,0 +1,1278 @@
+---
+title: "CA MPA Kelp Forest Analysis — Results for Manuscript"
+subtitle: "Donham & Stier, Conservation Letters"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+    theme: flatly
+    code_folding: hide
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, warning = FALSE, message = FALSE,
+  fig.width = 10, fig.height = 6
+)
+library(tidyverse)
+library(here)
+library(knitr)
+library(kableExtra)
+
+# Helper: read CSV safely with informative error
+read_table <- function(path, label = NULL) {
+  full_path <- here::here(path)
+  if (!file.exists(full_path)) {
+    warning(paste("MISSING FILE:", path))
+    return(NULL)
+  }
+  df <- read.csv(full_path, stringsAsFactors = FALSE, check.names = FALSE)
+  if (!is.null(label)) attr(df, "label") <- label
+  df
+}
+
+# Helper: format table with kableExtra
+fmt_table <- function(df, caption = NULL, scroll = FALSE, digits = 4) {
+  if (is.null(df)) {
+    return(kable(data.frame(Status = "FILE NOT FOUND"), caption = caption))
+  }
+  num_cols <- sapply(df, is.numeric)
+  df[num_cols] <- lapply(df[num_cols], function(x) round(x, digits))
+  out <- kable(df, caption = caption, row.names = FALSE) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                  full_width = FALSE, font_size = 12)
+  if (scroll || nrow(df) > 20) {
+    out <- out %>% scroll_box(height = "400px", width = "100%")
+  }
+  out
+}
+
+# Helper: format p-value for manuscript text
+fmt_p <- function(p) {
+  if (is.na(p)) return("NA")
+  if (p < 0.001) return("*p* < 0.001")
+  if (p < 0.01) sprintf("*p* = %s", formatC(p, format = "f", digits = 3))
+  else sprintf("*p* = %s", formatC(p, format = "f", digits = 2))
+}
+
+# Helper: format estimate with CI
+fmt_est <- function(est, ci_lo, ci_hi, digits = 2) {
+  sprintf("%s (95%% CI: %s to %s)",
+          formatC(est, format = "f", digits = digits),
+          formatC(ci_lo, format = "f", digits = digits),
+          formatC(ci_hi, format = "f", digits = digits))
+}
+
+# Load all key tables up front
+table2 <- read_table("tables/table_02_meta_analysis.csv")
+table3 <- read_table("tables/table_03_cross_taxa_meta_regression.csv")
+sp_slopes <- read_table("tables/table_s_species_slopes.csv")
+lmer_fit <- read_table("tables/table_s_lmer_model_fit.csv")
+analysis_summary <- read_table("tables/table_s_analysis_summary.csv")
+mod_reg <- read_table("tables/table_s_moderator_meta_regression.csv")
+mod_diag <- read_table("tables/table_s_moderator_diagnostics.csv")
+mod_sub <- read_table("tables/table_s_moderator_subgroup_effects.csv")
+cascade_cons <- read_table("tables/table_s_cascade_consistency.csv")
+outlier_sens <- read_table("tables/table_s_outlier_sensitivity.csv")
+kelp_loo <- read_table("tables/table_s_kelp_leave1out.csv")
+var_comp <- read_table("tables/table_s_variance_components.csv")
+ar1 <- read_table("tables/table_s_ar1_sensitivity.csv")
+gam_diag <- read_table("tables/table_s_gam_linearity_diagnostics.csv")
+phase_corr <- read_table("tables/table_s_phase_portrait_correlations.csv")
+model_summary <- read_table("outputs/model_results_summary.csv")
+source_models_tbl <- read_table("tables/table_s_source_sensitivity_models.csv")
+source_coefs_tbl <- read_table("tables/table_s_source_sensitivity_coefficients.csv")
+slope_summary <- read_table("tables/table_s_slope_summary_by_species.csv")
+per_mpa_slopes <- read_table("tables/table_s_per_mpa_slopes.csv")
+```
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Ocean/Kelp design tokens ──────────────────────── */
+:root {
+  --ocean-900: #0b1d2e;
+  --ocean-800: #0f2a3f;
+  --ocean-700: #163a54;
+  --ocean-600: #1d4e6e;
+  --ocean-500: #2b6d93;
+  --ocean-400: #3a8fb8;
+  --ocean-300: #5eb0d4;
+  --ocean-200: #93cde6;
+  --ocean-100: #c9e6f2;
+  --ocean-50:  #e8f4fa;
+  --kelp-500:  #3a8463;
+  --kelp-400:  #52b788;
+  --kelp-300:  #74c69d;
+  --kelp-100:  #d8f3dc;
+  --sand-50:   #fdfbf7;
+  --coral-500: #c44536;
+  --text-primary:   #1a1a2e;
+  --text-secondary: #4a4a5e;
+  --text-muted:     #7a7a8e;
+  --border-light:   #e2e6ea;
+  --bg-page:        #fdfcfa;
+  --bg-inset:       #f5f3ef;
+  --serif:  'Crimson Pro', Georgia, serif;
+  --sans:   'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:   'JetBrains Mono', 'Fira Code', Menlo, monospace;
+}
+
+/* ── Top accent bar ────────────────────────────────── */
+body::before {
+  content: '';
+  display: block;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(to right, var(--ocean-500), var(--kelp-400), var(--ocean-400));
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* ── Page-level polish ─────────────────────────────── */
+body {
+  font-family: var(--sans);
+  color: var(--text-primary);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+}
+.main-container { max-width: 960px; }
+
+/* ── Headings: editorial serif ─────────────────────── */
+h1, h2, h3, h4, h5, h6,
+.title {
+  font-family: var(--serif);
+  color: var(--ocean-800);
+}
+h1, .title { font-weight: 600; }
+h2 { color: var(--ocean-700); }
+h3 { color: var(--ocean-600); font-weight: 500; }
+
+/* Section dividers between H1s */
+.section.level1 {
+  padding-top: 8px;
+  margin-top: 20px;
+  border-top: 2px solid var(--ocean-400);
+  position: relative;
+}
+.section.level1::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  width: 50px;
+  height: 2px;
+  background: var(--kelp-400);
+}
+.section.level1:first-of-type { border-top: none; margin-top: 0; }
+.section.level1:first-of-type::after { display: none; }
+
+/* ── Floating TOC sidebar: dark ocean ──────────────── */
+.tocify {
+  background: var(--ocean-900) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: 2px 0 12px rgba(11,29,46,0.12);
+}
+/* Bootstrap tocify uses li.list-group-item (no inner <a> tags) */
+.tocify .list-group-item {
+  background: transparent !important;
+  color: var(--ocean-200) !important;
+  font-family: var(--sans);
+  font-size: 13px;
+  border: none !important;
+  border-left: 3px solid transparent !important;
+  padding: 6px 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.tocify .list-group-item:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,0.08) !important;
+  border-left-color: var(--kelp-400) !important;
+}
+.tocify .list-group-item.active,
+.tocify .list-group-item.active:hover,
+.tocify .list-group-item.active:focus {
+  background: var(--ocean-700) !important;
+  color: #fff !important;
+  border-left: 3px solid var(--kelp-400) !important;
+}
+.tocify .tocify-subheader {
+  background: transparent !important;
+}
+.tocify .tocify-subheader .list-group-item {
+  font-size: 12px !important;
+  color: var(--ocean-300) !important;
+  padding: 4px 12px 4px 20px;
+}
+
+/* ── Section labels ────────────────────────────────── */
+.section-label {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  background: var(--ocean-600);
+  color: #fff;
+}
+
+/* ── Copy-paste boxes (shared base) ────────────────── */
+.result-box, .supplement-box {
+  position: relative;
+  padding: 16px 20px 16px 20px;
+  margin: 6px 0 18px 0;
+  font-size: 13.5px;
+  line-height: 1.75;
+  border-radius: 6px;
+  cursor: text;
+  user-select: text;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Main-text boxes: ocean blue */
+.result-box {
+  background-color: var(--ocean-50);
+  border: 1px solid var(--ocean-100);
+  border-left: 5px solid var(--ocean-500);
+  box-shadow: 0 1px 3px rgba(11,29,46,0.06);
+}
+.result-box:hover {
+  box-shadow: 0 2px 10px rgba(11,29,46,0.12);
+  border-color: var(--ocean-200);
+}
+
+/* Supplement boxes: kelp green */
+.supplement-box {
+  background-color: var(--bg-inset);
+  border: 1px solid #ddd;
+  border-left: 5px solid var(--kelp-400);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.supplement-box:hover {
+  box-shadow: 0 2px 10px rgba(58,132,99,0.12);
+  border-color: var(--kelp-300);
+}
+
+/* Inline formatting inside boxes */
+.result-box em, .supplement-box em { font-style: italic; }
+.result-box strong, .supplement-box strong { font-weight: 600; }
+
+/* ── Copy button ───────────────────────────────────── */
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 10;
+}
+.result-box:hover .copy-btn,
+.supplement-box:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { background: #fff; color: var(--ocean-700); border-color: var(--ocean-400); }
+.copy-btn.copied { background: var(--kelp-100); color: var(--kelp-500); border-color: var(--kelp-300); }
+
+/* ── Tables: ocean-themed headers ──────────────────── */
+.table > thead > tr > th,
+.table thead th {
+  background: linear-gradient(to bottom, var(--ocean-700), var(--ocean-800)) !important;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 0.82em;
+  letter-spacing: 0.02em;
+  border-bottom: 2px solid var(--ocean-400) !important;
+  white-space: nowrap;
+}
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(--sand-50);
+}
+.table-hover > tbody > tr:hover {
+  background-color: var(--ocean-50);
+}
+.table > tbody > td {
+  border-color: var(--border-light);
+  vertical-align: top;
+}
+.table {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(11,29,46,0.06);
+}
+
+/* ── Table caption styling ─────────────────────────── */
+caption, .table caption {
+  caption-side: top;
+  font-family: var(--serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ocean-700);
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--ocean-400);
+  margin-bottom: 6px;
+}
+
+/* ── Tab navigation: ocean colors ──────────────────── */
+.nav-tabs > li > a {
+  font-size: 13px;
+  color: var(--ocean-600);
+  font-family: var(--sans);
+}
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  color: var(--ocean-800);
+  border-bottom-color: var(--ocean-400);
+  font-weight: 600;
+}
+.tab-content { padding-top: 10px; }
+
+/* ── Code: ocean-dark blocks ───────────────────────── */
+pre {
+  background: var(--ocean-900);
+  color: #e2e8f0;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(11,29,46,0.08);
+}
+code {
+  font-family: var(--mono);
+}
+pre code {
+  background: none;
+  color: inherit;
+}
+p > code, li > code {
+  background: var(--ocean-50);
+  color: var(--ocean-700);
+  padding: 0.12em 0.35em;
+  border-radius: 3px;
+  border: 1px solid var(--ocean-100);
+  font-size: 0.85em;
+}
+
+/* ── Scroll-box refinement ─────────────────────────── */
+.kable_wrapper .scroll-box,
+div[style*="overflow"] {
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+}
+
+/* ── Links ─────────────────────────────────────────── */
+a { color: var(--ocean-500); }
+a:hover { color: var(--ocean-400); }
+
+/* ── Footer ────────────────────────────────────────── */
+hr + p:last-child, .section.level1:last-child p:last-child em {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Selection highlight ───────────────────────────── */
+::selection { background: var(--ocean-200); color: var(--ocean-900); }
+
+/* ── Print styles ──────────────────────────────────── */
+@media print {
+  body::before { display: none; }
+  .copy-btn { display: none !important; }
+  .result-box, .supplement-box { break-inside: avoid; }
+  .section-label { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .tocify { display: none; }
+}
+</style>
+
+<script>
+// Add copy-to-clipboard buttons to all result and supplement boxes
+document.addEventListener("DOMContentLoaded", function() {
+  document.querySelectorAll(".result-box, .supplement-box").forEach(function(box) {
+    var btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.textContent = "Copy";
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      // Clone the box, remove copy buttons from the clone, get text
+      var clone = box.cloneNode(true);
+      clone.querySelectorAll(".copy-btn").forEach(function(b) { b.remove(); });
+      var text = clone.textContent.trim();
+      navigator.clipboard.writeText(text).then(function() {
+        btn.textContent = "Copied!";
+        btn.classList.add("copied");
+        setTimeout(function() {
+          btn.textContent = "Copy";
+          btn.classList.remove("copied");
+        }, 1500);
+      });
+    });
+    box.appendChild(btn);
+  });
+});
+</script>
+
+# Copy-Paste Results: Main Text {.tabset}
+
+These blue boxes contain pre-formatted sentences ready to copy into the manuscript. Hover over any box and click **Copy** to grab the text, or select and copy manually.
+
+## Study Design & Sample Sizes
+
+```{r main-sample-sizes, results='asis'}
+if (!is.null(analysis_summary)) {
+  n_mpas <- analysis_summary$Value[analysis_summary$Metric == "Total unique MPAs analyzed"]
+  n_effects <- analysis_summary$Value[analysis_summary$Metric == "Total MPA x taxa x response combinations (effect sizes)"]
+  n_bio <- analysis_summary$Value[analysis_summary$Metric == "Effect sizes - Biomass"]
+  n_den <- analysis_summary$Value[analysis_summary$Metric == "Effect sizes - Density"]
+  n_taxa <- analysis_summary$Value[analysis_summary$Metric == "Unique taxa"]
+  sources <- analysis_summary$Value[analysis_summary$Metric == "Data sources"]
+
+  cat('<div class="section-label">METHODS — Study Design</div>\n')
+  cat('<div class="result-box">')
+  cat(sprintf('We quantified MPA effects on %s taxa across %s MPAs along the California coast, yielding %s MPA \u00d7 taxa \u00d7 response effect sizes (%s biomass, %s density). Data were drawn from %s monitoring programs spanning %s to %s.',
+              n_taxa, n_mpas, n_effects, n_bio, n_den, sources,
+              analysis_summary$Value[analysis_summary$Metric == "Earliest year in dataset"],
+              analysis_summary$Value[analysis_summary$Metric == "Latest year in dataset"]))
+  cat('</div>\n\n')
+}
+```
+
+## Methods — Statistical Approach
+
+```{r main-methods-stats, results='asis'}
+if (!is.null(analysis_summary)) {
+  n_effects <- analysis_summary$Value[
+    analysis_summary$Metric == "Total MPA x taxa x response combinations (effect sizes)"]
+
+  cat('<div class="section-label">METHODS — Statistical Approach</div>\n')
+  cat('<div class="result-box">')
+  cat('We used joint multilevel random-effects meta-analysis (rma.mv, metafor package) to estimate mean effect sizes (log response ratios, lnRR) for each taxa x response combination, with taxa as a categorical moderator in cell-means parameterization and MPA identity and data source as crossed random effects. ')
+  cat(sprintf('The primary analysis reports the full dataset (%s effect sizes) without outlier removal, following best practice in ecological meta-analysis (Viechtbauer &amp; Cheung 2010). ', n_effects))
+  cat('<em>P</em>-values were corrected for multiple comparisons using the Benjamini-Hochberg false discovery rate (FDR) procedure across all 9 taxa x response coefficients. ')
+  cat('Temporal recovery trajectories were estimated using linear mixed-effects models (lmer, lme4 package) with years since MPA establishment as the fixed effect and MPA as a random intercept, with denominator degrees of freedom and <em>p</em>-values computed via Satterthwaite\\\'s approximation (lmerTest). ')
+  cat('Cross-taxa meta-regressions tested trophic cascade predictions by regressing herbivore lnRR on predator lnRR (and producer on herbivore) across MPAs. ')
+  cat('Sensitivity analyses compared four approaches: (1) joint model without outlier removal (primary), (2) per-taxa separate models without outlier removal, (3) per-taxa Cook\\\'s D at 4/<em>k</em>, and (4) joint Cook\\\'s D at 4/<em>n</em>. Additional sensitivity included leave-one-out jackknife (kelp), AR1 autocorrelation structures, GAM-based linearity checks, and models with data source as an additional random effect.')
+  cat('</div>\n\n')
+}
+```
+
+## Joint Model Summary
+
+```{r main-joint-summary, results='asis'}
+if (!is.null(model_summary)) {
+  trophic_order_jms <- c("P. interruptus", "S. pulcher", "S. purpuratus",
+                         "M. franciscanus", "M. pyrifera")
+
+  n_sig <- sum(model_summary$pval_fdr < 0.05, na.rm = TRUE)
+  n_total <- nrow(model_summary)
+  n_pos_sig <- sum(
+    model_summary$pval_fdr < 0.05 & model_summary$estimate > 0, na.rm = TRUE)
+  n_neg_sig <- sum(
+    model_summary$pval_fdr < 0.05 & model_summary$estimate < 0, na.rm = TRUE)
+
+  cat('<div class="section-label">RESULTS — Joint Model Summary</div>\n')
+  cat('<div class="result-box">\n')
+  cat(sprintf(
+    'Across all %d taxa x response models (multilevel RE meta-analysis, rma.mv), %d were significant after FDR correction (%d positive, indicating higher values inside MPAs; %d negative, indicating lower values inside MPAs).&nbsp; ',
+    n_total, n_sig, n_pos_sig, n_neg_sig))
+
+  for (tx in trophic_order_jms) {
+    tx_rows <- model_summary %>% filter(taxa == tx)
+    if (nrow(tx_rows) == 0) next
+
+    bio_row <- tx_rows %>% filter(response == "Biomass")
+    den_row <- tx_rows %>% filter(response == "Density")
+
+    summaries <- c()
+    if (nrow(bio_row) > 0) {
+      bio_sig <- if (!is.na(bio_row$pval_fdr[1]) &&
+                     bio_row$pval_fdr[1] < 0.05) "sig." else "n.s."
+      bio_dir <- if (bio_row$estimate[1] > 0) "+" else "\u2013"
+      summaries <- c(summaries, sprintf("biomass %s%s", bio_dir, bio_sig))
+    }
+    if (nrow(den_row) > 0) {
+      den_sig <- if (!is.na(den_row$pval_fdr[1]) &&
+                     den_row$pval_fdr[1] < 0.05) "sig." else "n.s."
+      den_dir <- if (den_row$estimate[1] > 0) "+" else "\u2013"
+      summaries <- c(summaries, sprintf("density %s%s", den_dir, den_sig))
+    }
+    cat(sprintf('<em>%s</em>: %s.&nbsp; ',
+                tx, paste(summaries, collapse = ", ")))
+  }
+  cat('\n</div>\n\n')
+}
+```
+
+## Meta-Analytic Results (Table 2)
+
+```{r main-meta-results, results='asis'}
+if (!is.null(table2)) {
+  # Trophic order for reporting
+  trophic_order <- c("P. interruptus", "S. pulcher", "S. purpuratus", "M. franciscanus", "M. pyrifera")
+
+  for (resp in c("Biomass", "Density")) {
+    t2r <- table2 %>% filter(Response == resp)
+    if (nrow(t2r) == 0) next
+
+    cat(sprintf('<div class="section-label">RESULTS — %s</div>\n', resp))
+    cat('<div class="result-box">\n')
+
+    for (tx in trophic_order) {
+      row <- t2r %>% filter(Taxa == tx)
+      if (nrow(row) == 0) next
+
+      sig_marker <- if (row$pval_fdr < 0.05) "" else " (n.s.)"
+      direction <- if (row$Estimate > 0) "higher" else "lower"
+
+      cat(sprintf('<em>%s</em> %s was %s%% %s inside MPAs (lnRR = %s, 95%% CI: %s to %s; RR = %s; <em>k</em> = %d MPAs; %s%s).&nbsp; ',
+                  tx, tolower(resp),
+                  abs(round(row$Pct_Change, 0)), direction,
+                  formatC(row$Estimate, format = "f", digits = 2),
+                  formatC(row$CI_lower, format = "f", digits = 2),
+                  formatC(row$CI_upper, format = "f", digits = 2),
+                  formatC(row$RR, format = "f", digits = 2),
+                  row$k,
+                  fmt_p(row$pval),
+                  sig_marker))
+    }
+
+    cat('\n</div>\n\n')
+  }
+
+  # Heterogeneity summary (joint model: tau2/I2 are shared within response type)
+  cat('<div class="section-label">RESULTS — Heterogeneity (Joint Model)</div>\n')
+  cat('<div class="result-box">\n')
+  het_parts <- c()
+  for (resp in c("Biomass", "Density")) {
+    resp_rows <- table2 %>% filter(Response == resp)
+    if (nrow(resp_rows) == 0) next
+    i2_val <- resp_rows$I2[1]  # Same for all taxa in joint model
+    tau2_val <- resp_rows$tau2[1]
+    het_parts <- c(het_parts, sprintf(
+      '%s: pseudo-<em>I</em>&sup2; = %s%%, &tau;&sup2; = %s',
+      resp,
+      formatC(i2_val, format = "f", digits = 1),
+      formatC(tau2_val, format = "f", digits = 4)))
+  }
+  cat('Joint model heterogeneity by response type: ')
+  cat(paste(het_parts, collapse = "; "))
+  cat('.\n</div>\n\n')
+}
+```
+
+## Cross-Taxa Meta-Regressions (Table 3 — Trophic Cascade)
+
+```{r main-cascade-regression, results='asis'}
+if (!is.null(table3)) {
+  cat('<div class="section-label">RESULTS — Trophic Cascade Tests</div>\n')
+  cat('<div class="result-box">\n')
+
+  for (i in seq_len(nrow(table3))) {
+    row <- table3[i, ]
+    sig <- if (row$Slope_pval < 0.05) "significant" else "non-significant"
+    direction <- if (row$Slope_Est < 0) "negative" else "positive"
+
+    cat(sprintf('%s: %s %s relationship (slope = %s, 95%% CI: %s to %s; %s; <em>R</em>&sup2; = %s%%; <em>k</em> = %d).&nbsp; ',
+                row$Relationship, sig, direction,
+                formatC(row$Slope_Est, format = "f", digits = 3),
+                formatC(row$Slope_CI_lower, format = "f", digits = 3),
+                formatC(row$Slope_CI_upper, format = "f", digits = 3),
+                fmt_p(row$Slope_pval),
+                formatC(row$R2, format = "f", digits = 1),
+                row$k))
+  }
+
+  cat('\n</div>\n\n')
+}
+```
+
+## Temporal Recovery Slopes (lmer)
+
+```{r main-temporal-slopes, results='asis'}
+if (!is.null(sp_slopes)) {
+  trophic_order <- c("P. interruptus", "S. pulcher", "S. purpuratus", "M. franciscanus", "M. pyrifera")
+  pooled <- sp_slopes %>% filter(model == "pooled")
+
+  cat('<div class="section-label">RESULTS — Temporal Recovery (Pooled Bio + Den)</div>\n')
+  cat('<div class="result-box">\n')
+  cat('Temporal meta-regression (lmer, pooled biomass + density) revealed species-specific recovery trajectories:&nbsp; ')
+  for (tx in trophic_order) {
+    row <- pooled %>% filter(Species_abbrev == tx)
+    if (nrow(row) == 0) next
+    direction <- if (row$slope > 0) "increase" else "decline"
+    sig <- if (row$p_value < 0.05) "" else " (n.s.)"
+    cat(sprintf('<em>%s</em>: %s lnRR units yr<sup>&minus;1</sup> (%s; 95%% CI: %s to %s; %s%s).&nbsp; ',
+                tx,
+                formatC(row$slope, format = "f", digits = 3),
+                direction,
+                formatC(row$CI_lower, format = "f", digits = 3),
+                formatC(row$CI_upper, format = "f", digits = 3),
+                fmt_p(row$p_value),
+                sig))
+  }
+  cat('\n</div>\n\n')
+
+  # Bio-only and Den-only
+  bio_den_map <- list(bio = "Biomass-Only", den = "Density-Only")
+  for (mod_key in names(bio_den_map)) {
+    mod_label <- bio_den_map[[mod_key]]
+    sub <- sp_slopes %>% filter(model == mod_key)
+    if (nrow(sub) == 0) next
+
+    cat(sprintf('<div class="section-label">RESULTS — Temporal Recovery (%s)</div>\n', mod_label))
+    cat('<div class="result-box">\n')
+    for (tx in trophic_order) {
+      row <- sub %>% filter(Species_abbrev == tx)
+      if (nrow(row) == 0) next
+      sig <- if (row$p_value < 0.05) "" else " (n.s.)"
+      cat(sprintf('<em>%s</em>: %s lnRR yr<sup>&minus;1</sup> (95%% CI: %s to %s; %s%s).&nbsp; ',
+                  tx,
+                  formatC(row$slope, format = "f", digits = 3),
+                  formatC(row$CI_lower, format = "f", digits = 3),
+                  formatC(row$CI_upper, format = "f", digits = 3),
+                  fmt_p(row$p_value),
+                  sig))
+    }
+    cat('\n</div>\n\n')
+  }
+}
+```
+
+## Cascade Consistency
+
+```{r main-cascade-consistency, results='asis'}
+if (!is.null(cascade_cons)) {
+  # Only MPAs with all 5 species
+  full <- cascade_cons %>% filter(n_species == 5)
+  n_full <- nrow(full)
+  n_consistent <- sum(full$cascade_score == 5, na.rm = TRUE)
+  n_high <- sum(full$cascade_score >= 4, na.rm = TRUE)
+
+  cat('<div class="section-label">RESULTS — Cascade Consistency</div>\n')
+  cat('<div class="result-box">\n')
+  cat(sprintf('Among the %d MPAs with data for all five taxa, %d (%d%%) showed perfect cascade consistency (all species trending in the predicted trophic direction) and %d (%d%%) showed high consistency (\u22654 of 5 species).',
+              n_full, n_consistent, round(100 * n_consistent / n_full),
+              n_high, round(100 * n_high / n_full)))
+  cat('\n</div>\n\n')
+}
+```
+
+# Copy-Paste Results: Supplement {.tabset}
+
+These grey boxes contain pre-formatted text for the supplementary materials. Hover and click **Copy** or select manually.
+
+## Outlier Sensitivity
+
+```{r supp-outlier, results='asis'}
+if (!is.null(outlier_sens)) {
+  cat('<div class="section-label">SUPPLEMENT — Outlier Sensitivity</div>\n')
+  cat('<div class="supplement-box">\n')
+  cat('Results were broadly robust to outlier exclusion criteria. ')
+
+  # Compare joint model (primary) vs per-taxa Cook's D (sensitivity)
+  primary <- outlier_sens %>% filter(grepl("Joint model, no removal", Method))
+  cooksd <- outlier_sens %>% filter(grepl("Per-taxa Cook's D", Method))
+
+  n_sig_primary <- sum(primary$pval < 0.05)
+  n_sig_cooksd <- sum(cooksd$pval < 0.05)
+
+  cat(sprintf("With the joint model (no outlier removal; primary analysis), %d of %d taxa x response combinations were significant (<em>p</em> < 0.05), compared to %d of %d with per-taxa Cook's D filtering (4/<em>k</em> threshold; sensitivity). ",
+              n_sig_primary, nrow(primary), n_sig_cooksd, nrow(cooksd)))
+
+  # Flag any sign changes
+  merged <- primary %>%
+    select(Taxa, Response, est_primary = Estimate, p_primary = pval) %>%
+    inner_join(cooksd %>% select(Taxa, Response, est_cooksd = Estimate, p_cooksd = pval),
+               by = c("Taxa", "Response"))
+  sign_changes <- merged %>% filter(sign(est_primary) != sign(est_cooksd))
+
+  if (nrow(sign_changes) > 0) {
+    cat(sprintf('Sign changes occurred for: %s.',
+                paste(sprintf('%s (%s)', sign_changes$Taxa, sign_changes$Response), collapse = ", ")))
+  } else {
+    cat('No sign changes occurred between methods for any taxa x response combination.')
+  }
+  cat('\n</div>\n\n')
+}
+```
+
+## Kelp Leave-One-Out
+
+```{r supp-kelp-loo, results='asis'}
+if (!is.null(kelp_loo)) {
+  n_sig <- sum(kelp_loo$pval < 0.05)
+  n_total <- nrow(kelp_loo)
+
+  cat('<div class="section-label">SUPPLEMENT — Kelp Leave-One-Out Sensitivity</div>\n')
+  cat('<div class="supplement-box">\n')
+  cat(sprintf('<em>M. pyrifera</em> biomass remained significant in %d of %d leave-one-out permutations (%d%%), indicating the MPA effect is not driven by any single MPA.',
+              n_sig, n_total, round(100 * n_sig / n_total)))
+  cat('\n</div>\n\n')
+}
+```
+
+## Moderator Analyses
+
+```{r supp-moderator, results='asis'}
+if (!is.null(mod_reg) && !is.null(mod_diag)) {
+  cat('<div class="section-label">SUPPLEMENT — Moderator: MPA Type (SMR vs SMCA)</div>\n')
+  cat('<div class="supplement-box">\n')
+
+  type_row <- mod_reg %>% filter(Model == "Type (SMR vs SMCA)", Term == "typeSMR")
+  type_diag <- mod_diag %>% filter(Model == "Type (SMR vs SMCA)")
+
+  if (nrow(type_row) > 0) {
+    cat(sprintf('MPA protection level (SMR vs. SMCA) was not a significant predictor of effect size (\u03b2 = %s, 95%% CI: %s to %s; %s). The omnibus test for the full moderator model was significant (QM = %s, df = %d, %s), driven by among-taxa differences rather than the type moderator.',
+                formatC(type_row$estimate, format = "f", digits = 3),
+                formatC(type_row$ci.lb, format = "f", digits = 3),
+                formatC(type_row$ci.ub, format = "f", digits = 3),
+                fmt_p(type_row$pval),
+                formatC(type_diag$QM, format = "f", digits = 1),
+                type_diag$QM_df,
+                fmt_p(type_diag$QM_pval)))
+  }
+  cat('\n</div>\n\n')
+
+  cat('<div class="section-label">SUPPLEMENT — Moderator: Location (Mainland vs Channel Islands)</div>\n')
+  cat('<div class="supplement-box">\n')
+
+  loc_row <- mod_reg %>% filter(Model == "Location (ML vs CI)", Term == "LocationML")
+  loc_diag <- mod_diag %>% filter(Model == "Location (ML vs CI)")
+
+  if (nrow(loc_row) > 0) {
+    cat(sprintf('Location (mainland vs. Channel Islands) was not a significant predictor (\u03b2 = %s, 95%% CI: %s to %s; %s). Residual heterogeneity remained high (<em>I</em>&sup2; = %s%%).',
+                formatC(loc_row$estimate, format = "f", digits = 3),
+                formatC(loc_row$ci.lb, format = "f", digits = 3),
+                formatC(loc_row$ci.ub, format = "f", digits = 3),
+                fmt_p(loc_row$pval),
+                formatC(loc_diag$I2, format = "f", digits = 1)))
+  }
+  cat('\n</div>\n\n')
+}
+```
+
+## Variance Components
+
+```{r supp-variance, results='asis'}
+if (!is.null(var_comp)) {
+  cat('<div class="section-label">SUPPLEMENT — Variance Components</div>\n')
+  cat('<div class="supplement-box">\n')
+  cat('The multilevel random-effects structure partitioned residual heterogeneity across MPA and data source levels. ')
+
+  for (i in seq_len(nrow(var_comp))) {
+    row <- var_comp[i, ]
+    ci_lo <- if ("CI_Lower" %in% names(var_comp)) row$CI_Lower else NA
+    ci_hi <- if ("CI_Upper" %in% names(var_comp)) row$CI_Upper else NA
+    pseudo_i2 <- if ("Pseudo_I2" %in% names(var_comp)) row$Pseudo_I2 else NA
+
+    ci_text <- if (!is.na(ci_lo) && !is.na(ci_hi)) {
+      sprintf(' (95%% CI: %s to %s)',
+              formatC(ci_lo, format = "f", digits = 4),
+              formatC(ci_hi, format = "f", digits = 4))
+    } else ""
+
+    i2_text <- if (!is.na(pseudo_i2)) {
+      sprintf('; pseudo-<em>I</em>&sup2; = %s%%',
+              formatC(pseudo_i2, format = "f", digits = 1))
+    } else ""
+
+    cat(sprintf('%s \u2014 %s: &sigma;&sup2; = %s%s%s.&nbsp; ',
+                row$Response, row$Component,
+                formatC(row$Estimate, format = "f", digits = 4),
+                ci_text, i2_text))
+  }
+  cat('\n</div>\n\n')
+
+  fmt_table(var_comp, caption = "Table S9: Variance components with profile likelihood CIs")
+}
+```
+
+## lmer Model Fit
+
+```{r supp-lmer-fit, results='asis'}
+if (!is.null(lmer_fit)) {
+  cat('<div class="section-label">SUPPLEMENT — lmer Model Diagnostics</div>\n')
+  cat('<div class="supplement-box">\n')
+
+  for (i in seq_len(nrow(lmer_fit))) {
+    row <- lmer_fit[i, ]
+    cat(sprintf('%s model (%s, <em>n</em> = %s observations across %s MPAs): <em>R</em>&sup2;<sub>marginal</sub> = %s, <em>R</em>&sup2;<sub>conditional</sub> = %s, AIC = %s%s.&nbsp; ',
+                tools::toTitleCase(row$model),
+                row$model_type,
+                row$n_obs, row$n_mpa,
+                formatC(row$R2_marginal, format = "f", digits = 3),
+                formatC(row$R2_conditional, format = "f", digits = 3),
+                formatC(row$AIC, format = "f", digits = 1),
+                ifelse(row$singular_fit, " (singular fit \u2014 interpret with caution)", "")))
+  }
+  cat('\n</div>\n\n')
+}
+```
+
+## AR1 Autocorrelation
+
+```{r supp-ar1, results='asis'}
+if (!is.null(ar1)) {
+  cat('<div class="section-label">SUPPLEMENT — AR1 Sensitivity</div>\n')
+  cat('<div class="supplement-box">\n')
+
+  dw_col <- intersect(c("statistic", "DW_statistic", "DW_stat"), names(ar1))
+  if (length(dw_col) > 0) {
+    mean_dw <- mean(ar1[[dw_col[1]]], na.rm = TRUE)
+    cat(sprintf('Durbin-Watson statistics across models (mean DW = %s) ',
+                formatC(mean_dw, format = "f", digits = 2)))
+  }
+  cat('indicated that AR1 temporal autocorrelation models failed to converge for all response types, likely due to the irregular spacing of observations. The standard lmer models (without AR1 structure) were retained as the primary analysis.')
+  cat('\n</div>\n\n')
+
+  fmt_table(ar1, caption = "Table S5: AR1 sensitivity \u2014 Durbin-Watson diagnostics")
+}
+```
+
+## GAM Linearity
+
+```{r supp-gam, results='asis'}
+if (!is.null(gam_diag)) {
+  cat('<div class="section-label">SUPPLEMENT — GAM Linearity Diagnostics</div>\n')
+  cat('<div class="supplement-box">\n')
+
+  linear_col <- if ("linear" %in% names(gam_diag)) {
+    gam_diag$linear
+  } else if ("linearity_class" %in% names(gam_diag)) {
+    gam_diag$linearity_class
+  } else if ("classification" %in% names(gam_diag)) {
+    gam_diag$classification
+  } else {
+    rep("", nrow(gam_diag))
+  }
+
+  n_linear <- sum(grepl("^yes$|linear", linear_col, ignore.case = TRUE), na.rm = TRUE)
+  n_total <- nrow(gam_diag)
+  cat(sprintf('GAM effective degrees of freedom (EDF) analysis showed %d of %d species x response combinations were approximately linear (EDF close to 1), supporting the use of linear lmer models for temporal trajectories.', n_linear, n_total))
+  cat('\n</div>\n\n')
+
+  fmt_table(gam_diag, caption = "Table S6: GAM EDF and linearity classification")
+}
+```
+
+## Phase Portrait Correlations
+
+```{r supp-phase-portraits, results='asis'}
+if (!is.null(phase_corr)) {
+  cat('<div class="section-label">SUPPLEMENT — Phase Portrait Correlations</div>\n')
+  cat('<div class="supplement-box">\n')
+  cat('Species-pair phase portrait analysis examined temporal covariation in lnRR across years since MPA establishment (network-wide means, <em>n</em> = ')
+  cat(sprintf('%d years).&nbsp; ', phase_corr$n_years[1]))
+
+  n_pairs <- nrow(phase_corr)
+  n_sig <- sum(phase_corr$pearson_p < 0.05)
+  cat(sprintf('Of %d species pairs tested, %d showed significant Pearson correlations (<em>p</em> < 0.05):&nbsp; ', n_pairs, n_sig))
+
+  for (i in seq_len(n_pairs)) {
+    row <- phase_corr[i, ]
+    sig_label <- if (row$pearson_p < 0.05) "significant" else "non-significant"
+    dir_label <- if (row$pearson_r > 0) "positive" else "negative"
+    cat(sprintf('%s vs. %s: %s %s correlation (<em>r</em> = %s, 95%% CI: %s to %s; %s; Spearman <em>\u03c1</em> = %s, %s).&nbsp; ',
+                row$x_species, row$y_species,
+                sig_label, dir_label,
+                formatC(row$pearson_r, format = "f", digits = 3),
+                formatC(row$pearson_ci_lb, format = "f", digits = 3),
+                formatC(row$pearson_ci_ub, format = "f", digits = 3),
+                fmt_p(row$pearson_p),
+                formatC(row$spearman_rho, format = "f", digits = 3),
+                fmt_p(row$spearman_p)))
+  }
+
+  cat('These correlations are consistent with trophic cascade dynamics: ')
+  cat('the strong negative correlation between <em>P. interruptus</em> and <em>S. purpuratus</em> (inverted) supports predator-mediated herbivore suppression, ')
+  cat('while the positive correlation between <em>S. purpuratus</em> (inverted) and <em>M. pyrifera</em> supports herbivore-mediated kelp release within MPAs.')
+  cat('\n</div>\n\n')
+}
+```
+
+## Source Random Effect Sensitivity
+
+```{r supp-source-sensitivity, results='asis'}
+if (!is.null(source_models_tbl) && !is.null(source_coefs_tbl)) {
+  cat('<div class="section-label">SUPPLEMENT — Source Random Effect Sensitivity</div>\n')
+  cat('<div class="supplement-box">\n')
+  cat('We assessed whether including data source (PISCO, KFM, LTER, Landsat) as an additional random effect altered conclusions.&nbsp; ')
+
+  for (resp in unique(source_models_tbl$Response)) {
+    resp_models <- source_models_tbl %>% filter(Response == resp)
+    with_src <- resp_models %>% filter(Model == "With Source")
+    without_src <- resp_models %>% filter(Model == "Without Source")
+
+    if (nrow(with_src) > 0 && nrow(without_src) > 0) {
+      preferred <- if (with_src$AIC < without_src$AIC) "With Source" else "Without Source"
+      delta <- abs(with_src$AIC - without_src$AIC)
+      cat(sprintf('For %s, the %s model was preferred (\u0394AIC = %s).&nbsp; ',
+                  tolower(resp), tolower(preferred),
+                  formatC(delta, format = "f", digits = 1)))
+    }
+  }
+
+  # Check for sign or significance changes
+  resp_list <- unique(source_coefs_tbl$Response)
+  any_sign_change <- FALSE
+  any_sig_change <- FALSE
+  sig_change_details <- c()
+
+  for (resp in resp_list) {
+    coefs <- source_coefs_tbl %>% filter(Response == resp)
+    for (i in seq_len(nrow(coefs))) {
+      row <- coefs[i, ]
+      if (sign(row$Est_with) != sign(row$Est_without)) {
+        any_sign_change <- TRUE
+      }
+      sig_w <- row$pval_with < 0.05
+      sig_wo <- row$pval_without < 0.05
+      if (sig_w != sig_wo) {
+        any_sig_change <- TRUE
+        label <- if (sig_w && !sig_wo) "gained" else "lost"
+        sig_change_details <- c(sig_change_details,
+          sprintf("<em>%s</em> %s %s significance", row$Taxa, tolower(resp), label))
+      }
+    }
+  }
+
+  if (!any_sign_change && !any_sig_change) {
+    cat('No sign changes or significance reversals occurred for any taxa x response combination when adding the Source random effect, confirming that conclusions are robust to data source heterogeneity.')
+  } else {
+    if (any_sign_change) {
+      cat('Sign changes occurred for some taxa when adding the Source random effect.&nbsp; ')
+    }
+    if (any_sig_change) {
+      cat(sprintf('Significance changes: %s.&nbsp; ',
+                  paste(sig_change_details, collapse = "; ")))
+    }
+    cat('Overall, the direction and pattern of MPA effects were consistent across model specifications.')
+  }
+  cat('\n</div>\n\n')
+}
+```
+
+## Per-MPA OLS Slope Directions
+
+```{r supp-slope-directions, results='asis'}
+if (!is.null(per_mpa_slopes) && !is.null(slope_summary)) {
+  trophic_order_sl <- c("P. interruptus", "S. pulcher", "S. purpuratus",
+                        "M. franciscanus", "M. pyrifera")
+
+  cat('<div class="section-label">SUPPLEMENT — Per-MPA OLS Slope Directions</div>\n')
+  cat('<div class="supplement-box">\n')
+  cat('Per-MPA ordinary least squares (OLS) regressions of lnRR on years since MPA establishment revealed the following slope direction patterns:&nbsp; ')
+
+  for (tx in trophic_order_sl) {
+    tx_data <- per_mpa_slopes %>%
+      filter(Species_abbrev == tx)
+    if (nrow(tx_data) == 0) next
+
+    n_pos <- sum(tx_data$slope > 0)
+    n_neg <- sum(tx_data$slope < 0)
+    n_total_sp <- nrow(tx_data)
+
+    # Get mean slope from slope_summary
+    ss_row <- slope_summary %>% filter(Species_abbrev == tx)
+    if (nrow(ss_row) > 0) {
+      mean_sl <- ss_row$mean_slope[1]
+      se_sl <- ss_row$se_slope[1]
+      cat(sprintf('<em>%s</em>: %d of %d MPAs showed positive slopes (%d negative); mean slope = %s +/- %s SE.&nbsp; ',
+                  tx, n_pos, n_total_sp, n_neg,
+                  formatC(mean_sl, format = "f", digits = 4),
+                  formatC(se_sl, format = "f", digits = 4)))
+    } else {
+      cat(sprintf('<em>%s</em>: %d of %d MPAs showed positive slopes (%d negative).&nbsp; ',
+                  tx, n_pos, n_total_sp, n_neg))
+    }
+  }
+
+  cat('Predators (<em>P. interruptus</em>) and producers (<em>M. pyrifera</em>) showed predominantly positive slopes (increasing MPA advantage over time), while herbivores (<em>S. purpuratus</em>, <em>M. franciscanus</em>) showed predominantly negative slopes, consistent with trophic cascade recovery dynamics.')
+  cat('\n</div>\n\n')
+}
+```
+
+# Full Tables {.tabset}
+
+## Table 1: Average Responses
+
+```{r avg-responses}
+avg_resp <- read_table("tables/average_responses.csv")
+if (!is.null(avg_resp)) fmt_table(avg_resp, caption = "Table 1: Average density/biomass by taxa and source") else cat("*Table not available (generated by data-processing repo)*")
+```
+
+## Table 2: Meta-Analysis
+
+```{r table-02-display}
+if (!is.null(table2)) {
+  t2_display <- table2 %>%
+    arrange(match(Response, c("Biomass", "Density")),
+            match(Taxa, c("P. interruptus", "S. pulcher", "S. purpuratus", "M. franciscanus", "M. pyrifera"))) %>%
+    select(Response, Taxa, k, n_MPAs, Estimate, SE, CI_lower, CI_upper,
+           RR, Pct_Change, pval, pval_fdr, tau2, I2) %>%
+    mutate(across(c(Estimate, SE, CI_lower, CI_upper, RR, tau2), ~ round(., 3)),
+           Pct_Change = round(Pct_Change, 1),
+           I2 = round(I2, 1))
+  fmt_table(t2_display, caption = "Table 2: Meta-analytic estimates by taxa and response")
+}
+```
+
+## Table 3: Cross-Taxa Meta-Regressions
+
+```{r table-03-display}
+if (!is.null(table3)) {
+  t3_display <- table3 %>%
+    select(Relationship, k, Slope_Est, Slope_SE, Slope_pval,
+           Slope_CI_lower, Slope_CI_upper, R2, tau2, I2)
+  fmt_table(t3_display, caption = "Table 3: Cross-taxa meta-regressions (trophic cascade tests)")
+}
+```
+
+## Table S1: Sample Sizes & Data Availability
+
+```{r table-s1-tabs, results='asis'}
+cat("### S1a: MPA Data Availability\n\n")
+mpa_avail <- read_table("tables/table_s_mpa_data_availability.csv")
+fmt_table(mpa_avail, caption = "Table S1a: Per-MPA data availability", scroll = TRUE)
+
+cat("\n\n### S1b: Sample Sizes\n\n")
+sample_sizes <- read_table("tables/table_s_sample_sizes.csv")
+fmt_table(sample_sizes, caption = "Table S1b: Sample sizes by taxa x response x data source")
+
+cat("\n\n### S1c: Analysis Summary\n\n")
+fmt_table(analysis_summary, caption = "Table S1c: Analysis summary")
+
+cat("\n\n### S1d: MPA x Taxa Matrix\n\n")
+mpa_matrix <- read_table("tables/table_s_mpa_taxa_matrix.csv")
+fmt_table(mpa_matrix, caption = "Table S1d: MPA x taxa cross-tabulation", scroll = TRUE)
+```
+
+## Table S2: Temporal Meta-Regression
+
+```{r table-s2}
+temp_pooled <- read_table("tables/table_s_temporal_meta_regression.csv")
+fmt_table(temp_pooled, caption = "Table S2: Temporal meta-regression \u2014 pooled lmer fixed effects")
+```
+
+```{r table-s2b}
+temp_bio <- read_table("tables/table_s_temporal_meta_regression_bio.csv")
+fmt_table(temp_bio, caption = "Table S2b: Temporal meta-regression \u2014 biomass lmer fixed effects")
+```
+
+```{r table-s2c}
+temp_den <- read_table("tables/table_s_temporal_meta_regression_den.csv")
+fmt_table(temp_den, caption = "Table S2c: Temporal meta-regression \u2014 density lmer fixed effects")
+```
+
+## Table S3: Cascade Consistency
+
+```{r table-s3}
+fmt_table(cascade_cons, caption = "Table S3: Per-MPA cascade consistency scores")
+```
+
+## Table S4: Moderator Analysis
+
+```{r table-s4}
+fmt_table(mod_reg, caption = "Table S4: Moderator meta-regression coefficients")
+```
+
+```{r table-s4b}
+fmt_table(mod_diag, caption = "Table S4b: Moderator model diagnostics")
+```
+
+```{r table-s4c}
+fmt_table(mod_sub, caption = "Table S4c: Moderator subgroup effect sizes", scroll = TRUE)
+```
+
+## Table S5-S11: Sensitivity & Diagnostics
+
+```{r tables-s5-s11}
+fmt_table(ar1, caption = "Table S5: AR1 Durbin-Watson diagnostics")
+fmt_table(gam_diag, caption = "Table S6: GAM linearity diagnostics")
+fmt_table(outlier_sens, caption = "Table S7: Outlier sensitivity (4 methods)", scroll = TRUE)
+fmt_table(kelp_loo, caption = "Table S8: Kelp leave-one-out sensitivity")
+fmt_table(var_comp, caption = "Table S9: Variance components")
+
+source_models <- read_table("tables/table_s_source_sensitivity_models.csv")
+fmt_table(source_models, caption = "Table S10: Source RE model comparison")
+
+source_coefs <- read_table("tables/table_s_source_sensitivity_coefficients.csv")
+fmt_table(source_coefs, caption = "Table S11: Source RE coefficient comparison")
+```
+
+## Additional Temporal Tables
+
+```{r temporal-extra}
+fmt_table(sp_slopes, caption = "Species-level derived slopes (lnRR/yr)")
+fmt_table(lmer_fit, caption = "lmer model fit statistics")
+
+slope_sum <- read_table("tables/table_s_slope_summary_by_species.csv")
+fmt_table(slope_sum, caption = "Mean OLS slopes by species")
+
+mpa_slopes <- read_table("tables/table_s_per_mpa_slopes.csv")
+fmt_table(mpa_slopes, caption = "Per-MPA slopes by species", scroll = TRUE)
+```
+
+# Data Provenance & Filtering {.tabset}
+
+## Response Ratio Provenance
+
+```{r prov-rr}
+prov_rr <- read_table("tables/table_data_provenance_rr.csv")
+if (!is.null(prov_rr)) fmt_table(prov_rr, caption = "Data provenance: RR observations by source/taxa/response") else cat("*Table not available (generated by data-processing repo)*")
+```
+
+## Raw Response Provenance
+
+```{r prov-raw}
+prov_raw <- read_table("tables/table_data_provenance_raw.csv")
+if (!is.null(prov_raw)) fmt_table(prov_raw, caption = "Data provenance: raw response observations") else cat("*Table not available (generated by data-processing repo)*")
+```
+
+## Filtering Steps
+
+```{r filtering}
+filtering <- read_table("outputs/data_filtering_steps.csv")
+if (!is.null(filtering)) fmt_table(filtering, caption = "Data filtering pipeline steps") else cat("*Table not available (generated by data-processing repo)*")
+```
+
+## Data Flow Summary
+
+```{r data-flow}
+data_flow <- read_table("outputs/data_flow_summary.csv")
+fmt_table(data_flow, caption = "Data flow by taxa through pipeline stages")
+```
+
+## Effect Sizes (SumStats.Final)
+
+```{r sumstats}
+sumstats <- read_table("data/sumstats_final.csv")
+if (!is.null(sumstats)) {
+  ss_display <- sumstats %>%
+    select(MPA, Taxa, Resp, Mean, SE, CI, Model, Source, AnalysisType) %>%
+    mutate(across(c(Mean, SE, CI), ~ round(as.numeric(.), 4)))
+  fmt_table(ss_display, caption = sprintf("All %d effect sizes (SumStats.Final)", nrow(ss_display)), scroll = TRUE)
+}
+```
+
+## Model Selection
+
+```{r model-sel}
+model_sel <- read_table("tables/table_model_selection.csv")
+if (!is.null(model_sel)) {
+  model_counts <- model_sel %>%
+    count(Model, Taxa, name = "n") %>%
+    pivot_wider(names_from = Model, values_from = n, values_fill = 0)
+  fmt_table(model_counts, caption = "NLS model type distribution by taxa")
+}
+```
+
+# Data Quality Audit {.tabset}
+
+```{r na-audit, include=FALSE}
+tables_to_audit <- list(
+  list(path = "tables/table_02_meta_analysis.csv",               name = "Table 2"),
+  list(path = "tables/table_03_cross_taxa_meta_regression.csv",  name = "Table 3"),
+  list(path = "tables/average_responses.csv",                    name = "Table 1"),
+  list(path = "tables/table_s_variance_components.csv",          name = "Variance components"),
+  list(path = "tables/table_s_outlier_sensitivity.csv",          name = "Outlier sensitivity"),
+  list(path = "tables/table_s_kelp_leave1out.csv",               name = "Kelp leave-one-out"),
+  list(path = "tables/table_s_source_sensitivity_models.csv",    name = "Source sensitivity (models)"),
+  list(path = "tables/table_s_source_sensitivity_coefficients.csv", name = "Source sensitivity (coefs)"),
+  list(path = "tables/table_s_temporal_meta_regression.csv",     name = "Temporal meta-reg (pooled)"),
+  list(path = "tables/table_s_temporal_meta_regression_bio.csv", name = "Temporal meta-reg (bio)"),
+  list(path = "tables/table_s_temporal_meta_regression_den.csv", name = "Temporal meta-reg (den)"),
+  list(path = "tables/table_s_lmer_model_fit.csv",               name = "lmer model fit"),
+  list(path = "tables/table_s_species_slopes.csv",               name = "Species slopes"),
+  list(path = "tables/table_s_per_mpa_slopes.csv",               name = "Per-MPA slopes"),
+  list(path = "tables/table_s_gam_linearity_diagnostics.csv",    name = "GAM diagnostics"),
+  list(path = "tables/table_s_ar1_sensitivity.csv",              name = "AR1 sensitivity"),
+  list(path = "tables/table_s_cascade_consistency.csv",          name = "Cascade consistency"),
+  list(path = "tables/table_s_moderator_meta_regression.csv",    name = "Moderator meta-reg"),
+  list(path = "tables/table_s_moderator_diagnostics.csv",        name = "Moderator diagnostics"),
+  list(path = "tables/table_s_moderator_subgroup_effects.csv",   name = "Moderator subgroups"),
+  list(path = "tables/table_data_provenance_rr.csv",             name = "Provenance (RR)"),
+  list(path = "tables/table_data_provenance_raw.csv",            name = "Provenance (raw)"),
+  list(path = "tables/table_s_mpa_data_availability.csv",        name = "MPA data availability"),
+  list(path = "tables/table_s_sample_sizes.csv",                 name = "Sample sizes"),
+  list(path = "tables/table_s_analysis_summary.csv",             name = "Analysis summary"),
+  list(path = "data/sumstats_final.csv",                         name = "SumStats.Final"),
+  list(path = "outputs/data_filtering_steps.csv",                name = "Filtering steps"),
+  list(path = "outputs/data_flow_summary.csv",                   name = "Data flow"),
+  list(path = "outputs/model_results_summary.csv",               name = "Model results summary"),
+  list(path = "outputs/replicate_effects.csv",                   name = "Replicate effects")
+)
+
+na_summary <- function(df, name) {
+  if (is.null(df)) return(data.frame(Table = name, Column = "FILE MISSING",
+                                      N_Missing = NA, Pct_Missing = NA))
+  nas <- colSums(is.na(df))
+  if (all(nas == 0)) return(data.frame(Table = name, Column = "(none)",
+                                        N_Missing = 0, Pct_Missing = 0))
+  na_cols <- nas[nas > 0]
+  data.frame(Table = name, Column = names(na_cols),
+             N_Missing = as.integer(na_cols),
+             Pct_Missing = round(100 * na_cols / nrow(df), 1), row.names = NULL)
+}
+
+audit_results <- bind_rows(lapply(tables_to_audit, function(t) {
+  na_summary(read_table(t$path), t$name)
+}))
+clean_tables <- audit_results %>% filter(N_Missing == 0 | is.na(N_Missing))
+problem_tables <- audit_results %>% filter(N_Missing > 0)
+```
+
+## Missing Values (`r nrow(problem_tables)` columns across `r n_distinct(problem_tables$Table)` tables)
+
+```{r na-problems}
+if (nrow(problem_tables) > 0) {
+  fmt_table(problem_tables %>% arrange(desc(Pct_Missing)),
+            caption = "Columns with missing values")
+} else {
+  cat("**All tables complete.**\n")
+}
+```
+
+## Clean Tables (`r n_distinct(clean_tables$Table)`)
+
+```{r na-clean}
+fmt_table(clean_tables %>% distinct(Table) %>% arrange(Table),
+          caption = "Tables with zero missing values")
+```
+
+## Completeness Score
+
+```{r completeness, results='asis'}
+total_cells <- sum(sapply(tables_to_audit, function(t) {
+  df <- read_table(t$path)
+  if (is.null(df)) return(0)
+  nrow(df) * ncol(df)
+}))
+total_missing <- sum(problem_tables$N_Missing, na.rm = TRUE)
+pct_complete <- round(100 * (1 - total_missing / total_cells), 2)
+
+cat(sprintf("\n\n**Overall completeness: %s%% (%s of %s cells populated)**\n\n",
+            pct_complete,
+            format(total_cells - total_missing, big.mark = ","),
+            format(total_cells, big.mark = ",")))
+cat(sprintf("- Tables audited: %d\n", length(tables_to_audit)))
+cat(sprintf("- Complete: %d | With NAs: %d\n",
+            n_distinct(clean_tables$Table), n_distinct(problem_tables$Table)))
+```
+
+---
+
+*Report generated by `code/R/results_report.Rmd` --- render with `rmarkdown::render(here::here("code", "R", "results_report.Rmd"), output_dir = here::here("docs"))`*

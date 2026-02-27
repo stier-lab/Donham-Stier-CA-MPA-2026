@@ -1,0 +1,2 @@
+"diagnostic","statistic","p_value","note"
+"Durbin-Watson",2.16866117537736,1,"Weak autocorrelation; lmer results likely robust"
