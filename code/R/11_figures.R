@@ -126,6 +126,9 @@ FIG_S10_DIMS <- c(w = 17, h = 22)  # Recovery curves — 5×2 grid (biomass + de
 # FIG_S11_DIMS <- c(w = 17, h = 9) # Recovery curves — density [DROPPED: merged concept into Fig 4]
 FIG_S2_DIMS <- c(w = 17.8, h = 23.5) # Forest plot (supplemental)
 FIG_S3_DIMS <- c(w = 17.8, h = 26) # All taxa time series (supplemental, faceted layout)
+FIG_S16_DIMS <- c(w = 17, h = 18)  # Outlier removal rationale — 2×2 panel layout
+FIG_S17_DIMS <- c(w = 17.8, h = 25) # Temporal trajectories with outlier status — 5×2 faceted
+FIG_S18_DIMS <- c(w = 17.8, h = 25) # Raw data trajectories with outlier status — 5×2 faceted
 
 # =============================================================================
 # Shared variables used across multiple figure sections
@@ -4035,6 +4038,569 @@ if (!file.exists(audit_path) || !file.exists(outlier_path)) {
 
 } # end file check
 } # end fig_s15
+
+####################################################################################################
+## Shared constants for outlier figures (S16–S18) #################################################
+####################################################################################################
+# These mappings are used by fig_s17 and fig_s18 which work with full species names.
+# Defined once here to avoid duplication.
+
+# Abbreviated → full species name mapping
+outlier_abbrev_to_full <- c(
+  "M. pyrifera"      = "Macrocystis pyrifera",
+  "M. franciscanus"  = "Mesocentrotus franciscanus",
+  "S. purpuratus"    = "Strongylocentrotus purpuratus",
+  "P. interruptus"   = "Panulirus interruptus",
+  "S. pulcher"       = "Semicossyphus pulcher"
+)
+
+# Response label mapping
+outlier_resp_map <- c("Biomass" = "Bio", "Density" = "Den")
+
+# Canonical species order (trophic: predators → urchins → kelp)
+outlier_sp_order_full <- c(
+  "Panulirus interruptus", "Semicossyphus pulcher",
+  "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus",
+  "Macrocystis pyrifera"
+)
+
+# Full-name → abbreviated for color lookup
+outlier_full_to_abbrev <- c(
+  "Macrocystis pyrifera"          = "M. pyrifera",
+  "Mesocentrotus franciscanus"    = "M. franciscanus",
+  "Strongylocentrotus purpuratus" = "S. purpuratus",
+  "Panulirus interruptus"         = "P. interruptus",
+  "Semicossyphus pulcher"         = "S. pulcher"
+)
+
+# Species colors keyed by full name
+outlier_sp_colors <- setNames(col_taxa[outlier_full_to_abbrev],
+                               names(outlier_full_to_abbrev))
+
+# Facet ordering: "Species — Response" (excluding M. pyrifera Density)
+outlier_facet_order <- as.vector(t(outer(
+  outlier_sp_order_full, c("Biomass", "Density"),
+  function(sp, r) paste0(sp, " \u2014 ", r)
+)))
+outlier_facet_order <- outlier_facet_order[
+  outlier_facet_order != "Macrocystis pyrifera \u2014 Density"
+]
+
+####################################################################################################
+## Figure S16: Outlier removal rationale ##########################################################
+####################################################################################################
+# WHY we chose not to remove Cook's D outliers as the primary analysis.
+# Four panels: (a) effect sizes by taxon with outlier highlighting, (b) between- vs
+# within-taxa distance decomposition, (c) % flagged bar chart, (d) paired forest plot.
+
+if (should_render("fig_s16")) {
+cat("\n--- Figure S16: Outlier removal rationale ---\n")
+
+audit_global_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
+audit_pertaxa_path <- here::here("outputs", "filter_audit_pertaxa_meta.csv")
+sensitivity_path <- here::here("tables", "table_s_outlier_sensitivity.csv")
+
+if (!file.exists(audit_global_path) || !file.exists(audit_pertaxa_path) ||
+    !file.exists(sensitivity_path)) {
+  warning("Required CSV files not found -- skipping fig_s16.")
+} else {
+
+  # --- Load data ---
+  audit_g <- read.csv(audit_global_path, stringsAsFactors = FALSE)
+  audit_pt <- read.csv(audit_pertaxa_path, stringsAsFactors = FALSE)
+  sensitivity <- read.csv(sensitivity_path, stringsAsFactors = FALSE)
+
+  # Standardize factor levels
+  audit_g$Taxa <- factor(audit_g$Taxa, levels = taxa_levels)
+  audit_pt$Taxa <- factor(audit_pt$Taxa, levels = taxa_levels)
+  sensitivity$Taxa <- factor(sensitivity$Taxa, levels = taxa_levels)
+
+  # Compute derived columns
+  grand_mean_val <- mean(audit_g$Mean, na.rm = TRUE)
+  taxon_resp_means <- aggregate(Mean ~ Taxa + Response, data = audit_g,
+                                 FUN = mean, na.rm = TRUE)
+  names(taxon_resp_means)[3] <- "taxon_mean"
+  audit_g <- merge(audit_g, taxon_resp_means, by = c("Taxa", "Response"))
+  audit_g$dist_grand <- abs(audit_g$Mean - grand_mean_val)
+  audit_g$dist_taxon <- abs(audit_g$Mean - audit_g$taxon_mean)
+  audit_g$outlier_label <- ifelse(audit_g$Is_Outlier, "Flagged by global 4/n", "Retained")
+
+  # Trophic group for annotation
+  audit_g$trophic <- trophic_assignment[as.character(audit_g$Taxa)]
+
+  # ---- Panel (a): Effect sizes by taxon with outlier status ----
+  # Y range for annotation placement
+  y_max_a <- max(audit_g$Mean, na.rm = TRUE) * 1.05
+  y_annot <- y_max_a + diff(range(audit_g$Mean, na.rm = TRUE)) * 0.08
+
+  # Build panel (a) base plot, then add trophic annotations as separate grobs
+  p_a <- ggplot(audit_g, aes(x = Taxa, y = Mean)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.3) +
+    geom_hline(yintercept = grand_mean_val, linetype = "dotted",
+               color = "grey40", linewidth = 0.3) +
+    geom_jitter(aes(color = Taxa,
+                    alpha = ifelse(Is_Outlier, 1.0, 0.25),
+                    shape = ifelse(Is_Outlier, "Flagged", "Retained")),
+                width = 0.2, height = 0, size = 1.8) +
+    scale_alpha_identity() +
+    scale_shape_manual(values = c("Flagged" = 16, "Retained" = 1),
+                       name = "Global 4/n status") +
+    scale_color_taxa(name = "Taxa") +
+    facet_wrap(~ Response, ncol = 2) +
+    labs(x = NULL, y = "Effect size (lnRR)",
+         subtitle = expression(
+           bold(phantom("Predators") * "\u2191") ~
+           bold(phantom("Urchins") * "\u2193") ~
+           bold(phantom("Kelp") * "\u2191")
+         )) +
+    theme_mpa(base_size = 8) +
+    theme(axis.text.x = element_text(face = "italic", angle = 35, hjust = 1, size = 6.5),
+          legend.position = "none",
+          strip.text = element_text(size = 8, face = "bold"),
+          plot.subtitle = element_blank(),
+          plot.margin = margin(5, 5, 5, 5, "mm"))
+
+  # Add colored trophic annotations using three separate geom_text layers (avoids scale conflict)
+  trophic_bio <- data.frame(Response = "Biomass", stringsAsFactors = FALSE)
+  p_a <- p_a +
+    geom_text(data = cbind(trophic_bio, x = 1.5, y = y_annot),
+              inherit.aes = FALSE, aes(x = x, y = y),
+              label = "Predators \u2191", color = col_effect["positive"],
+              size = 2.3, fontface = "bold", show.legend = FALSE) +
+    geom_text(data = cbind(trophic_bio, x = 3.5, y = y_annot),
+              inherit.aes = FALSE, aes(x = x, y = y),
+              label = "Urchins \u2193", color = col_effect["negative"],
+              size = 2.3, fontface = "bold", show.legend = FALSE) +
+    geom_text(data = cbind(trophic_bio, x = 5, y = y_annot),
+              inherit.aes = FALSE, aes(x = x, y = y),
+              label = "Kelp \u2191", color = col_effect["positive"],
+              size = 2.3, fontface = "bold", show.legend = FALSE)
+
+  # ---- Panel (b): Between-taxa vs within-taxa distance ----
+  p_b <- ggplot(audit_g, aes(x = dist_grand, y = dist_taxon)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey60") +
+    geom_point(aes(color = Taxa,
+                   shape = ifelse(Is_Outlier, "Flagged", "Retained")),
+               size = 1.8, alpha = 0.7) +
+    scale_color_taxa(name = "Taxa") +
+    scale_shape_manual(values = c("Flagged" = 17, "Retained" = 1),
+                       name = "Global 4/n status") +
+    # Annotation in the lower-right region (below diagonal)
+    annotate("text", x = max(audit_g$dist_grand, na.rm = TRUE) * 0.65,
+             y = max(audit_g$dist_grand, na.rm = TRUE) * 0.15,
+             label = "Flagged due to\ntaxon, not anomaly",
+             size = 2.2, color = "grey40", fontface = "italic") +
+    # Annotation in the upper-left region (above diagonal)
+    annotate("text", x = max(audit_g$dist_grand, na.rm = TRUE) * 0.15,
+             y = max(audit_g$dist_grand, na.rm = TRUE) * 0.75,
+             label = "True within-taxon\noutliers",
+             size = 2.2, color = "grey40", fontface = "italic") +
+    labs(x = "|lnRR \u2212 grand mean|",
+         y = "|lnRR \u2212 taxon mean|") +
+    theme_mpa(base_size = 8) +
+    theme(legend.position = "none")
+
+  # ---- Panel (c): % flagged — global vs per-taxon ----
+  # Global flagging rate per taxa (combining bio + den)
+  flag_global <- aggregate(Is_Outlier ~ Taxa, data = audit_g,
+                           FUN = function(x) round(100 * mean(x), 1))
+  names(flag_global)[2] <- "pct_flagged"
+  flag_global$method <- "Global (4/n)"
+
+  # Per-taxon flagging rate
+  flag_pertaxa <- aggregate(Is_Outlier ~ Taxa, data = audit_pt,
+                            FUN = function(x) round(100 * mean(x), 1))
+  names(flag_pertaxa)[2] <- "pct_flagged"
+  flag_pertaxa$method <- "Per-taxon (4/k)"
+
+  # Sample sizes per taxon
+  k_per_taxa <- aggregate(Mean ~ Taxa, data = audit_g, FUN = length)
+  names(k_per_taxa)[2] <- "k_total"
+
+  flag_df <- rbind(flag_global, flag_pertaxa)
+  flag_df$Taxa <- factor(flag_df$Taxa, levels = taxa_levels)
+  flag_df$method <- factor(flag_df$method,
+                           levels = c("Global (4/n)", "Per-taxon (4/k)"))
+
+  # Merge sample sizes for annotation
+  flag_df <- merge(flag_df, k_per_taxa, by = "Taxa")
+
+  p_c <- ggplot(flag_df, aes(x = Taxa, y = pct_flagged, fill = method)) +
+    geom_col(position = position_dodge(width = 0.7), width = 0.3) +
+    geom_text(aes(label = paste0(pct_flagged, "%")),
+              position = position_dodge(width = 0.7),
+              vjust = -0.5, size = 2.2) +
+    geom_hline(yintercept = 50, linetype = "dotted", color = "grey50", linewidth = 0.3) +
+    # k labels below bars
+    geom_text(data = flag_df[flag_df$method == "Global (4/n)", ],
+              aes(y = -4, label = paste0("k=", k_total)),
+              size = 2, color = "grey40") +
+    scale_fill_manual(values = c("Global (4/n)" = "#D55E00",
+                                 "Per-taxon (4/k)" = "#56B4E9"),
+                      name = "Threshold") +
+    scale_y_continuous(limits = c(-6, 105), breaks = seq(0, 100, 25)) +
+    labs(x = NULL, y = "Observations flagged (%)") +
+    theme_mpa(base_size = 8) +
+    theme(axis.text.x = element_text(face = "italic", angle = 35, hjust = 1, size = 6.5),
+          legend.position = "bottom",
+          legend.key.size = unit(3, "mm"),
+          legend.text = element_text(size = 7))
+
+  # ---- Panel (d): Meta-analytic estimates — full vs removed ----
+  sens_sub <- sensitivity[sensitivity$Method %in%
+    c("Joint model, no removal (primary)", "Joint Cook's D (4/n) (legacy)"), ]
+  sens_sub$Method_short <- ifelse(
+    grepl("no removal", sens_sub$Method),
+    "Full data (primary)", "After removal (legacy)"
+  )
+  sens_sub$Method_short <- factor(sens_sub$Method_short,
+    levels = c("Full data (primary)", "After removal (legacy)"))
+
+  # CIs using t-distribution
+  sens_sub$t_crit <- qt(0.975, df = pmax(sens_sub$k - 1, 1))
+  sens_sub$ci_lo <- sens_sub$Estimate - sens_sub$t_crit * sens_sub$SE
+  sens_sub$ci_hi <- sens_sub$Estimate + sens_sub$t_crit * sens_sub$SE
+
+  # Significance label
+  sens_sub$sig_label <- ifelse(sens_sub$pval < 0.05, "", "n.s.")
+  # k label
+  sens_sub$k_label <- paste0("k=", sens_sub$k)
+
+  # Combine k and significance into one label to reduce clutter
+  sens_sub$point_label <- paste0(
+    "k=", sens_sub$k,
+    ifelse(sens_sub$pval >= 0.05, "  n.s.", "")
+  )
+
+  p_d <- ggplot(sens_sub, aes(x = Estimate, y = Taxa, color = Method_short)) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "grey50", linewidth = 0.3) +
+    geom_errorbarh(aes(xmin = ci_lo, xmax = ci_hi),
+                   height = 0.15, linewidth = 0.4,
+                   position = position_dodge(width = 0.6)) +
+    geom_point(size = 2, position = position_dodge(width = 0.6)) +
+    geom_text(aes(label = point_label),
+              position = position_dodge(width = 0.6),
+              size = 1.7, hjust = -0.1, vjust = -0.9, show.legend = FALSE) +
+    scale_x_continuous(limits = c(-4, 4), oob = scales::squish) +
+    scale_color_manual(values = c("Full data (primary)" = col_effect["positive"],
+                                  "After removal (legacy)" = col_effect["negative"]),
+                       name = NULL) +
+    facet_wrap(~ Response, ncol = 2) +
+    labs(x = "Effect size (lnRR)", y = NULL) +
+    theme_mpa(base_size = 8) +
+    theme(axis.text.y = element_text(face = "italic", size = 7),
+          legend.position = "bottom",
+          legend.key.size = unit(3, "mm"),
+          legend.text = element_text(size = 7),
+          strip.text = element_text(size = 8, face = "bold"))
+
+  # ---- Assemble 2x2 ----
+  fig_s16 <- (p_a + p_b) / (p_c + p_d) +
+    patchwork::plot_layout(heights = c(1, 0.9)) +
+    patchwork::plot_annotation(tag_levels = "a") &
+    theme(plot.tag = element_text(face = "bold", size = 10))
+
+  save_fig(fig_s16, "fig_s16_outlier_rationale",
+           w = FIG_S16_DIMS["w"], h = FIG_S16_DIMS["h"])
+  cat("  Figure S16 saved.\n")
+
+} # end file check
+} # end fig_s16
+
+####################################################################################################
+## Figure S17: Temporal trajectories with outlier status ##########################################
+####################################################################################################
+# Companion to fig_s16. Shows that "outlier" MPA-taxa combinations follow coherent
+# recovery trajectories over time — not erratic noise. If these were genuine outliers,
+# their time series would be random; instead, they track the cascade prediction.
+
+if (should_render("fig_s17")) {
+cat("\n--- Figure S17: Temporal trajectories by outlier status ---\n")
+
+audit_global_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
+
+if (!file.exists(audit_global_path)) {
+  warning("Audit CSV not found -- skipping fig_s17.")
+} else if (!exists("All.RR.sub.trans")) {
+  warning("All.RR.sub.trans not available -- skipping fig_s17.")
+} else {
+
+  # --- Load outlier flags (use shared constants) ---
+  audit_g <- read.csv(audit_global_path, stringsAsFactors = FALSE)
+  audit_g$resp_short <- outlier_resp_map[audit_g$Response]
+  audit_g$Taxa_full <- outlier_abbrev_to_full[audit_g$Taxa]
+
+  # Create lookup key: MPA + full taxa name + resp
+  audit_g$join_key <- paste(audit_g$MPA, audit_g$Taxa_full, audit_g$resp_short, sep = "|")
+  outlier_keys <- audit_g$join_key[audit_g$Is_Outlier]
+  retained_keys <- audit_g$join_key[!audit_g$Is_Outlier]
+
+  # --- Detect taxa column name ---
+  taxa_col_ts <- if ("y" %in% names(All.RR.sub.trans)) "y" else "Taxa"
+
+  # --- Build temporal dataset (After period, Bio + Den, t <= 15) ---
+  ts_data <- All.RR.sub.trans %>%
+    dplyr::filter(BA == "After", time >= 0, time <= 15,
+                  !is.na(resp), resp %in% c("Bio", "Den")) %>%
+    dplyr::mutate(
+      time = as.numeric(time),
+      join_key = paste(CA_MPA_Name_Short, .data[[taxa_col_ts]], resp, sep = "|"),
+      outlier_status = dplyr::case_when(
+        join_key %in% outlier_keys ~ "Flagged by global 4/n",
+        join_key %in% retained_keys ~ "Retained",
+        TRUE ~ "Not in meta-analysis"
+      ),
+      resp_label = dplyr::case_when(
+        resp == "Bio" ~ "Biomass",
+        resp == "Den" ~ "Density",
+        TRUE ~ resp
+      )
+    ) %>%
+    dplyr::filter(outlier_status != "Not in meta-analysis")
+
+  # Drop M. pyrifera Density (no density data for kelp)
+  ts_data <- ts_data %>%
+    dplyr::filter(!(.data[[taxa_col_ts]] == "Macrocystis pyrifera" & resp == "Den"))
+
+  # Use shared constants for species ordering and colors
+  ts_data[[taxa_col_ts]] <- factor(ts_data[[taxa_col_ts]], levels = outlier_sp_order_full)
+
+  # Combined facet label: "Species — Response"
+  ts_data <- ts_data %>%
+    dplyr::mutate(
+      facet_label = paste0(.data[[taxa_col_ts]], " \u2014 ", resp_label)
+    )
+  ts_data$facet_label <- factor(ts_data$facet_label, levels = outlier_facet_order)
+
+  # Status factor
+  ts_data$outlier_status <- factor(ts_data$outlier_status,
+    levels = c("Flagged by global 4/n", "Retained"))
+
+  cat(sprintf("  Temporal data: %d obs, %d flagged trajectories, %d retained\n",
+              nrow(ts_data),
+              length(unique(ts_data$join_key[ts_data$outlier_status == "Flagged by global 4/n"])),
+              length(unique(ts_data$join_key[ts_data$outlier_status == "Retained"]))))
+
+  # --- Build figure ---
+  fig_s17 <- ggplot(ts_data, aes(x = time, y = lnDiff)) +
+    # Reference line at lnRR = 0 (no MPA effect)
+    geom_hline(yintercept = 0, linetype = "dashed", color = "grey30",
+               linewidth = 0.4) +
+    # Retained MPA trajectories (darker grey, medium weight)
+    geom_line(data = ts_data[ts_data$outlier_status == "Retained", ],
+              aes(group = interaction(CA_MPA_Name_Short, resp)),
+              color = "grey45", alpha = 0.6, linewidth = 0.5) +
+    # Flagged MPA trajectories (colored, lighter weight to reduce visual dominance)
+    geom_line(data = ts_data[ts_data$outlier_status == "Flagged by global 4/n", ],
+              aes(group = interaction(CA_MPA_Name_Short, resp),
+                  color = .data[[taxa_col_ts]]),
+              alpha = 0.45, linewidth = 0.5) +
+    # GAM smooth across ALL data (both flagged + retained)
+    geom_smooth(aes(color = .data[[taxa_col_ts]],
+                    fill = .data[[taxa_col_ts]]),
+                method = "gam", formula = y ~ s(x, k = 5),
+                linewidth = 1.2, alpha = 0.15,
+                se = TRUE, level = 0.95) +
+    facet_wrap(~ facet_label, ncol = 2, scales = "free_y") +
+    scale_color_manual(values = outlier_sp_colors, guide = "none") +
+    scale_fill_manual(values = outlier_sp_colors, guide = "none") +
+    scale_x_continuous(breaks = seq(0, 15, by = 5), limits = c(0, 16),
+                       expand = c(0.02, 0)) +
+    scale_y_rr_free() +
+    labs(
+      x = "Years since MPA implementation",
+      y = "MPA / Reference"
+    ) +
+    theme_mpa(base_size = 9) +
+    theme(
+      strip.text = element_text(face = "italic", size = 8.5,
+                                margin = margin(b = 3, t = 3)),
+      axis.text  = element_text(size = 7),
+      axis.title = element_text(size = 8),
+      panel.grid.major = element_blank(),
+      plot.margin = margin(6, 6, 6, 6, "pt")
+    )
+
+  # Manual legend for line types
+  legend_grob <- cowplot::ggdraw() +
+    cowplot::draw_line(x = c(0.08, 0.18), y = c(0.5, 0.5),
+                       color = "#D55E00", linewidth = 1.0) +
+    cowplot::draw_label("Would be removed by global Cook's D (4/n)",
+                        x = 0.20, y = 0.5, hjust = 0, size = 7) +
+    cowplot::draw_line(x = c(0.70, 0.80), y = c(0.5, 0.5),
+                       color = "grey70", linewidth = 0.5) +
+    cowplot::draw_label("Retained",
+                        x = 0.82, y = 0.5, hjust = 0, size = 7)
+
+  fig_s17_final <- cowplot::plot_grid(
+    fig_s17, legend_grob,
+    ncol = 1, rel_heights = c(1, 0.03)
+  )
+
+  save_fig(fig_s17_final, "fig_s17_temporal_outlier_trajectories",
+           w = FIG_S17_DIMS["w"], h = FIG_S17_DIMS["h"])
+  cat("  Figure S17 saved.\n")
+
+} # end data checks
+} # end fig_s17
+
+
+# =============================================================================
+# Figure S18: Raw data trajectories by outlier status
+# =============================================================================
+# Shows raw observed values (not response ratios) for MPA and reference sites
+# through time, highlighting MPA-taxa combos flagged by global Cook's D.
+# Complements fig_s17 (lnRR trajectories) by showing the underlying data
+# are well-behaved — flagged combos don't have erratic raw values.
+# =============================================================================
+
+if (should_render("fig_s18")) {
+cat("\n--- Figure S18: Raw data trajectories by outlier status ---\n")
+
+audit_global_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
+
+if (!file.exists(audit_global_path)) {
+  warning("Audit CSV not found -- skipping fig_s18.")
+} else if (!exists("All.Resp.sub")) {
+  warning("All.Resp.sub not available -- skipping fig_s18.")
+} else {
+
+  # --- Load outlier flags ---
+  audit_g <- read.csv(audit_global_path, stringsAsFactors = FALSE)
+
+  # Use shared constants for name mapping
+  audit_g$resp_short <- outlier_resp_map[audit_g$Response]
+  audit_g$Taxa_full <- outlier_abbrev_to_full[audit_g$Taxa]
+
+  # Outlier lookup: keyed by MPA + taxa + resp
+  audit_g$join_key <- paste(audit_g$MPA, audit_g$Taxa_full, audit_g$resp_short, sep = "|")
+  outlier_keys <- audit_g$join_key[audit_g$Is_Outlier]
+  retained_keys <- audit_g$join_key[!audit_g$Is_Outlier]
+
+  # --- Build raw data time series ---
+  raw_ts <- All.Resp.sub %>%
+    dplyr::filter(!is.na(resp), resp %in% c("Bio", "Den"),
+                  !is.na(value), value >= 0) %>%
+    dplyr::mutate(
+      year = as.numeric(year),
+      join_key = paste(CA_MPA_Name_Short, taxon_name, resp, sep = "|"),
+      outlier_status = dplyr::case_when(
+        join_key %in% outlier_keys ~ "Flagged by global 4/n",
+        join_key %in% retained_keys ~ "Retained",
+        TRUE ~ "Not in meta-analysis"
+      ),
+      resp_label = dplyr::case_when(
+        resp == "Bio" ~ "Biomass",
+        resp == "Den" ~ "Density",
+        TRUE ~ resp
+      )
+    ) %>%
+    dplyr::filter(outlier_status != "Not in meta-analysis")
+
+  # Drop M. pyrifera Density (doesn't exist)
+  raw_ts <- raw_ts %>%
+    dplyr::filter(!(taxon_name == "Macrocystis pyrifera" & resp == "Den"))
+
+  # Use shared constants
+  raw_ts$taxon_name <- factor(raw_ts$taxon_name, levels = outlier_sp_order_full)
+
+  # Combined facet label
+  raw_ts <- raw_ts %>%
+    dplyr::mutate(
+      facet_label = paste0(taxon_name, " \u2014 ", resp_label)
+    )
+  raw_ts$facet_label <- factor(raw_ts$facet_label, levels = outlier_facet_order)
+
+  # Status factor
+  raw_ts$outlier_status <- factor(raw_ts$outlier_status,
+    levels = c("Flagged by global 4/n", "Retained"))
+
+  # Prettify status labels for legend
+  raw_ts$site_type <- ifelse(raw_ts$status == "mpa", "MPA", "Reference")
+
+  cat(sprintf("  Raw data: %d obs, %d flagged MPA-taxa combos, %d retained\n",
+              nrow(raw_ts),
+              length(unique(raw_ts$join_key[raw_ts$outlier_status == "Flagged by global 4/n"])),
+              length(unique(raw_ts$join_key[raw_ts$outlier_status == "Retained"]))))
+
+  # --- Separate MPA and reference into paired lines per MPA ---
+  # Average MPA + reference per MPA×year for cleaner spaghetti
+  raw_wide <- raw_ts %>%
+    dplyr::select(CA_MPA_Name_Short, year, taxon_name, resp, status,
+                  value, outlier_status, facet_label) %>%
+    tidyr::pivot_wider(names_from = status, values_from = value,
+                       values_fn = mean) %>%
+    dplyr::filter(!is.na(mpa) | !is.na(reference))
+
+  # --- Build figure ---
+  # MPA lines (solid) and reference lines (dashed) per MPA,
+  # colored by species for flagged combos, grey for retained.
+  # sqrt y-axis to compress extreme values while preserving relative patterns.
+  fig_s18 <- ggplot(raw_wide, aes(x = year)) +
+    # --- Retained: grey ---
+    # MPA (solid)
+    geom_line(data = raw_wide[raw_wide$outlier_status == "Retained", ],
+              aes(y = mpa, group = CA_MPA_Name_Short),
+              color = "grey55", alpha = 0.45, linewidth = 0.35) +
+    # Reference (dashed)
+    geom_line(data = raw_wide[raw_wide$outlier_status == "Retained", ],
+              aes(y = reference, group = CA_MPA_Name_Short),
+              color = "grey55", alpha = 0.35, linewidth = 0.3,
+              linetype = "dashed") +
+    # --- Flagged: colored ---
+    # MPA (solid)
+    geom_line(data = raw_wide[raw_wide$outlier_status == "Flagged by global 4/n", ],
+              aes(y = mpa, group = CA_MPA_Name_Short,
+                  color = taxon_name),
+              alpha = 0.55, linewidth = 0.5) +
+    # Reference (dashed, lighter)
+    geom_line(data = raw_wide[raw_wide$outlier_status == "Flagged by global 4/n", ],
+              aes(y = reference, group = CA_MPA_Name_Short,
+                  color = taxon_name),
+              alpha = 0.35, linewidth = 0.4, linetype = "dashed") +
+    facet_wrap(~ facet_label, ncol = 2, scales = "free_y") +
+    scale_color_manual(values = outlier_sp_colors, guide = "none") +
+    scale_y_sqrt(expand = expansion(mult = c(0, 0.05))) +
+    labs(
+      x = "Year",
+      y = "Raw value (sqrt scale)"
+    ) +
+    theme_mpa(base_size = 9) +
+    theme(
+      strip.text = element_text(face = "italic", size = 8.5,
+                                margin = margin(b = 3, t = 3)),
+      axis.text  = element_text(size = 7),
+      axis.title = element_text(size = 8),
+      panel.grid.major = element_blank(),
+      plot.margin = margin(6, 6, 6, 6, "pt"),
+      legend.position = "none"
+    )
+
+  # Manual legend
+  legend_grob <- cowplot::ggdraw() +
+    cowplot::draw_line(x = c(0.06, 0.14), y = c(0.5, 0.5),
+                       color = "#D55E00", linewidth = 1.0) +
+    cowplot::draw_label("Would be removed by global Cook's D (4/n)",
+                        x = 0.15, y = 0.5, hjust = 0, size = 7) +
+    cowplot::draw_line(x = c(0.52, 0.60), y = c(0.5, 0.5),
+                       color = "grey55", linewidth = 0.5) +
+    cowplot::draw_label("Retained",
+                        x = 0.61, y = 0.5, hjust = 0, size = 7) +
+    cowplot::draw_label("(solid = MPA, dashed = reference)",
+                        x = 0.77, y = 0.5, hjust = 0, size = 6.5,
+                        fontface = "italic", colour = "grey40")
+
+  fig_s18_final <- cowplot::plot_grid(
+    fig_s18, legend_grob,
+    ncol = 1, rel_heights = c(1, 0.03)
+  )
+
+  save_fig(fig_s18_final, "fig_s18_raw_trajectories_outlier_status",
+           w = FIG_S18_DIMS["w"], h = FIG_S18_DIMS["h"])
+  cat("  Figure S18 saved.\n")
+
+} # end data checks
+} # end fig_s18
 
 
 cat("\n")

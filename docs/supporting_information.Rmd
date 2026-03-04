@@ -332,7 +332,7 @@ where $x_i$ is the moderator variable. The omnibus test (QM) evaluated whether t
 
 We conducted six sensitivity analyses to assess the robustness of our findings:
 
-1. **Outlier sensitivity** (Table S9): Compared results under four modeling/outlier approaches (joint model no removal, per-taxa models no removal, per-taxa Cook's D at 4/$k$, joint Cook's D at 4/$n$).
+1. **Outlier sensitivity** (Table S9; Figures S12--S15): Compared results under four modeling/outlier approaches (joint model no removal, per-taxa models no removal, per-taxa Cook's D at 4/$k$, joint Cook's D at 4/$n$). Figures S13--S15 demonstrate that observations flagged by the global Cook's D threshold are not genuine statistical outliers but instead reflect expected between-taxon differences in effect sizes.
 2. **Kelp leave-one-out** (Table S8): Dropped each MPA in turn from the *M. pyrifera* biomass meta-analysis to test whether any single MPA drove the significant kelp result.
 3. **Variance components** (Table S2): Estimated MPA and Source variance components with profile-likelihood confidence intervals.
 4. **Source random effect** (Table S3): Compared meta-analytic models with and without data source as an additional random effect.
@@ -747,6 +747,8 @@ if (!is.null(outlier_sens)) {
     cat(sprintf("Sign changes between methods (near-zero estimates where direction is unstable): %s.\n\n",
                 paste(sign_change_pairs, collapse = "; ")))
   }
+
+  cat("The global Cook's D threshold (4/n) flagged observations primarily because they belonged to taxa with effect sizes far from the pooled grand mean — reflecting the expected trophic cascade signal rather than statistical anomalies (Figure S13). Temporal trajectories of flagged MPA–taxon combinations showed coherent recovery patterns consistent with cascade predictions, not erratic noise (Figure S14). Raw observed values for flagged combinations were similarly well-behaved (Figure S15).\n\n")
 }
 
 # Kelp leave-one-out
@@ -872,6 +874,30 @@ cat("**Figure S12.** Sensitivity analysis summary. (a--b) Cook's distance for ea
 
 ```{r fig-s12, fig.cap="**Figure S12.** Cook's distance and outlier sensitivity comparison.", out.width="100%"}
 knitr::include_graphics(here::here("plots", "fig_s15_sensitivity_summary.png"))
+```
+
+```{r fig-s13-caption, results='asis'}
+cat("**Figure S13.** Outlier removal rationale. (a) Effect sizes (lnRR) by taxon with observations flagged by global Cook's D (4/n) highlighted; flagged points span the full within-taxon distribution, not just the extremes. (b) Between-taxon vs. within-taxon distance decomposition showing that high Cook's D values arise from between-taxon divergence (distance from grand mean) rather than within-taxon anomaly (distance from taxon mean); points below the 1:1 line are flagged due to taxon membership. (c) Percentage of observations flagged under global (4/n) vs. per-taxon (4/k) thresholds, showing that the global threshold flags 50--82% of observations per taxon while per-taxon thresholds flag only 4--13%. (d) Meta-analytic estimates with 95% CI for the full dataset (primary) vs. after global Cook's D removal (legacy), showing attenuation of predator and kelp signals and inflated confidence intervals after removal.\n\n")
+```
+
+```{r fig-s13, fig.cap="**Figure S13.** Outlier removal rationale (4-panel).", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s16_outlier_rationale.png"))
+```
+
+```{r fig-s14-caption, results='asis'}
+cat("**Figure S14.** Temporal trajectories of log response ratios (lnRR) for MPA--reference pairs, with observations flagged by global Cook's D (4/n) shown in color and retained observations in grey. GAM smooths fitted to all data (flagged + retained) are overlaid with 95% confidence ribbons. If flagged observations were genuine statistical outliers, their trajectories would be erratic; instead, they follow coherent recovery patterns consistent with trophic cascade predictions (predators increasing, urchins declining, kelp recovering).\n\n")
+```
+
+```{r fig-s14, fig.cap="**Figure S14.** Temporal outlier trajectories (lnRR).", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s17_temporal_outlier_trajectories.png"))
+```
+
+```{r fig-s15-caption, results='asis'}
+cat("**Figure S15.** Raw observed values (proportional density or biomass) for MPA sites (solid lines) and paired reference sites (dashed lines) through time, with MPA--taxon combinations flagged by global Cook's D (4/n) shown in color and retained combinations in grey. Y-axes are on a square-root scale to accommodate the range of values. Flagged combinations exhibit the same temporal patterns and magnitudes as retained combinations, confirming that the raw data underlying the 'outlier' effect sizes are well-behaved and not driven by erratic or implausible observations.\n\n")
+```
+
+```{r fig-s15, fig.cap="**Figure S15.** Raw data trajectories by outlier status.", out.width="100%"}
+knitr::include_graphics(here::here("plots", "fig_s18_raw_trajectories_outlier_status.png"))
 ```
 
 ---

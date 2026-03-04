@@ -10,13 +10,13 @@
 |---|---|---|
 | Significant effects | 2 of 9 | **6 of 9** |
 | Main text figures | 4 (map, pipeline diagram, mean effects, urchin-kelp scatter) | 4 (map, cascade case studies, mean effects, recovery curves) |
-| Supplemental figures | ~6 | 12 (S1-S12) |
+| Supplemental figures | ~6 | 15 (S1-S15) |
 | Main tables | 2 | 3 |
 | Supplemental tables | ~3 | 9 (S1-S9) |
 | Effect sizes (k) | ~144 | 132 |
 | MPAs analyzed | 19 | 23 |
 | Meta-analysis approach | Joint multi-taxa model | Joint multi-taxa model (same structure, improved random effects) |
-| Outlier detection | Joint Cook's D (flagged 62% of data) | No removal (primary); Cook's D as sensitivity |
+| Outlier detection | Joint Cook's D (flagged 62% of data) | No removal (primary); Cook's D as sensitivity (Figs S12-S15) |
 | P-value correction | None | Benjamini-Hochberg FDR |
 
 ---

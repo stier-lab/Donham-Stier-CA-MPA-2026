@@ -64,7 +64,7 @@ Third, this is a trophic cascade study. We *expect* large effect sizes for preda
 
 Fourth, the multilevel model already handles variation the right way. The `~1|MPA` random effect accounts for site-to-site differences in effect magnitude. Sites with unusually large effects get partially shrunk toward the overall taxon mean through the hierarchical structure. Inverse-variance weighting downweights imprecise estimates. These are the standard tools for handling heterogeneity, and they work better than throwing data away.
 
-The four-way sensitivity analysis confirms all of this. Significant results hold under approaches 1 through 3 (joint no removal, per-taxa no removal, per-taxa Cook's D at 4/k). Only V5's aggressive joint Cook's D at 4/n (approach 4) kills the predator signals, because it removes the taxa that diverge most from the grand mean (Table S9).
+The four-way sensitivity analysis confirms all of this. Significant results hold under approaches 1 through 3 (joint no removal, per-taxa no removal, per-taxa Cook's D at 4/k). Only V5's aggressive joint Cook's D at 4/n (approach 4) kills the predator signals, because it removes the taxa that diverge most from the grand mean (Table S9). Figures S13–S15 provide visual evidence: Figure S13 shows the flagged observations span the full within-taxon distribution and that the global threshold flags 50–82% of observations per taxon (vs. 4–13% for per-taxon thresholds); Figure S14 shows flagged MPA–taxon combinations follow coherent recovery trajectories, not erratic noise; Figure S15 shows the underlying raw data are well-behaved.
 
 ---
 

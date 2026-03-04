@@ -25,6 +25,9 @@
 #'   #   fig_s13 (from 11_figures.R, lmer residual diagnostics)
 #'   #   fig_s14 (from 11_figures.R, NLS model selection & DW autocorrelation)
 #'   #   fig_s15 (from 11_figures.R, sensitivity & robustness summary)
+#'   #   fig_s16 (from 11_figures.R, outlier removal rationale — 4-panel, = SI Fig S13)
+#'   #   fig_s17 (from 11_figures.R, temporal outlier trajectories, = SI Fig S14)
+#'   #   fig_s18 (from 11_figures.R, raw data trajectories by outlier status, = SI Fig S15)
 #'   #   fig_s03, fig_s07, fig_s10 (from 11_figures.R, dropped from SI but still renderable)
 
 # Preserve RENDER_FIGURES across rm() using options (survives workspace clear)

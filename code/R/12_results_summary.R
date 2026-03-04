@@ -343,6 +343,41 @@ if (file.exists(slopes_path)) {
   }
 }
 
+# --- Outlier Sensitivity ---
+outlier_audit_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
+pertaxa_audit_path <- here::here("outputs", "filter_audit_pertaxa_meta.csv")
+if (file.exists(outlier_audit_path)) {
+  audit_ol <- read.csv(outlier_audit_path, stringsAsFactors = FALSE)
+  n_total_ol <- nrow(audit_ol)
+  n_flagged_global <- sum(audit_ol$Is_Outlier)
+  pct_flagged <- round(100 * n_flagged_global / n_total_ol, 0)
+
+  md_lines <- c(md_lines,
+    "---", "",
+    "## Outlier Sensitivity", "",
+    sprintf("The primary analysis uses the **full dataset** (no outlier removal, k = %d).", n_total_ol),
+    sprintf("A global Cook's D threshold of 4/n flagged **%d of %d** observations (%d%%) as influential.",
+            n_flagged_global, n_total_ol, pct_flagged),
+    "These flagged observations span all taxa and arise primarily from between-taxon divergence",
+    "(the expected trophic cascade signal) rather than within-taxon anomalies.", ""
+  )
+
+  if (file.exists(pertaxa_audit_path)) {
+    audit_pt <- read.csv(pertaxa_audit_path, stringsAsFactors = FALSE)
+    if ("Is_Outlier" %in% names(audit_pt)) {
+      n_flagged_pt <- sum(audit_pt$Is_Outlier)
+      md_lines <- c(md_lines,
+        sprintf("A per-taxon Cook's D threshold (4/k) flagged only **%d of %d** observations,", n_flagged_pt, n_total_ol),
+        "confirming the global threshold's over-flagging.", ""
+      )
+    }
+  }
+
+  md_lines <- c(md_lines,
+    "See Table S9 for 4-method sensitivity comparison and Figures S13-S15 for visualizations.", ""
+  )
+}
+
 md_lines <- c(md_lines,
   "---", "",
   "For known limitations, see `docs/ANALYSIS_REVISIONS.md`.",

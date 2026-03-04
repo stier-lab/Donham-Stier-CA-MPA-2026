@@ -221,6 +221,14 @@ source(here::here("code", "R", "run_figures_only.R"))
 | **Figure S5** | Per-MPA slope comparison and cascade consistency | `plots/fig_s06_slope_comparison.pdf` |
 | **Figure S6** | Combined moderator comparisons: SMR vs SMCA, Islands vs mainland | `plots/fig_s09_moderator_comparisons.pdf` |
 | **Figure S7a-e** | Site-level appendix (5 taxa-specific panels) | `plots/fig_s08_appendix_*.pdf` |
+| **Figure S8** | DHARMa residual diagnostics for NLS models | `plots/fig_s11_dharma_diagnostics.pdf` |
+| **Figure S9** | Funnel plots + Egger's test for publication bias | `plots/fig_s12_funnel_plots.pdf` |
+| **Figure S10** | lmer residual diagnostics (4-panel) | `plots/fig_s13_lmer_residuals.pdf` |
+| **Figure S11** | NLS model selection frequency + DW statistics | `plots/fig_s14_model_selection.pdf` |
+| **Figure S12** | Cook's D values + 4-method sensitivity comparison | `plots/fig_s15_sensitivity_summary.pdf` |
+| **Figure S13** | Outlier removal rationale: 4-panel visualization | `plots/fig_s16_outlier_rationale.pdf` |
+| **Figure S14** | Temporal trajectories by outlier status (lnRR) | `plots/fig_s17_temporal_outlier_trajectories.pdf` |
+| **Figure S15** | Raw data trajectories by outlier status | `plots/fig_s18_raw_trajectories_outlier_status.pdf` |
 
 Note: SI renumbered figures but disk filenames retain original numbering.
 

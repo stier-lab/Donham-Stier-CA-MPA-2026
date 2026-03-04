@@ -1,6 +1,6 @@
 # Results Summary: CA MPA Kelp Forest Analysis
 
-**Generated:** 2026-02-27 11:50:00
+**Generated:** 2026-03-04 13:31:46
 **Pipeline version:** Modular pBACIPS v2.0
 
 ---
@@ -117,6 +117,20 @@ Species-specific slopes from `lmer(lnRR ~ time*species + (1+time|MPA) + (1|sourc
 | S. purpuratus | -0.0796 | 0.0252 | 0.002 |
 | M. franciscanus | -0.0631 | 0.0252 | 0.012 |
 | M. pyrifera | 0.1618 | 0.0245 | < 0.001 |
+
+---
+
+## Outlier Sensitivity
+
+The primary analysis uses the **full dataset** (no outlier removal, k = 132).
+A global Cook's D threshold of 4/n flagged **88 of 132** observations (67%) as influential.
+These flagged observations span all taxa and arise primarily from between-taxon divergence
+(the expected trophic cascade signal) rather than within-taxon anomalies.
+
+A per-taxon Cook's D threshold (4/k) flagged only **11 of 132** observations,
+confirming the global threshold's over-flagging.
+
+See Table S9 for 4-method sensitivity comparison and Figures S13-S15 for visualizations.
 
 ---
 
