@@ -114,23 +114,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  /* ---- Section reveal on scroll ---- */
-  // Support both <section> and div.section (rmarkdown format)
-  var revealSections = document.querySelectorAll(
-    'body > section, body > section > section, ' +
-    'body > div.section, body > div.section > div.section, ' +
-    'div.section.level1, div.section.level2'
-  );
-
-  function revealOnScroll() {
-    var trigger = window.innerHeight * 0.88;
-    revealSections.forEach(function(s) {
-      if (s.getBoundingClientRect().top < trigger) {
-        s.classList.add('visible');
-      }
-    });
-  }
-
   /* ---- Back to top button ---- */
   var backBtn = document.createElement('button');
   backBtn.id = 'back-to-top';
@@ -157,7 +140,6 @@ document.addEventListener('DOMContentLoaded', function() {
       window.requestAnimationFrame(function() {
         updateProgress();
         updateScrollSpy();
-        revealOnScroll();
         updateBackToTop();
         ticking = false;
       });
@@ -168,10 +150,6 @@ document.addEventListener('DOMContentLoaded', function() {
   /* Initial calls */
   updateProgress();
   updateScrollSpy();
-  revealOnScroll();
   updateBackToTop();
-
-  /* Reveal first sections immediately */
-  setTimeout(revealOnScroll, 100);
 });
 </script>
