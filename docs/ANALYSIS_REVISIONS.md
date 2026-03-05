@@ -14,6 +14,21 @@ Compared to V5: sheephead biomass, lobster density, and red urchin biomass **gai
 
 **What we need to rewrite:** Pretty much every number in Results and the Abstract. The Discussion needs to flip its conclusion about predators. See Section 9 for the full action list.
 
+### At a Glance
+
+| | MS V5 | Current Pipeline |
+|---|---|---|
+| Significant effects | 2 of 9 | **6 of 9** |
+| Main text figures | 4 (map, pipeline diagram, mean effects, urchin-kelp scatter) | 4 (map, cascade case studies, mean effects, recovery curves) |
+| Supplemental figures | ~6 | 15 (S1-S15) |
+| Main tables | 2 | 3 |
+| Supplemental tables | ~3 | 9 (S1-S9) |
+| Effect sizes (k) | ~144 | 132 |
+| MPAs analyzed | 19 | 23 |
+| Meta-analysis approach | Joint multi-taxa model | Joint multi-taxa model (same structure, improved random effects) |
+| Outlier detection | Joint Cook's D (flagged 62% of data) | No removal (primary); Cook's D as sensitivity (Figs S12-S15) |
+| P-value correction | None | Benjamini-Hochberg FDR |
+
 ---
 
 ## 1. Meta-Analysis Model Structure
@@ -281,6 +296,56 @@ We should hit these in the Discussion:
 | **8** | **Check SI document** | Browse `docs/supporting_information.html`. Make sure figure/table refs match and update SI refs in the manuscript. |
 | **9** | **Upload Dryad data** | Upload `dryad_staging/donham_stier_mpa_kelp_data.zip`, then update the DOI placeholder in `code/R/00_download_data.R` and Data Availability. |
 | **10** | **Browse results report** | Open `docs/results_report.html`. Every pipeline output on one page. Good for sanity checking. |
+
+### Line-by-line revision guide
+
+**Abstract — V5 claims to replace:**
+
+| V5 Claim | What to Write Instead |
+|----------|----------------------|
+| "we did not detect effects of MPA implementation on predator density and biomass" | Sheephead biomass +185% (p < 0.001) and lobster density +196% (p = 0.004) — **significant predator responses detected** |
+| "sea urchin densities declined" | **Purple** urchin density declined 77% (p < 0.001); red urchin density non-significant (-33%, p = 0.28) |
+| "kelp ~266% higher" | Kelp +79% higher (p = 0.032) — same direction, smaller magnitude in joint model |
+
+**Results — key sentences to replace:**
+
+| V5 Statement | Replacement |
+|-------------|-------------|
+| "We failed to detect a significant effect on P. interruptus or S. pulcher biomass or density" | S. pulcher biomass increased 185% (RR = 2.85, p < 0.001) and P. interruptus density increased 196% (RR = 2.96, p = 0.004) inside MPAs |
+| "significant effect on densities of BOTH purple and red sea urchins" | Only purple urchin density declined significantly (-77%, p < 0.001); red urchin density was non-significant (-33%, p = 0.28) |
+| "densities were ~78% and 51% lower for purple and red urchins" | Purple urchin density was 77% lower (p < 0.001); red urchin density was 33% lower but non-significant (p = 0.28) |
+| (no V5 equivalent) | Red urchin **biomass** increased 84% (RR = 1.84, p = 0.015) — urchins grow larger inside MPAs even as density declines, consistent with reduced harvest pressure |
+| "19 MPAs" | 23 MPAs |
+
+**Discussion — key claims to revise:**
+
+| V5 Claim | Revision |
+|----------|---------|
+| "we did not detect an increase in density or biomass of key predatory species" | 2 of 4 predator metrics are significant (sheephead biomass, lobster density) — discuss predator recovery |
+| Urchin decline claims (both species) | Specify only S. purpuratus density; M. franciscanus effects are mixed (biomass up, density non-sig) |
+| (new) | Discuss red urchin biomass increase: +84% inside MPAs suggests fishing release on individual size, even as density effects are non-significant |
+
+### Figure and table reference mappings
+
+**Figures (V5 → Current):**
+
+| When V5 says... | Change to... | Notes |
+|----------------|-------------|-------|
+| Fig 1 | Fig 1 | Same concept (map) but inset time series removed |
+| Fig 2 | Fig S1 | Pipeline diagram demoted to supplemental |
+| Fig 3 | Fig 3 | Mean effects — same concept, different number path |
+| Fig 4 | Table 3 | Urchin-kelp scatter replaced by cross-taxa meta-regressions |
+| — | Fig 2 (NEW) | Cascade case studies: 3x3 before/after grid |
+| — | Fig 4 (NEW) | Recovery trajectories: lmer predictions with 95% CI |
+| Fig S1 | Fig S2 | Forest plot renumbered |
+
+**Tables:**
+
+| When V5 says... | Change to... |
+|----------------|-------------|
+| Table 1 (meta-analysis) | Table 2 (Table 1 is now average responses) |
+| Table 2 | Table 2 (same) |
+| Table 3 "linear models" | Table 3 (cross-taxa meta-regression — different analysis) |
 
 ### I need your expertise on two things
 
