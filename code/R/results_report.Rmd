@@ -280,14 +280,69 @@ h3 { color: var(--ocean-600); font-weight: 500; }
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  opacity: 0;
+  opacity: 0.6;
   transition: opacity 0.15s ease, background 0.15s ease;
   z-index: 10;
 }
 .result-box:hover .copy-btn,
 .supplement-box:hover .copy-btn { opacity: 1; }
 .copy-btn:hover { background: #fff; color: var(--ocean-700); border-color: var(--ocean-400); }
-.copy-btn.copied { background: var(--kelp-100); color: var(--kelp-500); border-color: var(--kelp-300); }
+.copy-btn.copied { background: var(--kelp-100); color: var(--kelp-500); border-color: var(--kelp-300); opacity: 1; }
+
+/* ── Per-species lines inside result boxes ─────────── */
+.species-line {
+  display: block;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.species-line:last-child { border-bottom: none; }
+.species-line.sig {
+  font-weight: 500;
+}
+.species-line.ns {
+  color: var(--text-secondary);
+}
+
+/* ── Executive summary card ───────────────────────── */
+.exec-summary {
+  background: linear-gradient(135deg, var(--ocean-50), #f0f9ff);
+  border: 1px solid var(--ocean-200);
+  border-left: 6px solid var(--ocean-500);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin: 0 0 24px 0;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.exec-summary h3 {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ocean-800);
+  margin: 0 0 12px 0;
+  padding: 0;
+}
+.exec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+}
+.exec-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.exec-stat .num {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ocean-700);
+  line-height: 1;
+}
+.exec-stat .label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
 
 /* ── Tables: ocean-themed headers ──────────────────── */
 .table > thead > tr > th,
@@ -425,6 +480,39 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
+```{r exec-summary, results='asis', echo=FALSE}
+if (!is.null(table2) && !is.null(model_summary)) {
+  n_sig <- sum(model_summary$pval_fdr < 0.05, na.rm = TRUE)
+  n_total <- nrow(model_summary)
+  n_mpas <- if (!is.null(analysis_summary)) {
+    analysis_summary$Value[analysis_summary$Metric == "Total unique MPAs analyzed"]
+  } else "?"
+  n_effects <- if (!is.null(analysis_summary)) {
+    analysis_summary$Value[analysis_summary$Metric == "Total MPA x taxa x response combinations (effect sizes)"]
+  } else "?"
+
+  sig_taxa <- model_summary %>%
+    filter(pval_fdr < 0.05) %>%
+    mutate(dir = ifelse(estimate > 0, "+", "\u2013"),
+           pct = paste0(dir, abs(round((exp(estimate) - 1) * 100)), "%"))
+
+  sig_list <- paste0("<em>", sig_taxa$taxa, "</em> ", tolower(sig_taxa$response),
+                     " (", sig_taxa$pct, ")")
+
+  cat('<div class="exec-summary">\n')
+  cat('<h3>At a Glance</h3>\n')
+  cat('<div class="exec-grid">\n')
+  cat(sprintf('<div class="exec-stat"><span class="num">%d/%d</span><span class="label">taxa x response significant (FDR-corrected)</span></div>\n', n_sig, n_total))
+  cat(sprintf('<div class="exec-stat"><span class="num">%s</span><span class="label">MPAs analyzed across CA coast</span></div>\n', n_mpas))
+  cat(sprintf('<div class="exec-stat"><span class="num">%s</span><span class="label">effect sizes (pBACIPS lnRR)</span></div>\n', n_effects))
+  cat(sprintf('<div class="exec-stat"><span class="num">5</span><span class="label">taxa: predators, urchins, kelp</span></div>\n'))
+  cat('</div>\n')
+  cat(sprintf('<p style="margin-top:12px;margin-bottom:0;"><strong>Significant effects:</strong> %s</p>\n',
+              paste(sig_list, collapse = " &bull; ")))
+  cat('</div>\n\n')
+}
+```
+
 # Copy-Paste Results: Main Text {.tabset}
 
 These blue boxes contain pre-formatted sentences ready to copy into the manuscript. Hover over any box and click **Copy** to grab the text, or select and copy manually.
@@ -497,22 +585,26 @@ if (!is.null(model_summary)) {
     den_row <- tx_rows %>% filter(response == "Density")
 
     summaries <- c()
+    any_sig <- FALSE
     if (nrow(bio_row) > 0) {
-      bio_sig <- if (!is.na(bio_row$pval_fdr[1]) &&
-                     bio_row$pval_fdr[1] < 0.05) "sig." else "n.s."
+      is_sig <- !is.na(bio_row$pval_fdr[1]) && bio_row$pval_fdr[1] < 0.05
+      if (is_sig) any_sig <- TRUE
+      bio_sig <- if (is_sig) "sig." else "n.s."
       bio_dir <- if (bio_row$estimate[1] > 0) "+" else "\u2013"
       summaries <- c(summaries, sprintf("biomass %s%s", bio_dir, bio_sig))
     }
     if (nrow(den_row) > 0) {
-      den_sig <- if (!is.na(den_row$pval_fdr[1]) &&
-                     den_row$pval_fdr[1] < 0.05) "sig." else "n.s."
+      is_sig <- !is.na(den_row$pval_fdr[1]) && den_row$pval_fdr[1] < 0.05
+      if (is_sig) any_sig <- TRUE
+      den_sig <- if (is_sig) "sig." else "n.s."
       den_dir <- if (den_row$estimate[1] > 0) "+" else "\u2013"
       summaries <- c(summaries, sprintf("density %s%s", den_dir, den_sig))
     }
-    cat(sprintf('<em>%s</em>: %s.&nbsp; ',
-                tx, paste(summaries, collapse = ", ")))
+    sig_class <- if (any_sig) "sig" else "ns"
+    cat(sprintf('<span class="species-line %s"><em>%s</em>: %s.</span>\n',
+                sig_class, tx, paste(summaries, collapse = ", ")))
   }
-  cat('\n</div>\n\n')
+  cat('</div>\n\n')
 }
 ```
 
@@ -534,10 +626,13 @@ if (!is.null(table2)) {
       row <- t2r %>% filter(Taxa == tx)
       if (nrow(row) == 0) next
 
-      sig_marker <- if (row$pval_fdr < 0.05) "" else " (n.s.)"
+      is_sig <- row$pval_fdr < 0.05
+      sig_marker <- if (is_sig) "" else " (n.s.)"
+      sig_class <- if (is_sig) "sig" else "ns"
       direction <- if (row$Estimate > 0) "higher" else "lower"
 
-      cat(sprintf('<em>%s</em> %s was %s%% %s inside MPAs (lnRR = %s, 95%% CI: %s to %s; RR = %s; <em>k</em> = %d MPAs; %s%s).&nbsp; ',
+      cat(sprintf('<span class="species-line %s"><em>%s</em> %s was %s%% %s inside MPAs (lnRR = %s, 95%% CI: %s to %s; RR = %s; <em>k</em> = %d MPAs; %s%s).</span>\n',
+                  sig_class,
                   tx, tolower(resp),
                   abs(round(row$Pct_Change, 0)), direction,
                   formatC(row$Estimate, format = "f", digits = 2),
@@ -549,7 +644,7 @@ if (!is.null(table2)) {
                   sig_marker))
     }
 
-    cat('\n</div>\n\n')
+    cat('</div>\n\n')
   }
 
   # Heterogeneity summary (joint model: tau2/I2 are shared within response type)
