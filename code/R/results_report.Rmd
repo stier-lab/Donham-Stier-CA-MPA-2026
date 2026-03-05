@@ -424,8 +424,8 @@ caption, .table caption {
 .tab-content { padding-top: 10px; }
 
 /* ── Nav bar offset ────────────────────────────────── */
-body { padding-top: 38px; }
-.tocify { top: 58px !important; }
+body { padding-top: 42px; }
+.tocify { top: 62px !important; }
 
 /* ── Code: ocean-dark blocks ───────────────────────── */
 pre {

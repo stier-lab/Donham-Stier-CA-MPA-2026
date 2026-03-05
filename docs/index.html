@@ -63,15 +63,16 @@
     margin: -1.5rem auto 0;
     background: linear-gradient(135deg, var(--kelp-600) 0%, var(--kelp-500) 100%);
     color: #fff;
-    padding: 1rem 1.5rem;
+    padding: 1.1rem 1.8rem;
     border-radius: 10px;
-    font-size: 0.95rem;
+    font-size: 1.05rem;
+    line-height: 1.6;
     box-shadow: 0 4px 16px rgba(0,0,0,0.15);
     position: relative;
     z-index: 2;
   }
-  .start-here strong { font-weight: 600; }
-  .start-here a { color: var(--kelp-100); font-weight: 500; }
+  .start-here strong { font-weight: 600; font-size: 1.1rem; }
+  .start-here a { color: var(--kelp-100); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
 
   /* Main layout */
   main {
@@ -129,14 +130,17 @@
     margin-bottom: 0.2rem;
   }
   .card-body .purpose {
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     color: var(--text-secondary);
-    margin-bottom: 0.5rem;
+    line-height: 1.6;
+    margin-bottom: 0.7rem;
   }
   .card-body .sections {
     font-size: 0.82rem;
     color: var(--text-muted);
     line-height: 1.5;
+    padding-top: 0.15rem;
+    border-top: 1px solid #eee;
   }
   .card-body .sections span {
     display: inline-block;
@@ -147,11 +151,17 @@
   }
 
   .card-time {
-    font-size: 0.82rem;
-    color: var(--text-muted);
+    font-size: 0.85rem;
+    color: var(--ocean-600);
     white-space: nowrap;
     padding-top: 0.3rem;
-    font-weight: 500;
+    font-weight: 600;
+    background: var(--ocean-50);
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    text-align: center;
+    align-self: start;
+    margin-top: 0.1rem;
   }
 
   /* Footer */

@@ -124,15 +124,15 @@ body {
 
 /* Force TOC to column 1, everything else to column 2 */
 /* Offset for fixed nav bar */
-body { padding-top: 38px; }
+body { padding-top: 42px; }
 #doc-nav + * { margin-top: 0; }
 
 nav#TOC {
   grid-column: 1;
   grid-row: 1 / 999;
   position: sticky;
-  top: 38px;
-  height: calc(100vh - 38px);
+  top: 42px;
+  height: calc(100vh - 42px);
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--ocean-950);
@@ -187,9 +187,9 @@ nav#TOC a {
   padding: 7px 12px;
   border-radius: 6px;
   font-family: var(--sans);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 400;
-  line-height: 1.4;
+  line-height: 1.45;
   border-left: 2px solid transparent;
   transition: all 0.2s var(--ease-out);
   position: relative;
@@ -212,7 +212,7 @@ nav#TOC a.active {
 
 nav#TOC > ul > li > a {
   font-weight: 500;
-  font-size: 13.5px;
+  font-size: 14px;
   color: rgba(201, 230, 242, 0.9);
   margin-top: 4px;
   padding: 8px 12px;
@@ -228,9 +228,9 @@ nav#TOC ul ul {
 }
 
 nav#TOC ul ul a {
-  font-size: 12px;
-  color: rgba(147, 205, 230, 0.6);
-  padding: 4px 10px;
+  font-size: 12.5px;
+  color: rgba(147, 205, 230, 0.65);
+  padding: 5px 10px;
 }
 
 /* TOC scrollbar */
@@ -390,7 +390,7 @@ h3 {
 }
 
 p {
-  margin-bottom: 0.85rem;
+  margin-bottom: 1rem;
 }
 
 strong {
@@ -480,7 +480,7 @@ pre code {
 
 table {
   font-family: var(--sans);
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   border-collapse: separate;
   border-spacing: 0;
   border-radius: 10px;
@@ -498,9 +498,9 @@ thead {
 thead th {
   color: rgba(255,255,255,0.95);
   font-weight: 600;
-  font-size: 0.78rem;
-  letter-spacing: 0.03em;
-  padding: 0.7rem 0.9rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  padding: 0.75rem 1rem;
   border: none;
   border-bottom: 2px solid var(--ocean-500);
   white-space: nowrap;
@@ -509,11 +509,12 @@ thead th {
 }
 
 tbody td {
-  padding: 0.55rem 0.9rem;
+  padding: 0.65rem 1rem;
   border: none;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-primary);
   vertical-align: top;
+  line-height: 1.5;
 }
 
 tbody tr {

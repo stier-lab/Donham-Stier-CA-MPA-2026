@@ -63,7 +63,7 @@ body {
   line-height: 1.72 !important;
   color: var(--text-primary) !important;
   background: var(--bg-page) !important;
-  padding-top: 38px;
+  padding-top: 42px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
