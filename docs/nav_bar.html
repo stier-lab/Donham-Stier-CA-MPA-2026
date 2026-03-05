@@ -1,0 +1,59 @@
+<nav id="doc-nav" style="
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #071421;
+  display: flex; align-items: center; gap: 0;
+  padding: 0 1rem; height: 38px;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.82rem; font-weight: 400;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+">
+  <a href="index.html" style="
+    color: #93cde6; text-decoration: none; padding: 0.5rem 0.7rem;
+    border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  " onmouseover="this.style.color='#52b788';this.style.borderBottomColor='#52b788'"
+     onmouseout="if(!this.classList.contains('active')){this.style.color='#93cde6';this.style.borderBottomColor='transparent'}"
+  >Home</a>
+  <a href="before_after_comparison.html" style="
+    color: #93cde6; text-decoration: none; padding: 0.5rem 0.7rem;
+    border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  " onmouseover="this.style.color='#52b788';this.style.borderBottomColor='#52b788'"
+     onmouseout="if(!this.classList.contains('active')){this.style.color='#93cde6';this.style.borderBottomColor='transparent'}"
+  >Before/After</a>
+  <a href="analysis_revisions.html" style="
+    color: #93cde6; text-decoration: none; padding: 0.5rem 0.7rem;
+    border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  " onmouseover="this.style.color='#52b788';this.style.borderBottomColor='#52b788'"
+     onmouseout="if(!this.classList.contains('active')){this.style.color='#93cde6';this.style.borderBottomColor='transparent'}"
+  >Analysis Revisions</a>
+  <a href="results_report.html" style="
+    color: #93cde6; text-decoration: none; padding: 0.5rem 0.7rem;
+    border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  " onmouseover="this.style.color='#52b788';this.style.borderBottomColor='#52b788'"
+     onmouseout="if(!this.classList.contains('active')){this.style.color='#93cde6';this.style.borderBottomColor='transparent'}"
+  >Results Report</a>
+  <a href="supporting_information.html" style="
+    color: #93cde6; text-decoration: none; padding: 0.5rem 0.7rem;
+    border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  " onmouseover="this.style.color='#52b788';this.style.borderBottomColor='#52b788'"
+     onmouseout="if(!this.classList.contains('active')){this.style.color='#93cde6';this.style.borderBottomColor='transparent'}"
+  >Supporting Info</a>
+</nav>
+<script>
+(function() {
+  var path = window.location.pathname.split('/').pop();
+  var links = document.querySelectorAll('#doc-nav a');
+  links.forEach(function(a) {
+    if (a.getAttribute('href') === path) {
+      a.classList.add('active');
+      a.style.color = '#52b788';
+      a.style.borderBottomColor = '#52b788';
+      a.style.fontWeight = '500';
+    }
+  });
+})();
+</script>

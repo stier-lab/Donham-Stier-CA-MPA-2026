@@ -147,6 +147,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }, { passive: true });
 
+  /* ---- Collapsible taxa-by-taxa sections ---- */
+  var taxaSection = document.getElementById('taxa-by-taxa-details');
+  if (taxaSection) {
+    var level3Sections = taxaSection.querySelectorAll(':scope > div.section.level3');
+    level3Sections.forEach(function(sec) {
+      var h3 = sec.querySelector('h3');
+      if (!h3) return;
+
+      var details = document.createElement('details');
+      details.className = 'collapsible-section';
+
+      var summary = document.createElement('summary');
+      summary.textContent = h3.textContent.trim();
+      details.appendChild(summary);
+
+      var contentDiv = document.createElement('div');
+      contentDiv.className = 'section-content';
+
+      // Move all children except h3 into content div
+      var children = Array.from(sec.children);
+      children.forEach(function(child) {
+        if (child !== h3) {
+          contentDiv.appendChild(child);
+        }
+      });
+
+      details.appendChild(contentDiv);
+      sec.replaceChild(details, h3);
+    });
+  }
+
   /* Initial calls */
   updateProgress();
   updateScrollSpy();

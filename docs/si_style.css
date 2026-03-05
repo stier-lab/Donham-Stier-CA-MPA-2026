@@ -63,6 +63,7 @@ body {
   line-height: 1.72 !important;
   color: var(--text-primary) !important;
   background: var(--bg-page) !important;
+  padding-top: 38px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -791,7 +792,8 @@ a:hover {
   .reading-progress,
   .back-to-top,
   .lightbox-overlay,
-  #TOC {
+  #TOC,
+  #doc-nav {
     display: none !important;
   }
 
@@ -799,6 +801,7 @@ a:hover {
     font-size: 11pt !important;
     color: black !important;
     background: white !important;
+    padding-top: 0;
   }
 
   h1 { font-size: 18pt !important; }

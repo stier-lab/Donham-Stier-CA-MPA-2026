@@ -123,12 +123,16 @@ body {
 }
 
 /* Force TOC to column 1, everything else to column 2 */
+/* Offset for fixed nav bar */
+body { padding-top: 38px; }
+#doc-nav + * { margin-top: 0; }
+
 nav#TOC {
   grid-column: 1;
   grid-row: 1 / 999;
   position: sticky;
-  top: 0;
-  height: 100vh;
+  top: 38px;
+  height: calc(100vh - 38px);
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--ocean-950);
@@ -720,18 +724,66 @@ div.section.level2 {
 
 
 /* ==========================================================================
+   Collapsible sections (taxa-by-taxa details)
+   ========================================================================== */
+
+details.collapsible-section {
+  border-left: 3px solid var(--ocean-200);
+  margin-bottom: 1rem;
+  border-radius: 0 6px 6px 0;
+  background: var(--bg-surface);
+  transition: border-color 0.2s ease;
+}
+details.collapsible-section[open] {
+  border-left-color: var(--kelp-400);
+}
+details.collapsible-section summary {
+  cursor: pointer;
+  padding: 0.7rem 1rem;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ocean-700);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  user-select: none;
+}
+details.collapsible-section summary::-webkit-details-marker { display: none; }
+details.collapsible-section summary::before {
+  content: '\25B6';
+  font-size: 0.65rem;
+  color: var(--ocean-400);
+  transition: transform 0.2s ease;
+}
+details.collapsible-section[open] summary::before {
+  transform: rotate(90deg);
+}
+details.collapsible-section summary:hover {
+  color: var(--kelp-600);
+}
+details.collapsible-section .section-content {
+  padding: 0 1rem 1rem;
+}
+
+
+/* ==========================================================================
    Print
    ========================================================================== */
 
 @media print {
-  body { display: block; font-size: 11pt; color: black; background: white; }
+  body { display: block; font-size: 11pt; color: black; background: white; padding-top: 0; }
   nav#TOC { display: none; }
+  #doc-nav { display: none; }
   #reading-progress { display: none; }
   h1 { font-size: 16pt; } h2 { font-size: 13pt; } h3 { font-size: 11pt; }
   table { box-shadow: none; }
   thead { background: #333; -webkit-print-color-adjust: exact; }
   blockquote::before { content: 'Suggested text:'; }
   #back-to-top { display: none; }
+  details.collapsible-section { border-left: 1px solid #999; }
+  details.collapsible-section[open] { border-left-color: #333; }
 }
 
 

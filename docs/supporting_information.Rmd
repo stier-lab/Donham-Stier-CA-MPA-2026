@@ -20,6 +20,7 @@ output:
     theme: flatly
     css: si_style.css
     includes:
+      before_body: nav_bar.html
       after_body: si_script.html
   word_document:
     toc: true

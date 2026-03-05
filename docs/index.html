@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CA MPA Manuscript Revision Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ocean-950: #071421; --ocean-900: #0b1d2e; --ocean-800: #0f2a3f;
+    --ocean-700: #163a54; --ocean-600: #1d4e6e; --ocean-500: #2b6d93;
+    --ocean-400: #3a8fb8; --ocean-300: #5eb0d4; --ocean-200: #93cde6;
+    --ocean-100: #c9e6f2; --ocean-50: #e8f4fa;
+    --kelp-600: #2d6a4f; --kelp-500: #3a8463; --kelp-400: #52b788;
+    --kelp-300: #74c69d; --kelp-200: #a7dbb8; --kelp-100: #d8f3dc;
+    --text-primary: #1a1a2e; --text-secondary: #4a4a5e; --text-muted: #7a7a8e;
+    --bg-page: #faf9f7; --bg-surface: #ffffff;
+    --serif: 'Newsreader', Georgia, serif;
+    --sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, var(--ocean-950) 0%, var(--ocean-800) 100%);
+    color: #fff;
+    padding: 3rem 2rem 2.5rem;
+    text-align: center;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+    letter-spacing: -0.02em;
+  }
+  header p.subtitle {
+    font-size: 1rem;
+    color: var(--ocean-200);
+    font-weight: 300;
+  }
+  header .accent-line {
+    width: 60px;
+    height: 3px;
+    background: var(--kelp-400);
+    margin: 1rem auto 0;
+    border-radius: 2px;
+  }
+
+  /* Start-here banner */
+  .start-here {
+    max-width: 780px;
+    margin: -1.5rem auto 0;
+    background: linear-gradient(135deg, var(--kelp-600) 0%, var(--kelp-500) 100%);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    position: relative;
+    z-index: 2;
+  }
+  .start-here strong { font-weight: 600; }
+  .start-here a { color: var(--kelp-100); font-weight: 500; }
+
+  /* Main layout */
+  main {
+    max-width: 880px;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+  }
+  .section-title {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--ocean-700);
+    margin-bottom: 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--ocean-100);
+  }
+
+  /* Cards */
+  .cards { display: flex; flex-direction: column; gap: 1rem; }
+
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid #e2e6ea;
+    border-radius: 10px;
+    padding: 1.3rem 1.5rem;
+    display: grid;
+    grid-template-columns: 48px 1fr auto;
+    gap: 0 1.2rem;
+    align-items: start;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border-color: var(--ocean-300);
+  }
+
+  .card-num {
+    width: 42px; height: 42px;
+    background: var(--ocean-50);
+    color: var(--ocean-600);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .card:hover .card-num { background: var(--ocean-100); }
+
+  .card-body h3 {
+    font-family: var(--serif);
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--ocean-800);
+    margin-bottom: 0.2rem;
+  }
+  .card-body .purpose {
+    font-size: 0.92rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+  .card-body .sections {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .card-body .sections span {
+    display: inline-block;
+    background: var(--ocean-50);
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    margin: 0.15rem 0.2rem 0.15rem 0;
+  }
+
+  .card-time {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding-top: 0.3rem;
+    font-weight: 500;
+  }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 2rem 1rem;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    border-top: 1px solid #e2e6ea;
+    margin-top: 2rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    header h1 { font-size: 1.5rem; }
+    .card { grid-template-columns: 36px 1fr; }
+    .card-time { grid-column: 2; font-size: 0.78rem; }
+    .start-here { margin: -1rem 1rem 0; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CA MPA Manuscript Revision Hub</h1>
+  <p class="subtitle">Donham &amp; Stier &mdash; Conservation Letters</p>
+  <div class="accent-line"></div>
+</header>
+
+<div class="start-here">
+  <strong>Start here:</strong> Open the <a href="before_after_comparison.html">Before/After Comparison</a> first for a 5-minute overview of every number that changed, then work through the documents below in order.
+</div>
+
+<main>
+  <h2 class="section-title">Reading Order</h2>
+
+  <div class="cards">
+
+    <a class="card" href="before_after_comparison.html">
+      <div class="card-num">1</div>
+      <div class="card-body">
+        <h3>Before/After Comparison</h3>
+        <p class="purpose">Side-by-side table of every number that changed between V5 and the current pipeline. Use this to find-and-replace in Results and Abstract.</p>
+        <div class="sections">
+          <span>At a Glance</span>
+          <span>Flipped Significance</span>
+          <span>Abstract Guide</span>
+          <span>Figure Mapping</span>
+        </div>
+      </div>
+      <div class="card-time">~5 min</div>
+    </a>
+
+    <a class="card" href="analysis_revisions.html">
+      <div class="card-num">2</div>
+      <div class="card-body">
+        <h3>Analysis Revisions</h3>
+        <p class="purpose">Detailed walkthrough of <em>why</em> each result changed. Covers model structure, outlier decisions, random effects, and taxa-by-taxa explanations.</p>
+        <div class="sections">
+          <span>Executive Summary</span>
+          <span>Model Structure</span>
+          <span>Results Comparison</span>
+          <span>Taxa Details</span>
+          <span>Action Items</span>
+        </div>
+      </div>
+      <div class="card-time">~30 min</div>
+    </a>
+
+    <a class="card" href="results_report.html">
+      <div class="card-num">3</div>
+      <div class="card-body">
+        <h3>Results Report</h3>
+        <p class="purpose">Interactive dashboard with every estimate, table, and diagnostic. Use the tabbed interface to find specific numbers while rewriting.</p>
+        <div class="sections">
+          <span>Copy-Paste Results</span>
+          <span>Full Tables</span>
+          <span>Data Provenance</span>
+          <span>Quality Audit</span>
+        </div>
+      </div>
+      <div class="card-time">Reference</div>
+    </a>
+
+    <a class="card" href="RESULTS_SUMMARY.md">
+      <div class="card-num">4</div>
+      <div class="card-body">
+        <h3>Results Summary</h3>
+        <p class="purpose">Auto-generated one-page summary of all meta-analysis estimates. Quick sanity check that numbers match.</p>
+        <div class="sections">
+          <span>Table 2 Values</span>
+          <span>Table 3 Values</span>
+          <span>Variance Components</span>
+        </div>
+      </div>
+      <div class="card-time">~2 min</div>
+    </a>
+
+    <a class="card" href="supporting_information.html">
+      <div class="card-num">5</div>
+      <div class="card-body">
+        <h3>Supporting Information</h3>
+        <p class="purpose">Full SI document with methods, supplemental tables (S1-S9), and supplemental figures (S1-S15). Skim to check structure; detailed read after main text is drafted.</p>
+        <div class="sections">
+          <span>S1 Methods</span>
+          <span>S2 Results</span>
+          <span>Tables S1-S9</span>
+          <span>Figures S1-S15</span>
+        </div>
+      </div>
+      <div class="card-time">Skim</div>
+    </a>
+
+  </div>
+</main>
+
+<footer>
+  Donham &amp; Stier, CA MPA Kelp Forest Analysis &mdash; Generated March 2026
+</footer>
+
+</body>
+</html>
