@@ -797,6 +797,41 @@ if (!is.null(cascade_cons)) {
 }
 ```
 
+## Replicate-Level Summary
+
+```{r replicate-summary, results='asis'}
+rep_file <- here::here("outputs", "replicate_effects.csv")
+if (file.exists(rep_file)) {
+  rep_df <- read.csv(rep_file)
+  n_total <- nrow(rep_df)
+  n_sig_inc <- sum(rep_df$Significant == TRUE & rep_df$Direction == "positive", na.rm = TRUE)
+  n_sig_dec <- sum(rep_df$Significant == TRUE & rep_df$Direction == "negative", na.rm = TRUE)
+  n_ns <- n_total - n_sig_inc - n_sig_dec
+
+  cat('<div class="section-label">RESULTS — Replicate-Level Effect Sizes</div>\n')
+  cat('<div class="result-box">\n')
+  cat(sprintf('Across all %d MPA-level effect sizes, %d showed significant increases inside MPAs, %d showed significant decreases, and %d were not significant.',
+              n_total, n_sig_inc, n_sig_dec, n_ns))
+
+  # Per-taxa breakdown
+  taxa_summary <- rep_df %>%
+    dplyr::group_by(Taxa) %>%
+    dplyr::summarise(
+      n = dplyr::n(),
+      n_sig = sum(Significant == TRUE, na.rm = TRUE),
+      pct_sig = round(100 * n_sig / n),
+      .groups = "drop"
+    ) %>%
+    dplyr::arrange(dplyr::desc(pct_sig))
+
+  cat(' Per-taxa significance rates: ')
+  parts <- sprintf('<em>%s</em> %d%% (%d/%d)', taxa_summary$Taxa, taxa_summary$pct_sig, taxa_summary$n_sig, taxa_summary$n)
+  cat(paste(parts, collapse = '; '))
+  cat('.')
+  cat('\n</div>\n\n')
+}
+```
+
 # Copy-Paste Results: Supplement {.tabset}
 
 These grey boxes contain pre-formatted text for the supplementary materials. Hover and click **Copy** or select manually.

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Submission Checklist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ocean-950: #071421; --ocean-800: #0f2a3f; --ocean-700: #163a54;
+    --ocean-600: #1d4e6e; --ocean-500: #2b6d93; --ocean-400: #3a8fb8;
+    --ocean-200: #93cde6; --ocean-100: #c9e6f2; --ocean-50: #e8f4fa;
+    --kelp-600: #2d6a4f; --kelp-500: #3a8463; --kelp-400: #52b788;
+    --kelp-300: #74c69d; --kelp-100: #d8f3dc;
+    --text-primary: #1a1a2e; --text-secondary: #4a4a5e; --text-muted: #7a7a8e;
+    --bg-page: #faf9f7; --bg-surface: #ffffff;
+    --border-light: #e2e6ea;
+    --serif: 'Newsreader', Georgia, serif;
+    --sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans); background: var(--bg-page); color: var(--text-primary);
+    line-height: 1.7; padding-top: 42px; max-width: 780px; margin: 0 auto;
+    padding-left: 1.5rem; padding-right: 1.5rem;
+  }
+  h1 {
+    font-family: var(--serif); font-size: 1.8rem; font-weight: 700;
+    color: var(--ocean-800); margin: 2.5rem 0 0.3rem; letter-spacing: -0.02em;
+  }
+  h1::after {
+    content: ''; display: block; width: 48px; height: 2px; margin-top: 0.5rem;
+    background: linear-gradient(90deg, var(--ocean-400), var(--kelp-400)); border-radius: 1px;
+  }
+  .subtitle { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem; }
+  .progress-wrap { margin: 1.5rem 0 2rem; }
+  .progress-label { font-size: 0.88rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.4rem; }
+  .progress-bar {
+    height: 10px; background: var(--ocean-50); border-radius: 5px; overflow: hidden;
+    border: 1px solid var(--border-light);
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--ocean-400), var(--kelp-400));
+    border-radius: 5px; transition: width 0.4s ease;
+  }
+  .category {
+    font-family: var(--sans); font-size: 0.78rem; font-weight: 600;
+    color: var(--ocean-600); letter-spacing: 0.06em; text-transform: uppercase;
+    margin: 2rem 0 0.6rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--ocean-100);
+  }
+  .check-item {
+    background: var(--bg-surface); border: 1px solid var(--border-light);
+    border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 0.6rem;
+    display: grid; grid-template-columns: 28px 1fr; gap: 0.8rem; align-items: start;
+    transition: all 0.2s ease;
+  }
+  .check-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .check-item.done { opacity: 0.55; background: var(--kelp-100); border-color: var(--kelp-300); }
+  .check-item.done .item-title { text-decoration: line-through; color: var(--text-muted); }
+  .check-item input[type="checkbox"] {
+    width: 20px; height: 20px; margin-top: 2px; cursor: pointer;
+    accent-color: var(--kelp-500);
+  }
+  .item-title { font-weight: 500; font-size: 0.95rem; color: var(--text-primary); margin-bottom: 0.2rem; }
+  .item-detail { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; }
+  .item-detail a {
+    color: var(--ocean-500); text-decoration: none; border-bottom: 1px solid var(--ocean-100);
+  }
+  .item-detail a:hover { color: var(--ocean-400); border-bottom-color: var(--ocean-200); }
+  .item-detail code {
+    font-size: 0.82rem; background: var(--ocean-50); padding: 0.1rem 0.35rem;
+    border-radius: 3px; color: var(--ocean-700);
+  }
+  .priority {
+    display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.1rem 0.4rem;
+    border-radius: 4px; margin-left: 0.4rem; vertical-align: middle;
+  }
+  .priority.high { background: #fde8e8; color: #c53030; }
+  .reset-btn {
+    display: inline-block; margin-top: 1.5rem; font-size: 0.82rem; color: var(--text-muted);
+    border: 1px solid var(--border-light); padding: 0.4rem 0.8rem; border-radius: 6px;
+    cursor: pointer; background: none; font-family: var(--sans);
+  }
+  .reset-btn:hover { background: #fee; color: #c53030; border-color: #feb2b2; }
+  footer { text-align: center; padding: 2rem 1rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 2rem; border-top: 1px solid var(--border-light); }
+</style>
+</head>
+<body>
+
+<nav id="doc-nav" style="
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #071421; display: flex; align-items: center; gap: 0;
+  padding: 0 1.2rem; height: 42px;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px; font-weight: 400; letter-spacing: 0.01em;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+">
+  <a href="index.html" style="color: #b8daea; text-decoration: none; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; white-space: nowrap;">Home</a>
+  <a href="analysis_revisions.html" style="color: #b8daea; text-decoration: none; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; white-space: nowrap;">Analysis Revisions</a>
+  <a href="results_report.html" style="color: #b8daea; text-decoration: none; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; white-space: nowrap;">Results Report</a>
+  <a href="supporting_information.html" style="color: #b8daea; text-decoration: none; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; white-space: nowrap;">Supporting Info</a>
+</nav>
+
+<h1>Submission Checklist</h1>
+<p class="subtitle">Track your progress through the manuscript revision. Checkboxes save automatically in your browser.</p>
+
+<div class="progress-wrap">
+  <div class="progress-label" id="progress-label">0 of 0 complete</div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+</div>
+
+<div class="category">Manuscript Text</div>
+
+<div class="check-item" data-id="rewrite-results">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Rewrite Results section <span class="priority high">High</span></div>
+    <div class="item-detail">
+      Almost every number changed. Use <a href="results_report.html">Results Report</a> copy-paste boxes and the
+      <a href="analysis_revisions.html#line-by-line-revision-guide">line-by-line revision guide</a>.
+      Key changes: sheephead biomass +185% (p&lt;0.001), lobster density +196%, red urchin biomass +84% now significant.
+    </div>
+  </div>
+</div>
+
+<div class="check-item" data-id="rewrite-abstract">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Rewrite Abstract <span class="priority high">High</span></div>
+    <div class="item-detail">
+      V5 says "we did not detect effects on predator density and biomass" -- now 2 of 4 predator metrics are significant.
+      Kelp is +79% (not "~266%"). See <a href="analysis_revisions.html#line-by-line-revision-guide">Abstract revision table</a>.
+    </div>
+  </div>
+</div>
+
+<div class="check-item" data-id="rewrite-discussion">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Rewrite Discussion <span class="priority high">High</span></div>
+    <div class="item-detail">
+      Flip the predator narrative. Add red urchin biomass-density divergence paragraph.
+      Limitations from <a href="analysis_revisions.html#known-limitations">Section 8</a>.
+      See <a href="analysis_revisions.html#line-by-line-revision-guide">Discussion revision table</a>.
+    </div>
+  </div>
+</div>
+
+<div class="check-item" data-id="update-methods">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Update Methods section</div>
+    <div class="item-detail">
+      Describe joint multilevel meta-analysis, FDR correction, Source RE, delta method SEs.
+      Draft text in <a href="analysis_revisions.html#suggested-methods-text">Section 10</a>.
+    </div>
+  </div>
+</div>
+
+<div class="check-item" data-id="fill-refs">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Fill reference placeholders</div>
+    <div class="item-detail">
+      V5 has "REF", "REFS", "CITE" on pages 5, 6, 7, 12. Replace with proper citations.
+    </div>
+  </div>
+</div>
+
+<div class="check-item" data-id="add-limitations">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Add Limitations paragraph</div>
+    <div class="item-detail">
+      Cover bio/den non-independence, cross-taxa attenuation, no climate covariates, red urchin heterogeneity.
+      See the 12 items in <a href="analysis_revisions.html#known-limitations">Section 8</a>.
+    </div>
+  </div>
+</div>
+
+<div class="category">Figures &amp; Tables</div>
+
+<div class="check-item" data-id="update-fig-refs">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Update figure/table references <span class="priority high">High</span></div>
+    <div class="item-detail">
+      V5 figure numbers are completely different. Use the
+      <a href="analysis_revisions.html#figure-and-table-reference-mappings">figure/table mapping</a>.
+      Main: V5 Fig 2 (pipeline) is now Fig S1; V5 Fig 4 (scatter) is now Table 3;
+      new Fig 2 (cascade case studies) and Fig 4 (recovery curves).
+    </div>
+  </div>
+</div>
+
+<div class="check-item" data-id="write-captions">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Finalize figure captions</div>
+    <div class="item-detail">
+      Draft captions for all figures: <a href="figure_captions.html">Figure Captions</a>.
+      Copy, edit, and paste into the manuscript. Figures are in <code>plots/</code> as PDF + PNG.
+    </div>
+  </div>
+</div>
+
+<div class="check-item" data-id="format-tables">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Format Tables 1-3 for submission</div>
+    <div class="item-detail">
+      CSV files in <code>tables/</code>: <code>average_responses.csv</code> (Table 1),
+      <code>table_02_meta_analysis.csv</code> (Table 2),
+      <code>table_03_cross_taxa_meta_regression.csv</code> (Table 3).
+      Format in Word/journal template with proper column headers and significance notation.
+    </div>
+  </div>
+</div>
+
+<div class="category">Supporting Information</div>
+
+<div class="check-item" data-id="check-si">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Review SI document</div>
+    <div class="item-detail">
+      Browse <a href="supporting_information.html">Supporting Information</a>.
+      Verify figure/table refs match the manuscript, and update SI references in the main text.
+      SI now includes Figures S1-S15 and Tables S1-S9.
+    </div>
+  </div>
+</div>
+
+<div class="category">Data &amp; Reproducibility</div>
+
+<div class="check-item" data-id="upload-dryad">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Upload Dryad data package</div>
+    <div class="item-detail">
+      Upload <code>dryad_staging/donham_stier_mpa_kelp_data.zip</code>,
+      then update the DOI placeholder in <code>code/R/00_download_data.R</code> and the Data Availability statement.
+    </div>
+  </div>
+</div>
+
+<div class="check-item" data-id="sanity-check">
+  <input type="checkbox" onchange="saveCheck(this)">
+  <div>
+    <div class="item-title">Final sanity check</div>
+    <div class="item-detail">
+      Open <a href="results_report.html">Results Report</a> and spot-check all numbers in the manuscript against the pipeline output.
+      Use the Full Tables section (searchable/filterable) and the copy-paste boxes.
+    </div>
+  </div>
+</div>
+
+<button class="reset-btn" onclick="resetAll()">Reset all checkboxes</button>
+
+<footer>
+  Donham &amp; Stier, CA MPA Kelp Forest Analysis &mdash; Checklist, March 2026
+</footer>
+
+<script>
+(function() {
+  var STORAGE_KEY = 'mpa-checklist-v1';
+  var items = document.querySelectorAll('.check-item');
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch(e) {}
+
+  items.forEach(function(item) {
+    var id = item.dataset.id;
+    var cb = item.querySelector('input[type="checkbox"]');
+    if (saved[id]) {
+      cb.checked = true;
+      item.classList.add('done');
+    }
+  });
+  updateProgress();
+
+  var path = window.location.pathname.split('/').pop();
+  var links = document.querySelectorAll('#doc-nav a');
+  links.forEach(function(a) {
+    if (a.getAttribute('href') === path) {
+      a.style.color = '#52b788';
+      a.style.borderBottomColor = '#52b788';
+      a.style.fontWeight = '500';
+    }
+  });
+})();
+
+function saveCheck(cb) {
+  var item = cb.closest('.check-item');
+  var id = item.dataset.id;
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem('mpa-checklist-v1')) || {}; } catch(e) {}
+  if (cb.checked) {
+    saved[id] = true;
+    item.classList.add('done');
+  } else {
+    delete saved[id];
+    item.classList.remove('done');
+  }
+  localStorage.setItem('mpa-checklist-v1', JSON.stringify(saved));
+  updateProgress();
+}
+
+function updateProgress() {
+  var items = document.querySelectorAll('.check-item');
+  var done = document.querySelectorAll('.check-item.done').length;
+  var total = items.length;
+  var pct = total > 0 ? Math.round(100 * done / total) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  var label = document.getElementById('progress-label');
+  label.textContent = done + ' of ' + total + ' complete' + (pct === 100 ? ' -- Ready to submit!' : '');
+}
+
+function resetAll() {
+  if (!confirm('Reset all checkboxes? This cannot be undone.')) return;
+  localStorage.removeItem('mpa-checklist-v1');
+  document.querySelectorAll('.check-item').forEach(function(item) {
+    item.classList.remove('done');
+    item.querySelector('input[type="checkbox"]').checked = false;
+  });
+  updateProgress();
+}
+</script>
+
+</body>
+</html>

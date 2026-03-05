@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Draft Figure Captions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ocean-950: #071421; --ocean-800: #0f2a3f; --ocean-700: #163a54;
+    --ocean-600: #1d4e6e; --ocean-500: #2b6d93; --ocean-400: #3a8fb8;
+    --ocean-200: #93cde6; --ocean-100: #c9e6f2; --ocean-50: #e8f4fa;
+    --kelp-600: #2d6a4f; --kelp-500: #3a8463; --kelp-400: #52b788;
+    --kelp-100: #d8f3dc;
+    --text-primary: #1a1a2e; --text-secondary: #4a4a5e; --text-muted: #7a7a8e;
+    --bg-page: #faf9f7; --bg-surface: #ffffff;
+    --border-light: #e2e6ea;
+    --serif: 'Newsreader', Georgia, serif;
+    --sans: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans); background: var(--bg-page); color: var(--text-primary);
+    line-height: 1.7; padding-top: 42px; max-width: 820px; margin: 0 auto; padding-left: 1.5rem; padding-right: 1.5rem;
+  }
+  h1 {
+    font-family: var(--serif); font-size: 1.8rem; font-weight: 700;
+    color: var(--ocean-800); margin: 2.5rem 0 0.5rem; letter-spacing: -0.02em;
+  }
+  h1::after {
+    content: ''; display: block; width: 48px; height: 2px; margin-top: 0.5rem;
+    background: linear-gradient(90deg, var(--ocean-400), var(--kelp-400)); border-radius: 1px;
+  }
+  .subtitle { font-size: 0.95rem; color: var(--text-muted); margin-bottom: 2rem; }
+  h2 {
+    font-family: var(--serif); font-size: 1.3rem; font-weight: 600;
+    color: var(--ocean-700); margin: 2.5rem 0 1rem;
+    padding-bottom: 0.3rem; border-bottom: 2px solid var(--ocean-100);
+  }
+  .fig-card {
+    background: var(--bg-surface); border: 1px solid var(--border-light);
+    border-radius: 10px; padding: 1.4rem 1.6rem; margin-bottom: 1.2rem;
+    position: relative;
+  }
+  .fig-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+  .fig-label {
+    font-family: var(--sans); font-weight: 600; font-size: 0.82rem;
+    color: var(--ocean-600); letter-spacing: 0.03em; text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+  .fig-file {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.78rem;
+    color: var(--text-muted); background: var(--ocean-50); padding: 0.15rem 0.5rem;
+    border-radius: 4px; display: inline-block; margin-bottom: 0.6rem;
+  }
+  .fig-caption {
+    font-family: var(--serif); font-size: 0.95rem; line-height: 1.7; color: var(--text-primary);
+  }
+  .fig-caption em { color: var(--text-secondary); }
+  .fig-caption strong { color: var(--ocean-700); }
+  .copy-btn {
+    position: absolute; top: 0.8rem; right: 0.8rem; font-size: 0.75rem;
+    padding: 0.3rem 0.6rem; border: 1px solid var(--border-light); border-radius: 5px;
+    background: var(--bg-surface); color: var(--text-muted); cursor: pointer;
+    transition: all 0.15s ease; font-family: var(--sans);
+  }
+  .copy-btn:hover { background: var(--ocean-50); color: var(--ocean-600); border-color: var(--ocean-200); }
+  .note {
+    font-size: 0.85rem; color: var(--kelp-600); background: var(--kelp-100);
+    padding: 0.8rem 1rem; border-radius: 8px; margin: 1.5rem 0;
+    border-left: 3px solid var(--kelp-400);
+  }
+  footer { text-align: center; padding: 2rem 1rem; font-size: 0.82rem; color: var(--text-muted); margin-top: 2rem; border-top: 1px solid var(--border-light); }
+</style>
+</head>
+<body>
+
+<nav id="doc-nav" style="
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: #071421;
+  display: flex; align-items: center; gap: 0;
+  padding: 0 1.2rem; height: 42px;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px; font-weight: 400; letter-spacing: 0.01em;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+">
+  <a href="index.html" style="color: #b8daea; text-decoration: none; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; white-space: nowrap;">Home</a>
+  <a href="analysis_revisions.html" style="color: #b8daea; text-decoration: none; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; white-space: nowrap;">Analysis Revisions</a>
+  <a href="results_report.html" style="color: #b8daea; text-decoration: none; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; white-space: nowrap;">Results Report</a>
+  <a href="supporting_information.html" style="color: #b8daea; text-decoration: none; padding: 0.55rem 1rem; border-bottom: 2px solid transparent; white-space: nowrap;">Supporting Info</a>
+</nav>
+
+<h1>Draft Figure Captions</h1>
+<p class="subtitle">Copy-and-edit captions for Conservation Letters submission. Click "Copy" on any caption to grab it.</p>
+
+<div class="note">
+  These are <strong>draft captions</strong> — please review species names, statistics, and panel descriptions against the actual figures before submitting. All figures are in <code>plots/</code> as PDF + PNG (600 DPI).
+</div>
+
+<h2>Main Text Figures</h2>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure 1</div>
+  <div class="fig-file">fig_01_mpa_map.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure 1.</strong> Map of 23 marine protected areas (MPAs) along the California coast included in the analysis. Points indicate MPA locations; color indicates data source (KFM/NPS-MBON, SBC-LTER, PISCO, or Landsat). Bathymetric shading shows the continental shelf. All MPAs were established between 2003 and 2012 as part of California's Marine Life Protection Act.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure 2</div>
+  <div class="fig-file">fig_02_cascade_case_studies.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure 2.</strong> Trophic cascade case studies at representative MPAs. Each column shows a single MPA; rows show predators (<em>Panulirus interruptus</em>, <em>Semicossyphus pulcher</em>), prey (<em>Strongylocentrotus purpuratus</em>, <em>Mesocentrotus franciscanus</em>), and kelp (<em>Macrocystis pyrifera</em>). Points show log response ratios (lnRR = ln[MPA/Reference]) over time; vertical dashed lines mark MPA implementation. The predicted trophic cascade pattern is: predators increase (positive lnRR), urchins decrease (negative lnRR), and kelp increases (positive lnRR).
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure 3</div>
+  <div class="fig-file">fig_03_mean_effects.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure 3.</strong> Meta-analytic mean effects of MPA protection on kelp forest taxa. Points show estimated mean log response ratios from the joint multilevel meta-analysis (metafor::rma.mv); horizontal bars show 95% confidence intervals. The x-axis is displayed on the back-transformed response ratio (RR) scale, where RR = 1 (dashed line) indicates no MPA effect. Filled points indicate effects significant after Benjamini-Hochberg FDR correction (<em>p</em> < 0.05); open points are non-significant. Numbers in parentheses show the number of MPA-level effect sizes (<em>k</em>) for each taxon-response combination.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure 4</div>
+  <div class="fig-file">fig_04_recovery_curves.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure 4.</strong> Temporal recovery trajectories of MPA effects on kelp forest biomass. Panels show predators (<em>P. interruptus</em>, <em>S. pulcher</em>), urchins (<em>S. purpuratus</em>, <em>M. franciscanus</em>), and kelp (<em>M. pyrifera</em>). Thin colored lines show individual MPA trajectories (lnRR over years since MPA establishment); thick lines show population-level linear mixed effects model (lmer) predictions with 95% confidence bands. Positive slopes indicate increasing MPA effects over time. Temporal models used the specification: lnRR ~ time &times; species + (1 + time | MPA) + (1 | source).
+  </div>
+</div>
+
+<h2>Supplemental Figures</h2>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S1</div>
+  <div class="fig-file">fig_s01_data_processing.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S1.</strong> Conceptual diagram of the data processing pipeline from raw monitoring observations to standardized effect sizes. (a) Raw proportional response time series for a representative MPA-reference pair. (b) Paired log response ratio (lnRR) series with before/after delineation. (c) Candidate pBACIPS models fit to post-implementation data; the best model (by AICc) yields the effect size.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S2</div>
+  <div class="fig-file">fig_s02_forest_plot.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S2.</strong> Forest plot of individual MPA effect sizes by taxon. Points show MPA-level effect sizes (lnRR) with 95% confidence intervals, colored by response type (biomass or density). Vertical dashed lines and shaded bands show meta-analytic means and 95% CIs from the joint multilevel model. The x-axis is on the back-transformed response ratio scale.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S3</div>
+  <div class="fig-file">fig_s03_all_taxa_timeseries.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S3.</strong> Species-level recovery trajectories (lnRR vs. years since MPA establishment), faceted by species and response type. Thin lines show individual MPA trajectories; thick colored lines show GAM smooths with 95% CIs; dashed grey lines show linear mixed effects model (lmer) predictions. <em>M. pyrifera</em> density is absent because Landsat provides biomass estimates only.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S4</div>
+  <div class="fig-file">fig_s04_recovery_curves.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S4.</strong> Species-pair phase portraits showing network-wide mean lnRR trajectories over time since MPA establishment. Arrows indicate temporal progression; quadrant shading highlights predicted trophic cascade directions (e.g., predator increasing while prey decreasing).
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S5</div>
+  <div class="fig-file">fig_s05_cascade_phase.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S5.</strong> Per-MPA slope comparison and cascade consistency. (a) OLS slope estimates (lnRR yr<sup>-1</sup>) by species; colored points show individual MPA slopes, black pointranges show means &plusmn; 1 SE. (b) Cascade consistency tile chart showing whether each species' temporal slope matches the predicted trophic cascade direction at each MPA.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S6</div>
+  <div class="fig-file">fig_s06_slope_comparison.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S6.</strong> Moderator comparisons: (a) State Marine Reserve (SMR) vs. State Marine Conservation Area (SMCA) protection level and (b) Channel Islands vs. mainland location. Points show individual MPA effect sizes; pointranges show subgroup marginal means &plusmn; 1 SE from meta-regression. Neither moderator was statistically significant.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figures S7a-e</div>
+  <div class="fig-file">fig_s07_statistical_transparency.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S7.</strong> Statistical transparency panel. (a) Model selection frequencies across MPA-taxa combinations. (b) Variance component decomposition. (c-e) Additional diagnostic visualizations for the meta-analytic and temporal models.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figures S8a-e</div>
+  <div class="fig-file">fig_s08_appendix_*.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S8.</strong> Site-level lnRR time series for each taxon: (a) <em>P. interruptus</em>, (b) <em>S. pulcher</em>, (c) <em>S. purpuratus</em>, (d) <em>M. franciscanus</em>, (e) <em>M. pyrifera</em>. Each panel shows MPA-reference paired log response ratios over time, with individual MPAs in separate facets. Vertical dashed lines mark MPA implementation.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S9</div>
+  <div class="fig-file">fig_s09_moderator_comparisons.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S9.</strong> Moderator comparisons showing MPA effects by (a) protection level (SMR vs. SMCA) and (b) geographic region (Channel Islands vs. mainland). Points show individual effect sizes; pointranges show subgroup means &plusmn; SE.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S10</div>
+  <div class="fig-file">fig_s10_recovery_bio_den.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S10.</strong> Recovery trajectories for all taxa showing both biomass and density responses (5 &times; 2 grid). Layout matches Figure 4 but includes density panels. Thin lines show individual MPA trajectories; thick lines show lmer predictions with 95% confidence bands.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S11</div>
+  <div class="fig-file">fig_s11_dharma_diagnostics.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S11.</strong> DHARMa residual diagnostics for the nonlinear least squares (NLS) effect-size models used in the pBACIPS pipeline. QQ plots and residual-vs-predicted plots confirm model assumptions are reasonably met.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S12</div>
+  <div class="fig-file">fig_s12_funnel_plots.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S12.</strong> Funnel plots for publication bias assessment. Each panel shows a taxon-response combination. Points show individual effect sizes plotted against standard errors. Egger's regression test results are annotated; no evidence of systematic publication bias was detected.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S13</div>
+  <div class="fig-file">fig_s13_lmer_residuals.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S13.</strong> Residual diagnostics for the linear mixed effects temporal recovery model (lmer). Panels show (a) residuals vs. fitted values, (b) QQ plot of residuals, (c) scale-location plot, and (d) residuals by species.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S14</div>
+  <div class="fig-file">fig_s14_model_selection.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S14.</strong> NLS model selection frequencies across taxa and Durbin-Watson autocorrelation diagnostics. Left panel shows the distribution of best-fit pBACIPS models by type (constant, linear, exponential, asymptotic). Right panel shows DW test statistics; values near 2 indicate no significant temporal autocorrelation in residuals.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S15</div>
+  <div class="fig-file">fig_s15_sensitivity_summary.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S15.</strong> Cook's distance and outlier sensitivity comparison across four analytical approaches: (1) joint model without outlier removal (primary), (2) per-taxa models without removal, (3) per-taxa Cook's D at 4/<em>k</em> threshold, and (4) joint Cook's D at 4/<em>n</em>. The primary analysis (no removal) is preferred because the global Cook's D threshold over-flags between-taxon differences as outliers (see Section 2.4 of Analysis Revisions).
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S16</div>
+  <div class="fig-file">fig_s16_outlier_rationale.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S16.</strong> Outlier removal rationale. Four-panel visualization showing why global Cook's D thresholds over-flag observations in the joint meta-analysis. Between-taxon divergence in effect sizes (the expected trophic cascade signal) drives most flagged observations, not within-taxon anomalies. Per-taxon Cook's D (4/<em>k</em>) flagged only 11 of 132 observations compared to 88 of 132 under the global threshold (4/<em>n</em>).
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S17</div>
+  <div class="fig-file">fig_s17_temporal_outlier_trajectories.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S17.</strong> Temporal trajectories (lnRR over time since MPA establishment) for observations flagged as outliers by the global Cook's D threshold. Highlighted observations follow species-typical temporal patterns rather than showing anomalous behavior, supporting the decision to retain the full dataset in the primary analysis.
+  </div>
+</div>
+
+<div class="fig-card">
+  <button class="copy-btn" onclick="copyCaption(this)">Copy</button>
+  <div class="fig-label">Figure S18</div>
+  <div class="fig-file">fig_s18_raw_trajectories_outlier_status.pdf</div>
+  <div class="fig-caption">
+    <strong>Figure S18.</strong> Raw data trajectories colored by outlier status under the global Cook's D threshold (4/<em>n</em>). Panels are faceted by taxa and response type. Flagged observations (red) are concentrated in taxa with large between-group effect size differences, confirming that global thresholds conflate biological signal with statistical influence.
+  </div>
+</div>
+
+<footer>
+  Donham &amp; Stier, CA MPA Kelp Forest Analysis &mdash; Draft captions, March 2026
+</footer>
+
+<script>
+function copyCaption(btn) {
+  var card = btn.closest('.fig-card');
+  var caption = card.querySelector('.fig-caption').innerText;
+  navigator.clipboard.writeText(caption).then(function() {
+    btn.textContent = 'Copied!';
+    btn.style.background = '#d8f3dc';
+    btn.style.color = '#2d6a4f';
+    setTimeout(function() { btn.textContent = 'Copy'; btn.style.background = ''; btn.style.color = ''; }, 1500);
+  });
+}
+</script>
+
+</body>
+</html>
