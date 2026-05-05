@@ -1,60 +1,58 @@
 "CA_MPA_Name_Short","Species","Species_abbrev","slope","slope_se","n_years","n_resp"
 "Abalone Cove SMCA","Panulirus interruptus","P. interruptus",0.297883412482831,0.157084766164078,11,2
-"Abalone Cove SMCA","Semicossyphus pulcher","S. pulcher",0.258846952843446,0.0816996062293211,11,2
+"Abalone Cove SMCA","Semicossyphus pulcher","S. pulcher",0.260776595344493,0.0827425190506495,11,2
 "Abalone Cove SMCA","Strongylocentrotus purpuratus","S. purpuratus",-0.249064016171735,0.157170226514363,11,2
 "Abalone Cove SMCA","Mesocentrotus franciscanus","M. franciscanus",-0.198026012843721,0.0477504596608869,11,2
 "Abalone Cove SMCA","Macrocystis pyrifera","M. pyrifera",0.192626605827163,0.161481964085225,11,2
 "Anacapa Island SMR 2003","Panulirus interruptus","P. interruptus",-0.00323124343155839,0.0664414002845246,14,1
-"Anacapa Island SMR 2003","Semicossyphus pulcher","S. pulcher",0.0142251750882676,0.0387994231459979,15,3
+"Anacapa Island SMR 2003","Semicossyphus pulcher","S. pulcher",0.0141746697559851,0.038907991345104,15,3
 "Anacapa Island SMR 2003","Strongylocentrotus purpuratus","S. purpuratus",-0.223210191546806,0.0982917129366283,14,2
 "Anacapa Island SMR 2003","Mesocentrotus franciscanus","M. franciscanus",-0.192026185685874,0.0460960373867684,14,2
 "Anacapa Island SMR 2003","Macrocystis pyrifera","M. pyrifera",0.0451968489875233,0.244770651529899,14,2
-"Blue Cavern Onshore SMCA","Semicossyphus pulcher","S. pulcher",0.0333806363973094,0.124437340937847,6,2
+"Blue Cavern Onshore SMCA","Semicossyphus pulcher","S. pulcher",0.0322842539497221,0.122799645358549,6,2
 "Campus Point SMCA","Panulirus interruptus","P. interruptus",0.065324805036382,0.0740951025032688,11,2
-"Campus Point SMCA","Semicossyphus pulcher","S. pulcher",-0.19228355580222,0.105851571623286,11,2
+"Campus Point SMCA","Semicossyphus pulcher","S. pulcher",-0.199802010317829,0.105096542958055,11,2
 "Campus Point SMCA","Strongylocentrotus purpuratus","S. purpuratus",-0.225376507651462,0.0437500580415976,11,2
 "Campus Point SMCA","Mesocentrotus franciscanus","M. franciscanus",-0.152791783923644,0.0853552157475732,11,2
 "Campus Point SMCA","Macrocystis pyrifera","M. pyrifera",0.168806825175088,0.0453593052313924,11,2
-"Cat Harbor SMCA","Semicossyphus pulcher","S. pulcher",-0.0365047354448843,0.071646176108207,6,2
-"Dana Point SMCA","Semicossyphus pulcher","S. pulcher",-0.438651633208778,0.665503103497618,5,2
 "Gull Island SMR","Panulirus interruptus","P. interruptus",0.0438572865110082,0.0724310365152829,15,1
-"Gull Island SMR","Semicossyphus pulcher","S. pulcher",0.0200922313703522,0.0244852152162792,15,3
+"Gull Island SMR","Semicossyphus pulcher","S. pulcher",0.0203785054016995,0.0252463622198873,15,3
 "Gull Island SMR","Strongylocentrotus purpuratus","S. purpuratus",0.0028147951989084,0.0620071814669072,15,2
 "Gull Island SMR","Mesocentrotus franciscanus","M. franciscanus",-0.00819403050400225,0.0506897514747414,15,2
 "Gull Island SMR","Macrocystis pyrifera","M. pyrifera",0.294583457489734,0.115281970187007,15,2
 "Harris Point SMR","Panulirus interruptus","P. interruptus",0.030029061751644,0.0183559823451783,15,1
-"Harris Point SMR","Semicossyphus pulcher","S. pulcher",-0.137695965558398,0.108377049592685,15,3
+"Harris Point SMR","Semicossyphus pulcher","S. pulcher",-0.139914523686123,0.108762317728882,15,3
 "Harris Point SMR","Strongylocentrotus purpuratus","S. purpuratus",0.0626937191967921,0.0861924348912512,15,2
 "Harris Point SMR","Mesocentrotus franciscanus","M. franciscanus",-0.0144326948278559,0.0588418834071698,15,2
 "Harris Point SMR","Macrocystis pyrifera","M. pyrifera",-0.368923556385251,0.127916323905549,15,2
-"Long Point SMR","Semicossyphus pulcher","S. pulcher",-0.0239540529592341,0.150823333982969,6,2
+"Long Point SMR","Semicossyphus pulcher","S. pulcher",-0.0619059061120447,0.133959888323623,6,2
 "Matlahuayl SMR","Panulirus interruptus","P. interruptus",0.00532737036358276,0.491475955404945,5,2
 "Matlahuayl SMR","Semicossyphus pulcher","S. pulcher",-0.573728320454171,0.223224811101248,5,2
 "Matlahuayl SMR","Strongylocentrotus purpuratus","S. purpuratus",-0.245001127393738,0.172383260435544,5,1
 "Matlahuayl SMR","Mesocentrotus franciscanus","M. franciscanus",-0.350973720351162,0.300012643714471,5,1
 "Matlahuayl SMR","Macrocystis pyrifera","M. pyrifera",0.302355440839987,0.486855061916644,5,2
 "Naples SMCA","Panulirus interruptus","P. interruptus",0.00168138983996982,0.0718030397236939,11,2
-"Naples SMCA","Semicossyphus pulcher","S. pulcher",-0.117556878495033,0.0766172877385639,11,2
+"Naples SMCA","Semicossyphus pulcher","S. pulcher",-0.124634137908642,0.0764148125334322,11,2
 "Naples SMCA","Strongylocentrotus purpuratus","S. purpuratus",0.0823979287190531,0.0455706587135255,11,2
 "Naples SMCA","Mesocentrotus franciscanus","M. franciscanus",0.0576859001575813,0.0461743344091427,11,2
 "Naples SMCA","Macrocystis pyrifera","M. pyrifera",0.196933835061089,0.085137010027349,11,2
 "Point Vicente SMCA","Panulirus interruptus","P. interruptus",0.174324994074189,0.165862675670746,10,2
-"Point Vicente SMCA","Semicossyphus pulcher","S. pulcher",0.0806959411991339,0.0300774395111559,11,2
+"Point Vicente SMCA","Semicossyphus pulcher","S. pulcher",0.0823110699070637,0.0306734064166157,11,2
 "Point Vicente SMCA","Strongylocentrotus purpuratus","S. purpuratus",0.0779078974084157,0.138514096706501,10,2
 "Point Vicente SMCA","Mesocentrotus franciscanus","M. franciscanus",0.0110025060277965,0.0460810336610842,10,2
 "Point Vicente SMCA","Macrocystis pyrifera","M. pyrifera",0.24479236183973,0.144936838873924,10,2
 "Santa Barbara Island SMR","Panulirus interruptus","P. interruptus",0.243687785940033,0.0515425415681092,15,1
-"Santa Barbara Island SMR","Semicossyphus pulcher","S. pulcher",0.00628714747017534,0.0411907882121657,15,3
+"Santa Barbara Island SMR","Semicossyphus pulcher","S. pulcher",0.0111050171011775,0.0432558749563334,15,3
 "Santa Barbara Island SMR","Strongylocentrotus purpuratus","S. purpuratus",0.0418359511620669,0.0475318225031249,15,1
 "Santa Barbara Island SMR","Mesocentrotus franciscanus","M. franciscanus",-0.0696267076267844,0.0525787947285772,15,1
 "Santa Barbara Island SMR","Macrocystis pyrifera","M. pyrifera",0.203505556790025,0.179921770490737,15,2
 "Scorpion SMR","Panulirus interruptus","P. interruptus",0.14868756015353,0.0423334187496198,15,1
-"Scorpion SMR","Semicossyphus pulcher","S. pulcher",-0.0348199959609861,0.0232704119425903,15,3
+"Scorpion SMR","Semicossyphus pulcher","S. pulcher",-0.034138363945379,0.0232754115815311,15,3
 "Scorpion SMR","Strongylocentrotus purpuratus","S. purpuratus",-0.0646768512740543,0.0423329054575555,15,2
 "Scorpion SMR","Mesocentrotus franciscanus","M. franciscanus",-0.0413186635994188,0.0241677877626086,15,2
 "Scorpion SMR","Macrocystis pyrifera","M. pyrifera",0.48193675270358,0.113976685522201,15,2
 "South Point SMR","Panulirus interruptus","P. interruptus",0.210836620128205,0.0428661109572974,14,1
-"South Point SMR","Semicossyphus pulcher","S. pulcher",-0.0307300952329631,0.0199150084457764,15,3
+"South Point SMR","Semicossyphus pulcher","S. pulcher",-0.0316253603163355,0.0195909244882359,15,3
 "South Point SMR","Strongylocentrotus purpuratus","S. purpuratus",-0.150720071902712,0.0338815125802503,14,2
 "South Point SMR","Mesocentrotus franciscanus","M. franciscanus",-0.042792960531829,0.0255477340050838,14,2
 "South Point SMR","Macrocystis pyrifera","M. pyrifera",0.276112436977319,0.0803423161847936,14,2

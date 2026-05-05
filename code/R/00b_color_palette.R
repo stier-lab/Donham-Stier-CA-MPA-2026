@@ -35,23 +35,23 @@
 
 col_taxa <- c(
   "S. purpuratus"   = "#7B68A6",
-    # Muted violet-purple -- echoes the animal's test color. Blue-shifted
+    # Muted violet-purple. Echoes the animal's test color. Blue-shifted
     # to remain distinct from M. franciscanus under protanopia. L* ~45.
 
   "M. franciscanus"  = "#B85A4C",
-    # Burnt sienna / rust -- reflects the red urchin's spine color.
+    # Burnt sienna / rust. Reflects the red urchin's spine color.
     # Shifted toward brown to avoid pure-red collapse with green. L* ~48.
 
   "M. pyrifera"      = "#4A7C59",
-    # Forest/kelp green -- references kelp frond color. Cooler than olive
+    # Forest/kelp green. References kelp frond color. Cooler than olive
     # to harmonize with ocean theme. L* ~48.
 
   "P. interruptus"   = "#D4933B",
-    # Golden amber -- evokes the spiny lobster's carapace. High luminance
+    # Golden amber. Evokes the spiny lobster's carapace. High luminance
     # (L* ~62) provides key grayscale anchor for all taxa.
 
   "S. pulcher"       = "#1B6B8A"
-    # Deep blue-teal -- references sheephead's marine environment. Shifted
+    # Deep blue-teal. References sheephead's marine environment. Shifted
     # darker/bluer than col_site["Inside"] (#2A7B8E) to avoid collision.
     # More cyan than purple for clear CVD separation. L* ~42.
 )
@@ -78,12 +78,12 @@ cols <- col_taxa_short
 
 col_response <- c(
   "Den"     = "#5B8BA0",
-    # Slate steel blue -- cool tone signals count-based measurement.
-    # Muted and professional, distinct from taxa palette. L* ~55.
+    # Slate steel blue. Cool tone signals count-based measurement.
+    # Muted, distinct from taxa palette. L* ~55.
 
   "Bio"     = "#B07C4F"
-    # Warm copper/terracotta -- warm tone signals mass-based measurement.
-    # Good luminance separation from Density (~50 L*) and ~170° hue
+    # Warm copper/terracotta. Warm tone signals mass-based measurement.
+    # Good luminance separation from Density (~50 L*) and ~170 degree hue
     # separation ensures CVD discrimination.
 )
 
@@ -103,11 +103,11 @@ col_response_long <- c(
 
 col_site <- c(
   "Inside"    = "#2A7B8E",
-    # Teal -- MPA protected site. Connects visually to marine/ocean theme.
+    # Teal. MPA protected site. Connects visually to marine/ocean theme.
     # Cool color = "deep ocean" protection association. L* ~48.
 
   "Outside"   = "#8C7B6A"
-    # Warm taupe/stone -- reference site. Neutral, land-adjacent color.
+    # Warm taupe/stone. Reference site. Neutral, land-adjacent color.
     # Lower saturation signals "unprotected/baseline." L* ~52.
 )
 
@@ -132,14 +132,14 @@ col_site_all <- c(col_site, col_site_alt)
 
 col_map <- c(
   "land"      = "#F2EBE1",
-    # Warm cream/parchment -- very light, recedes visually. L* ~93.
+    # Warm cream/parchment. Very light, recedes visually. L* ~93.
 
   "ocean"     = "#D4E5F0",
-    # Pale steel blue -- low saturation prevents competition with data
+    # Pale steel blue. Low saturation prevents competition with data
     # points. L* ~90.
 
   "coastline" = "#3D3D3D"
-    # Charcoal -- high contrast against both land and ocean. Crisp edges.
+    # Charcoal. High contrast against both land and ocean. Crisp edges.
 )
 
 # Data source colors for map markers (harmonize with overall palette)
@@ -159,11 +159,11 @@ col_source_map <- c(
 
 col_ba <- c(
   "Before" = "#A0A0A0",
-    # Neutral mid-gray -- visually lighter, "faded" to suggest the
+    # Neutral mid-gray. Visually lighter, "faded" to suggest the
     # pre-intervention baseline.
 
   "After"  = "#2B2B2B"
-    # Near-black -- darker fill signals the treatment period.
+    # Near-black. Darker fill signals the treatment period.
     # The luminance contrast ratio (Before/After) is ~3.5:1.
 )
 
@@ -188,10 +188,10 @@ alpha_ba <- c(
 # (8-10 pt in Conservation Letters figures).
 
 shape_source <- c(
-  "KFM"     = 15,   # filled square   -- NPS Channel Islands program
-  "LTER"    = 16,   # filled circle   -- SBC LTER
-  "PISCO"   = 17,   # filled triangle -- PISCO kelp forest surveys
-  "Landsat" = 18    # filled diamond  -- satellite remote sensing
+  "KFM"     = 15,   # filled square. NPS Channel Islands program
+  "LTER"    = 16,   # filled circle. SBC LTER
+  "PISCO"   = 17,   # filled triangle. PISCO kelp forest surveys
+  "Landsat" = 18    # filled diamond. satellite remote sensing
 )
 
 # Open-point variants (for Before period overlay)
@@ -228,7 +228,8 @@ col_type <- c(
 # =============================================================================
 # NLS model types shown in stacked bar charts. Colors are deliberately DISTINCT
 # from col_taxa and col_site to avoid visual confusion with biological variables.
-# Grey/blue/teal family — all muted, professional, and perceptually separable.
+# Grey/blue/teal family. All muted and perceptually separable.
+
 
 col_model <- c(
   "Step"       = "#6A9FB5",   # Light steel blue
@@ -244,7 +245,7 @@ col_model <- c(
 # 6c. VARIANCE COMPONENT COLORS (originally Fig S7 panel b, now dropped from SI)
 # =============================================================================
 # Distinguishes random effects: MPA (spatial) vs Source (data program).
-# Uses earth tones — NOT overlapping with col_taxa or col_response.
+# Uses earth tones. NOT overlapping with col_taxa or col_response.
 
 col_variance <- c(
   "MPA"    = "#5E7D6A",   # Sage green (spatial concept)
@@ -270,8 +271,8 @@ col_effect <- c(
 # Binary yes/no for whether each MPA-species slope matches expected direction.
 
 col_cascade <- c(
-  "TRUE"  = "#0072B2",   # Okabe-Ito blue — expected direction (colorblind-safe)
-  "FALSE" = "#D55E00"    # Okabe-Ito vermillion — unexpected direction (colorblind-safe)
+  "TRUE"  = "#0072B2",   # Okabe-Ito blue. expected direction (colorblind-safe)
+  "FALSE" = "#D55E00"    # Okabe-Ito vermillion. unexpected direction (colorblind-safe)
 )
 
 
@@ -296,10 +297,10 @@ col_heatmap <- c(
 # from methodological dimensions.
 
 col_diag <- c(
-  "OK"              = "#B8C9B8",   # Sage green — passes all tests
-  "Non-normal"      = "#D4A574",   # Terracotta — Shapiro-Wilk failure
-  "Heteroscedastic" = "#8FA4B8",   # Steel blue-grey — residual heteroscedasticity
-  "Both"            = "#C4889A"    # Dusty rose — both failures
+  "OK"              = "#B8C9B8",   # Sage green. passes all tests
+  "Non-normal"      = "#D4A574",   # Terracotta. Shapiro-Wilk failure
+  "Heteroscedastic" = "#8FA4B8",   # Steel blue-grey. residual heteroscedasticity
+  "Both"            = "#C4889A"    # Dusty rose. both failures
 )
 
 

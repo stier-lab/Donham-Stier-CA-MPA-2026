@@ -296,7 +296,7 @@ SumStats <- data.frame(
 #'
 #' STATISTICAL CONTEXT (2026-02-12):
 #' Previously, the SE of the difference was computed as sqrt(SE_before^2 + SE_after^2),
-#' which assumes independence between predictions at t=0 and t=11. However, because both
+#' which assumes independence between predictions at t=0 and t=11. But because both
 #' predictions come from the same NLS model and share parameters, they have positive
 #' covariance. The independence assumption therefore OVERESTIMATES the SE, which
 #' systematically down-weights NLS effect sizes in the meta-analysis. The delta method
@@ -443,6 +443,24 @@ add_time_columns <- function(dat) {
 #' Sites with significant (p < 0.05) linear trends in the before period are
 #' excluded from pBACIPS analysis and analyzed separately as CI (Control-Impact)
 #' sites, which don't require the parallel trend assumption.
+#'
+#' CI FALLBACK ROUTING (Emily review, 2026-04):
+#'   The MPAs that fail the linearity test here are NOT dropped from the
+#'   analysis. They are routed to run_ci_analysis() (defined ~L575) which
+#'   fits two effect-size variants per MPA:
+#'     (a) `linear`. Slope of lnRR over time across the full series
+#'     (b) `mean`. Simple after-period mean lnRR (legacy CI estimate)
+#'   The "linear" variant is flagged Primary = "Y" if its slope is
+#'   significant (p <= 0.05); otherwise "mean" is the primary. Both rows
+#'   are written to SumStats.Final with model_type = "CI_linear" or
+#'   "CI_mean" so downstream meta-analysis can include or exclude them.
+#'
+#'   This is the "just CI" comparison Emily ran during the methods
+#'   exploration: it shows how the meta-analytic results change if every
+#'   MPA is treated as CI-only (no pBACIPS). See ANALYSIS_REVISIONS.md
+#'   Section 4 for the side-by-side comparison. The current pipeline uses
+#'   pBACIPS for parallel-trend MPAs and CI for the rest (the routing
+#'   above), which is the intended design.
 #'
 #' LIMITATIONS AND CAVEATS:
 #' 1. Low statistical power: With only 3-5 before-period points, power to detect
@@ -942,6 +960,35 @@ add_mean_effect_size <- function(dat, taxa_name, mpa_name, source_name, resp_nam
 ####################################################################################################
 ## LTER ANALYSES ###################################################################################
 ####################################################################################################
+#
+# OVERVIEW: Each source section below (LTER, PISCO, KFM, Landsat) follows the same pattern:
+#
+#   1. Subset the response ratio data for one source × taxa × response type
+#   2. Add time columns (time.model = 0 for Before, 1,2,3... for After; time.true = sequential)
+#   3. Test for linear trend in the Before period (violates BACI assumptions if significant)
+#   4. Run pBACIPS model selection on MPAs that pass the before-trend test
+#   5. For each MPA, pick the best-fit model (step/linear/asymptotic/sigmoid) and
+#      extract effect size at t=0 (before) vs t=11 years (after MPA implementation)
+#   6. Add one row to SumStats per MPA × taxa × response
+#
+# EXCLUSION LOGIC:
+#   - If the before period has a significant linear trend (p < 0.05), the MPA is
+#     excluded from pBACIPS and analyzed as CI (control-impact) instead
+#   - This is conservative: the parallel-trends assumption is essential for BACI inference
+#   - Some MPAs are excluded for BOTH density and biomass if EITHER shows a before trend
+#     (e.g., LTER urchins: purps density was linear → both density AND biomass excluded)
+#
+# EFFECT SIZE TYPES:
+#   - add_step_effect_size():     Before vs After mean comparison (Step model won)
+#   - add_linear_effect_size():   Predicted value at t=11 minus t=0 from linear fit
+#   - add_nls_effect_size():      Same but from NLS sigmoid/asymptotic fit
+#   - add_mean_effect_size():     Simple mean of post-MPA lnRR (CI sites without Before data)
+#
+# WHY SOME MPAS APPEAR MULTIPLE TIMES:
+#   - The same MPA may have data from PISCO + KFM + LTER
+#   - Each source contributes a separate effect size (different transects/methods)
+#   - The meta-analysis in 09 accounts for this with a Source random effect
+#
 
 #----- S. purpuratus Density (LTER) -----#
 LTER.purps <- subset(All.RR.sub.trans, source == "LTER" &
@@ -1041,9 +1088,15 @@ SumStats <- rbind(SumStats, add_mean_effect_size(LTER.nap.LOB.bio, "P. interrupt
 ####################################################################################################
 ## PISCO ANALYSES ##################################################################################
 ####################################################################################################
-
-# The PISCO loop pattern: for each taxa x response, loop over MPAs and calculate both
-# linear and mean effect sizes using run_ci_analysis()
+#
+# PISCO sites are all CI (control-impact). They lack sufficient before-period data
+# for a full pBACIPS analysis. For each taxa x response, we calculate BOTH a linear
+# and a mean effect size. The CI filter in the finalization step (line ~1640) selects
+# which one to keep based on whether the before period had a significant trend.
+#
+# The run_ci_analysis() helper (defined above) loops over all PISCO MPAs for a given
+# taxa × response and returns rows for SumStats.
+#
 
 #----- M. franciscanus Density (PISCO) -----#
 Mes.den <- subset(All.RR.sub.trans, y == "Mesocentrotus franciscanus" &
@@ -1106,10 +1159,15 @@ SumStats <- rbind(SumStats, run_ci_analysis(Sheep.bio, "S. pulcher", "PISCO", "B
 ####################################################################################################
 ## KFM ANALYSES ####################################################################################
 ####################################################################################################
-
+#
+# KFM (Kelp Forest Monitoring, run by National Park Service on the Channel Islands) has
+# the longest time series and the best before/after coverage. These are the core pBACIPS
+# sites where we can do full model selection (step, linear, asymptotic, sigmoid).
+#
 # KFM sites are split into:
-# BA sites (Scorpion, SBI, Harris Point, Gull Island) -> pBACIPS with before/after data
-# CI sites (Anacapa 2003, South Point) -> CI-only linear regression
+#   BA sites (Scorpion, SBI, Harris Pt, Gull Island) → full pBACIPS with before/after data
+#   CI sites (Anacapa 2003, South Point) → CI-only analysis (no before period)
+#
 
 # KFM BA site lists
 KFM_BA_SITES <- c("Scorpion SMR", "Santa Barbara Island SMR",
@@ -1548,16 +1606,39 @@ SumStats <- rbind(SumStats, run_ci_analysis(KFM.sheep.CI, "S. pulcher", "KFM", "
 ####################################################################################################
 ## LANDSAT Kelp Biomass Effect Sizes ###############################################################
 ####################################################################################################
-
-# Landsat.RR is loaded from harmonized CSVs by 03_load_harmonized_data.R.
-# Here we only run the effect size analysis loop over the pre-processed response ratios.
+#
+# WHAT THIS DOES:
+#   Adds M. pyrifera (giant kelp) biomass effect sizes from satellite-derived canopy data.
+#   Landsat imagery (30m resolution, 1984-2021) provides the longest time series and broadest
+#   spatial coverage of any data source. 20 MPAs with annual kelp canopy biomass estimates.
+#
+# WHY IT MATTERS:
+#   Landsat nearly doubles the M. pyrifera sample size (from k=17 to k=31) and adds 4 MPAs
+#   that have no diver-survey kelp data (Cabrillo, Point Dume SMCA/SMR, Skunk Pt).
+#   This substantially strengthens the kelp recovery signal.
+#
+# DATA SOURCE:
+#   Landsat.RR is loaded from data/harmonized/harmonized_landsat_rr.csv by 03_load_harmonized_data.R.
+#   It contains pre-computed log response ratios (lnDiff) with time columns already set:
+#     time = 0 for all Before-period years, 1, 2, 3, ... for After-period years
+#
+# METHOD:
+#   Simple linear model: lnDiff ~ time, then extract effect size as predicted(t=11) - predicted(t=0).
+#   This matches the approach used for other linear effect sizes throughout this script.
+#
+# NOTE ON BASE R SUBSETTING:
+#   We use base R (not dplyr::filter) because Landsat.RR has a column named "mpa" (containing
+#   biomass proportions). Using dplyr::filter(Landsat.RR, CA_MPA_Name_Short == mpa_name) would
+#   cause dplyr's data masking to match the "mpa" COLUMN instead of the loop variable, silently
+#   returning 0 rows. This was a bug discovered in March 2026.
+#
 
 if (exists("Landsat.RR") && nrow(Landsat.RR) > 0) {
   mpas_landsat <- unique(Landsat.RR$CA_MPA_Name_Short)
-  for (mpa in mpas_landsat) {
-    mpa_dat <- dplyr::filter(Landsat.RR, CA_MPA_Name_Short == mpa)
+  for (mpa_name in mpas_landsat) {
+    mpa_dat <- Landsat.RR[Landsat.RR$CA_MPA_Name_Short == mpa_name, ]
     if (nrow(mpa_dat) > 3) {
-      SumStats <- rbind(SumStats, add_linear_effect_size(mpa_dat, "M. pyrifera", mpa, "Landsat", "Bio",
+      SumStats <- rbind(SumStats, add_linear_effect_size(mpa_dat, "M. pyrifera", mpa_name, "Landsat", "Bio",
                              time_var = "time"))
     }
   }
@@ -1566,6 +1647,18 @@ if (exists("Landsat.RR") && nrow(Landsat.RR) > 0) {
 ####################################################################################################
 ## Finalize SumStats ###############################################################################
 ####################################################################################################
+#
+# WHAT HAPPENS HERE:
+#   1. Clean up data types (rbind coerced some numerics to character)
+#   2. Remove rows with missing values (the initial empty row + any failed models)
+#   3. Set factor levels for consistent ordering in figures
+#   4. Merge with Site metadata (adds lat/lon, MPA start year, location, etc.)
+#   5. Filter to publication-ready subset:
+#      - Keep all pBACIPS results
+#      - For CI sites: keep only the "primary" model where before period was not linear
+#      - Remove excluded MPAs (fishing allowed, data quality issues, etc.)
+#   6. Export to data/sumstats_final.csv
+#
 
 # Convert numeric columns (necessary because c() in row assignment coerces to character)
 SumStats$Mean <- as.numeric(SumStats$Mean)
@@ -1880,7 +1973,7 @@ if (nrow(dw_available) > 0) {
                   row$DW_stat, row$DW_pval))
     }
     cat("\nNote: Significant autocorrelation may inflate Type I error rates by\n")
-    cat("underestimating SEs. However, the meta-analytic framework (rma.mv in\n")
+    cat("underestimating SEs. The meta-analytic framework (rma.mv in\n")
     cat("09_meta_analysis.R) partially mitigates this by modeling heterogeneity\n")
     cat("across studies. Consider GLS or Newey-West corrections for a sensitivity analysis.\n")
   } else {
@@ -1898,8 +1991,8 @@ if (nrow(dw_available) > 0) {
 # 1. Is EXCLUDED from AICc competition (not a true NLS fit)
 # 2. May produce different effect size estimates than NLS models
 # 3. Uses a simpler functional form that cannot capture nonlinear recovery
-# 4. Affects 0 out of 14 model fit log entries that reach SumStats.Final —
-#    all 5 piecewise fallbacks in the audit log were excluded from AICc,
+# 4. Affects 0 out of 14 model fit log entries that reach SumStats.Final.
+#    All 5 piecewise fallbacks in the audit log were excluded from AICc,
 #    so the winning model for each MPA-taxa combination was always a true
 #    NLS fit (sigmoid, asymptotic) or a step/linear model. No fallback
 #    models appear in SumStats.Final (verified by grepping for "fallback"

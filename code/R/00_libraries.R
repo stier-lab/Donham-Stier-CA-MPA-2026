@@ -26,7 +26,7 @@
 # -----------------------------------------------------------------------------
 # The plyr package has functions (like summarise) that conflict with dplyr.
 # Loading plyr first ensures dplyr's versions take precedence, which is what
-# we want for this analysis. You'll see masking warnings - this is expected.
+# we want for this analysis. Masking warnings are expected.
 
 library(plyr)
 

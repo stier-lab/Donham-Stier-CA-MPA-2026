@@ -3,22 +3,44 @@
 # =============================================================================
 #
 # PURPOSE:
-#   Perform multilevel meta-analysis of MPA effects across all taxa, data sources,
-#   and MPAs. This aggregates the individual effect sizes from 08_effect_sizes.R
-#   to estimate overall MPA effects by taxa.
+#   This script answers the central question: "On average, how much do MPAs
+#   change the biomass and density of each kelp forest species?"
 #
-# WHAT THIS SCRIPT DOES:
-#   1. Prepares effect size data for meta-analysis (calculates sampling variance)
-#   2. Fits JOINT multilevel models with Taxa moderator (PRIMARY: full data, no outlier removal)
-#   3. Fits per-taxa meta-analyses (SENSITIVITY: separate models per taxon)
-#   4. Produces Table 2: Meta-analytic estimates by taxa from joint model
-#   5. Produces outlier sensitivity table (4 approaches compared)
-#   6. Produces leave-one-out analysis for borderline kelp result
-#   7. Produces Table 3: Cross-taxa relationships (trophic cascade tests)
+#   It takes the individual MPA-level effect sizes computed in 08_effect_sizes.R
+#   and synthesizes them into overall (network-wide) estimates for each of the
+#   five focal taxa (lobster, sheephead, purple urchin, red urchin, giant kelp).
+#   It also tests whether effect sizes on different trophic levels are related
+#   to each other, which is the statistical test for the trophic cascade hypothesis.
+#
+# WHAT THIS SCRIPT DOES (in order):
+#   1. Data prep: converts SE to sampling variance (vi = SE^2) for meta-analysis
+#   2. PRIMARY ANALYSIS -- Joint multilevel models (one for biomass, one for density):
+#      Estimates the mean MPA effect for each taxon while sharing variance
+#      components across taxa, which stabilizes estimates for taxa with few MPAs.
+#   3. SENSITIVITY -- Source random effect: checks whether including the monitoring
+#      program (PISCO/KFM/LTER) as a random effect changes conclusions.
+#   4. SENSITIVITY -- Variance components: reports how much of the variation in
+#      effect sizes comes from differences among MPAs vs. monitoring programs.
+#   5. SENSITIVITY -- Per-taxa models: fits separate models for each taxon
+#      (instead of a joint model) to show results are robust to modeling choice.
+#   6. SENSITIVITY -- Outlier diagnostics: compares 4 outlier-handling approaches
+#      to show results are not driven by any single extreme effect size.
+#   7. SENSITIVITY -- Leave-one-out for kelp: tests whether the kelp biomass
+#      result depends on any single MPA (it's a borderline result).
+#   8. TABLE 2 (manuscript): The main results table -- meta-analytic mean effect
+#      sizes with 95% CIs and FDR-corrected p-values for each taxon x response.
+#   9. TABLE 3 (manuscript): Cross-taxa meta-regressions testing the trophic
+#      cascade hypothesis (e.g., does predator increase predict urchin decrease?).
 #
 # PRIMARY META-ANALYSIS STRUCTURE (Joint Model, No Outlier Removal):
 #   yi ~ Taxa - 1, random = list(~1|MPA, ~1|Source)
-#   Cell-means parameterization: each coefficient IS a per-taxa estimate.
+#
+#   In plain English: the mean effect size differs by taxon (fixed effect), and
+#   effect sizes from the same MPA or the same monitoring program may be more
+#   similar to each other than to random draws (random intercepts). The "- 1"
+#   means each taxon gets its own coefficient directly (cell-means), rather than
+#   one taxon being the baseline with others expressed as differences.
+#
 #   All taxa share common tau2(MPA) and tau2(Source), yielding more stable
 #   estimates especially for small-k taxa (e.g., P. interruptus Bio k=2).
 #   Statistical rationale: Borenstein & Higgins 2013, Cochrane Handbook Ch. 10,
@@ -32,61 +54,75 @@
 #
 # WHY SEPARATE MODELS FOR BIOMASS AND DENSITY:
 #   Biomass and density estimates for the same taxa/MPA/source are non-independent
-#   (they come from the same surveys). Running them together would violate
-#   independence assumptions. By splitting, we can properly estimate variance.
+#   (they come from the same surveys measuring the same organisms). Running them
+#   together in one model would violate independence assumptions. Splitting into
+#   separate biomass and density models avoids this problem.
 #
-# METHODS REFERENCE:
+# METHODS REFERENCE (from manuscript):
 #   "We fit multilevel meta-analysis models with restricted maximum-likelihood
 #    estimation (REML) using effect size estimates (ES) from pBACIPS and/or CI
 #    analyses for each taxa using the rma.mv function in the metafor package.
 #    Taxa was a fixed effect (moderator) in meta-analysis models with MPA as
 #    a random effect."
 #
-# NOTE: pBACIPS assumes parallel trends between MPA and reference sites
-# in the before-period. With typically short before-periods (3-5 years)
-# and high interannual variability, formal tests for parallel trends
-# have low statistical power. The before-period trends are implicitly
-# assumed parallel by the NLS model structure.
+# NOTE ON ASSUMPTIONS:
+#   pBACIPS assumes parallel trends between MPA and reference sites in the
+#   before-period. With typically short before-periods (3-5 years) and high
+#   interannual variability, formal tests for parallel trends have low
+#   statistical power. The before-period trends are implicitly assumed
+#   parallel by the NLS model structure in 08_effect_sizes.R.
 #
 # INPUTS:
 #   - SumStats.Final: Effect size estimates from 08_effect_sizes.R
+#     (one row per MPA x taxon x response type, with columns Mean, SE, etc.)
 #
-# OUTPUTS (R objects):
-#   - meta_biomass: rma.mv model object for biomass
-#   - meta_density: rma.mv model object for density
+# OUTPUTS (R objects kept in memory for downstream scripts):
+#   - meta_biomass_full / meta_density_full: Primary joint rma.mv model objects
+#   - meta_biomass / meta_density: Joint models after Cook's D outlier removal
 #   - Table2: Summary dataframe (also exported as CSV)
 #
 # OUTPUTS (CSV files):
 #   - tables/table_02_meta_analysis.csv                    Table 2: joint model estimates + heterogeneity
 #   - tables/table_03_cross_taxa_meta_regression.csv       Table 3: trophic cascade meta-regressions
-#   - tables/table_s_outlier_sensitivity.csv               Outlier sensitivity: 4 methods compared
-#   - tables/table_s_kelp_leave1out.csv                    Leave-one-out: M. pyrifera biomass
-#   - tables/table_s_variance_components.csv               Variance components with CIs
-#   - tables/table_s_source_sensitivity_models.csv         Source RE model comparison (AIC/BIC)
-#   - tables/table_s_source_sensitivity_coefficients.csv   Source RE coefficient comparison
-#   - outputs/filter_audit_meta_analysis.csv             Joint model filter audit
-#   - outputs/filter_audit_pertaxa_meta.csv              Per-taxa filter audit
+#   - tables/table_s_outlier_sensitivity.csv               Table S9: outlier sensitivity (4 methods)
+#   - tables/table_s_kelp_leave1out.csv                    Table S8: leave-one-out M. pyrifera biomass
+#   - tables/table_s_variance_components.csv               Table S2: variance components with CIs
+#   - tables/table_s_source_sensitivity_models.csv         Table S3a: source RE model comparison (AIC/BIC)
+#   - tables/table_s_source_sensitivity_coefficients.csv   Table S3b: source RE coefficient comparison
+#   - outputs/filter_audit_meta_analysis.csv               Joint model filter audit (which rows were outliers)
+#   - outputs/filter_audit_pertaxa_meta.csv                Per-taxa filter audit
 #
 # DEPENDENCIES:
-#   Requires 00-08 scripts to be sourced first
+#   Requires 00-08 scripts to be sourced first (loads SumStats.Final)
 #
 # AUTHORS: Emily Donham & Adrian Stier
 # PROJECT: CA MPA Kelp Forest pBACIPS Analysis
 # =============================================================================
 
 ####################################################################################################
-## Prepare data for meta-analysis ##################################################################
+## SECTION A: Prepare effect size data for meta-analysis ###########################################
 ####################################################################################################
+#
+# WHAT: Convert the individual MPA-level effect sizes from 08_effect_sizes.R into
+#   the format required by metafor. The key transformation is computing the
+#   sampling variance (vi = SE^2), which tells the meta-analysis how precisely
+#   each effect size was estimated. Better-estimated effect sizes (lower SE)
+#   get more weight in the overall average.
+#
+# WHY: metafor::rma.mv() requires a variance column (V) rather than SE.
+#   We also split the data into separate biomass and density subsets because
+#   these are non-independent (measured on the same organisms at the same sites).
 
-# Compute sampling variance (vi = SE^2)
-# SE is the standard error of the effect size estimate
+# Compute sampling variance: vi = SE^2
+# metafor weights each effect size by 1/vi, so more precise estimates count more
 SumStats.Final$vi <- as.numeric(SumStats.Final$SE)^2
 
-# Ensure Mean and vi are numeric (they may have been stored as character from 08)
+# Ensure numeric types (these may have been stored as character in the CSV from 08)
 SumStats.Final$Mean <- as.numeric(SumStats.Final$Mean)
 SumStats.Final$vi   <- as.numeric(SumStats.Final$vi)
 
-# --- OUTPUT VALIDATION: Check variance calculation ---
+# --- Data quality checks ---
+# Flag any rows with non-positive SE or non-finite variance (would break the model)
 n_invalid_se <- sum(SumStats.Final$SE <= 0, na.rm = TRUE)
 n_invalid_vi <- sum(!is.finite(SumStats.Final$vi))
 if (n_invalid_se > 0) {
@@ -99,23 +135,24 @@ if (n_invalid_vi > 0) {
 }
 stopifnot("No valid effect sizes remaining" = nrow(SumStats.Final) > 0)
 
-# --- OUTPUT VALIDATION: Check effect size range ---
+# Flag extremely large effect sizes (|lnRR| > 5 means >150x difference MPA vs ref)
+# These are not removed, just flagged -- they may be real (e.g., kelp at some sites)
 extreme_es <- sum(abs(SumStats.Final$Mean) > 5, na.rm = TRUE)
 if (extreme_es > 0) {
   warning("Found ", extreme_es, " effect sizes with |Mean| > 5 (may be outliers)")
 }
 
-# Ensure Taxa is a factor for the moderator specification
+# Convert grouping variables to factors (required by rma.mv formula interface)
 SumStats.Final$Taxa <- factor(SumStats.Final$Taxa)
-
-# Ensure Source is a factor for random effects nesting
 SumStats.Final$Source <- factor(SumStats.Final$Source)
 
-# Split into biomass and density subsets (non-independent, so modeled separately)
+# Split into biomass and density subsets
+# These MUST be modeled separately because biomass and density are measured on
+# the same organisms at the same sites -- they are not independent observations
 biomass_data <- subset(SumStats.Final, Resp == "Bio")
 density_data <- subset(SumStats.Final, Resp == "Den")
 
-# --- OUTPUT VALIDATION: Ensure both subsets have sufficient data ---
+# Verify both subsets have data
 stopifnot("No biomass data for meta-analysis" = nrow(biomass_data) > 0)
 stopifnot("No density data for meta-analysis" = nrow(density_data) > 0)
 
@@ -123,25 +160,38 @@ cat("Biomass observations:", nrow(biomass_data), "\n")
 cat("Density observations:", nrow(density_data), "\n")
 
 ####################################################################################################
-## JOINT MODEL: Biomass meta-analysis (PRIMARY / Variance Components) ##############################
+## SECTION B: Joint Biomass Meta-Analysis (PRIMARY ANALYSIS) #######################################
 ####################################################################################################
+#
+# WHAT: Estimate the average MPA effect on BIOMASS for each of the 5 taxa, pooling
+#   across all MPAs and monitoring programs. This is the primary analysis that
+#   populates the biomass rows of manuscript Table 2.
+#
+# WHY A JOINT MODEL: By fitting all 5 taxa in one model, we "borrow strength"
+#   across taxa -- the variance components (tau2_MPA and tau2_Source) are estimated
+#   from all the data, not just from one taxon. This matters most for taxa with
+#   very few effect sizes (e.g., lobster biomass has only k=2 MPAs).
+#
+# HOW TO READ THE OUTPUT: Each taxon's coefficient IS its estimated mean lnRR.
+#   Positive = higher inside MPAs. The p-value tests whether lnRR differs from 0.
+#   For example, lnRR = 0.61 means biomass is exp(0.61) = 1.84x higher inside MPAs.
+#
+# KNOWN LIMITATION: Biomass and density measurements come from the same organisms
+#   at the same sites, so they are not independent. The (1|MPA) random effect
+#   partially accounts for this, but the FDR correction across bio + den tests
+#   may still be slightly anti-conservative. See 13_additional_analyses.R.
 
-# NOTE: Bio/Den non-independence
-# Biomass and density measurements come from the same individuals at the same
-# sites. The random effect (1|MPA) partially accounts for this correlation,
-# but residual non-independence between response types may inflate effective
-# sample sizes and affect FDR correction. This is a known limitation of
-# pooling biomass and density in the same meta-analytic model.
-# See also: moderator analyses in 13_additional_analyses.R
-
-# Step 1: Fit initial model with all biomass data
-# - yi = Mean: the effect size (mean difference on log-ratio scale)
-# - V = vi: sampling variance (SE^2)
-# - mods = ~ Taxa - 1: taxa as a fixed-effect moderator (cell-means parameterization,
-#   removing the intercept so each taxon gets its own estimate)
-# - random = list(~ 1 | MPA, ~ 1 | Source): random intercepts for MPA and data Source
-#   to account for non-independence within the same MPA and monitoring program
-# - method = "REML": restricted maximum-likelihood estimation
+# --- Step 1: Fit the joint model on ALL biomass data (no outlier removal) ---
+# This is the PRIMARY model. Cook's D outlier removal (Step 2-3) is for sensitivity only.
+#
+# Model formula explained:
+#   yi = Mean:            effect size on log-ratio scale (lnRR)
+#   V = vi:               sampling variance (SE^2) -- weights more precise estimates higher
+#   mods = ~ Taxa - 1:    separate intercept for each taxon (cell-means parameterization)
+#   random = ~1|MPA:      effect sizes from the same MPA may be correlated
+#   random = ~1|Source:    effect sizes from the same monitoring program may be correlated
+#   method = "REML":      restricted maximum likelihood (standard for inference)
+#   test = "t":           use t-distribution for p-values (more conservative than z with small k)
 meta_biomass_full <- tryCatch(
   rma.mv(
     yi     = Mean,
@@ -168,7 +218,7 @@ outliers_bio <- integer(0)
 pseudo_I2_bio <- NA_real_
 
 if (!is.null(meta_biomass_full)) {
-  # --- OUTPUT VALIDATION: Check model convergence ---
+  # Verify the model converged and produced valid estimates
   if (!is.null(meta_biomass_full$not.converged) && meta_biomass_full$not.converged) {
     warning("Biomass meta-analysis model did not converge")
   }
@@ -178,15 +228,15 @@ if (!is.null(meta_biomass_full)) {
   cat("\n--- Biomass model (full data) ---\n")
   print(summary(meta_biomass_full))
 
-  # Step 2: Cook's distance outlier detection
-  # Cook's distance measures the influence of each observation on the fitted model.
-  # Observations with Cook's distance exceeding the conventional threshold (cutoff based
-  # on the number of observations) are considered influential outliers.
+  # --- Step 2: Identify influential observations using Cook's distance ---
+  # Cook's distance measures how much the model results would change if you removed
+  # one observation. A high value means that single MPA-taxon combination is
+  # disproportionately driving the overall result. The 4/n threshold is standard
+  # in meta-analytic practice (Viechtbauer & Cheung 2010).
   cooks_bio <- cooks.distance(meta_biomass_full)
   p_bio <- length(coef(meta_biomass_full))
 
-  # Standard threshold: values exceeding 4/n or the median + 3*IQR
-  # We use the 4/n rule which is standard in meta-analytic practice
+  # Flag observations exceeding the 4/n threshold as influential
   outliers_bio <- which(cooks_bio > cooks_threshold_bio)
 
   cat("\nBiomass Cook's distance threshold (4/n):", round(cooks_threshold_bio, 4), "\n")
@@ -196,9 +246,10 @@ if (!is.null(meta_biomass_full)) {
     print(biomass_data[outliers_bio, c("Taxa", "MPA", "Mean", "SE")])
   }
 
-  # Step 3: Remove outliers and refit
+  # --- Step 3: Remove outliers and refit (SENSITIVITY, not primary) ---
+  # The primary analysis uses meta_biomass_full (no removal). This cleaned model
+  # (meta_biomass) is kept for the outlier sensitivity comparison in Table S9.
   if (length(outliers_bio) > 0) {
-    # --- OUTPUT VALIDATION: Check outlier removal is not excessive ---
     pct_removed <- 100 * length(outliers_bio) / n_bio
     cat("Removing", length(outliers_bio), "outliers (", round(pct_removed, 1), "% of data)\n")
     if (pct_removed > 20) {
@@ -209,9 +260,9 @@ if (!is.null(meta_biomass_full)) {
     biomass_clean <- biomass_data
   }
 
-  # --- OUTPUT VALIDATION: Ensure sufficient data remains ---
   stopifnot("Insufficient biomass data after outlier removal" = nrow(biomass_clean) >= 10)
 
+  # Refit the same joint model on the cleaned data
   meta_biomass <- tryCatch(
     rma.mv(
       yi     = Mean,
@@ -232,25 +283,25 @@ if (!is.null(meta_biomass_full)) {
     cat("\n--- Biomass model (outliers removed) ---\n")
     print(summary(meta_biomass))
 
-    # Report heterogeneity statistics for biomass model
-    # tau² (tau-squared): Between-study variance components
-    # I²: Percentage of total variability due to heterogeneity (vs sampling error)
+    # --- Heterogeneity statistics ---
+    # These describe how variable the MPA effects are across sites and programs.
+    # tau2_MPA: variance in effect sizes attributable to differences among MPAs
+    #   (e.g., some MPAs may have stronger effects due to enforcement, habitat, etc.)
+    # tau2_Source: variance attributable to differences among monitoring programs
+    #   (PISCO, KFM, LTER may estimate slightly different effect sizes due to methods)
     cat("\n--- Biomass Heterogeneity Statistics ---\n")
     cat("Between-MPA variance (tau²_MPA):", round(meta_biomass$sigma2[1], 4), "\n")
     cat("Between-Source variance (tau²_Source):", round(meta_biomass$sigma2[2], 4), "\n")
-    # Calculate pseudo-I² for multilevel models
-    # Total heterogeneity variance = sum of random effect variances
-    # Typical within-study variance approximated by mean sampling variance
-    #
-    # NOTE: In multilevel models, I² represents variance not attributable to
-    # sampling error, but it does not distinguish between-MPA from between-study
-    # heterogeneity. The variance components table (Table S2) provides a more
-    # informative decomposition. Very high I² (>90%) is expected given the
-    # ecological diversity of MPAs and should not be interpreted as a model
-    # deficiency.
+
+    # Pseudo-I2: what fraction of total variability is "real" heterogeneity vs.
+    # just sampling noise? I2 > 75% = substantial heterogeneity, meaning MPAs
+    # differ meaningfully in their effect sizes (expected for ecological reasons).
+    # NOTE: Very high I2 (>90%) is normal here -- MPAs vary in size, age,
+    # enforcement, habitat, and species composition. Table S2 gives the more
+    # informative decomposition into MPA vs. Source components.
     total_hetero_bio <- sum(meta_biomass$sigma2)
-    # Use harmonic mean of sampling variances (more robust to outlier variances;
-    # see Nakagawa & Santos 2012 for multilevel I² approximation)
+    # Harmonic mean of sampling variances (Nakagawa & Santos 2012 recommendation
+    # for multilevel models; more robust than arithmetic mean to outlier variances)
     typical_v_bio <- 1 / mean(1 / biomass_clean$vi)
     pseudo_I2_bio <- 100 * total_hetero_bio / (total_hetero_bio + typical_v_bio)
     cat("Pseudo-I² (total):", round(pseudo_I2_bio, 1), "%\n")
@@ -264,10 +315,17 @@ if (!is.null(meta_biomass_full)) {
 }
 
 ####################################################################################################
-## JOINT MODEL: Density meta-analysis (PRIMARY / Variance Components) ##############################
+## SECTION C: Joint Density Meta-Analysis (PRIMARY ANALYSIS) #######################################
 ####################################################################################################
+#
+# WHAT: Same analysis as Section B, but for DENSITY instead of biomass.
+#   Estimates the average MPA effect on density for each of the 5 taxa.
+#   Populates the density rows of manuscript Table 2.
+#
+# The model structure is identical to the biomass model:
+#   yi ~ Taxa - 1, random = list(~1|MPA, ~1|Source)
 
-# Step 1: Fit initial model with all density data
+# --- Step 1: Fit the joint model on ALL density data (no outlier removal) ---
 meta_density_full <- tryCatch(
   rma.mv(
     yi     = Mean,
@@ -294,7 +352,7 @@ outliers_den <- integer(0)
 pseudo_I2_den <- NA_real_
 
 if (!is.null(meta_density_full)) {
-  # --- OUTPUT VALIDATION: Check model convergence ---
+  # Verify convergence
   if (!is.null(meta_density_full$not.converged) && meta_density_full$not.converged) {
     warning("Density meta-analysis: optimizer reports non-convergence; results may be unreliable")
   }
@@ -302,7 +360,7 @@ if (!is.null(meta_density_full)) {
   cat("\n--- Density model (full data) ---\n")
   print(summary(meta_density_full))
 
-  # Step 2: Cook's distance outlier detection
+  # --- Step 2: Cook's distance outlier detection (same logic as biomass above) ---
   cooks_den <- cooks.distance(meta_density_full)
   outliers_den <- which(cooks_den > cooks_threshold_den)
 
@@ -313,13 +371,14 @@ if (!is.null(meta_density_full)) {
     print(density_data[outliers_den, c("Taxa", "MPA", "Mean", "SE")])
   }
 
-  # Step 3: Remove outliers and refit
+  # --- Step 3: Remove outliers and refit (SENSITIVITY, not primary) ---
   if (length(outliers_den) > 0) {
     density_clean <- density_data[-outliers_den, ]
   } else {
     density_clean <- density_data
   }
 
+  # Refit the same joint model on the cleaned data
   meta_density <- tryCatch(
     rma.mv(
       yi     = Mean,
@@ -340,13 +399,11 @@ if (!is.null(meta_density_full)) {
     cat("\n--- Density model (outliers removed) ---\n")
     print(summary(meta_density))
 
-    # Report heterogeneity statistics for density model
+    # Heterogeneity statistics (same approach as biomass -- see Section B for explanation)
     cat("\n--- Density Heterogeneity Statistics ---\n")
     cat("Between-MPA variance (tau²_MPA):", round(meta_density$sigma2[1], 4), "\n")
     cat("Between-Source variance (tau²_Source):", round(meta_density$sigma2[2], 4), "\n")
-    # Calculate pseudo-I² for multilevel models
     total_hetero_den <- sum(meta_density$sigma2)
-    # Use harmonic mean of sampling variances (consistent with biomass model)
     typical_v_den <- 1 / mean(1 / density_clean$vi)
     pseudo_I2_den <- 100 * total_hetero_den / (total_hetero_den + typical_v_den)
     cat("Pseudo-I² (total):", round(pseudo_I2_den, 1), "%\n")
@@ -360,19 +417,27 @@ if (!is.null(meta_density_full)) {
 }
 
 ####################################################################################################
-## SENSITIVITY ANALYSIS: Models with/without Source random effect #################################
+## SECTION D: Sensitivity -- Does the Source random effect matter? (Tables S3a, S3b) ###############
 ####################################################################################################
-# NOTE: The Source random effect accounts for program-level variation (PISCO, KFM, LTER).
-# However, with only 3-4 Source levels (below the recommended 5-6 minimum), variance
-# estimates may be uncertain. This sensitivity analysis compares results with and without
-# the Source random effect to assess its impact on conclusions.
+#
+# WHAT: Compare the primary model (which includes both MPA and Source random effects)
+#   to a simpler model with only the MPA random effect. If conclusions are the same
+#   either way, we can be confident that differences among monitoring programs
+#   (PISCO vs. KFM vs. LTER) are not driving the results.
+#
+# WHY THIS MATTERS: We only have 3-4 monitoring programs (Source levels), which is
+#   below the recommended 5-6 minimum for reliable variance estimation. If the
+#   Source random effect is poorly estimated, it could distort the taxa estimates.
+#   This comparison shows whether that's a problem in practice.
+#
+# OUTPUT: Table S3a (AIC/BIC model comparison) and Table S3b (coefficient comparison)
 
 cat("\n")
 cat("====================================\n")
 cat("SENSITIVITY ANALYSIS: Source Effect\n")
 cat("====================================\n")
 
-# Fit alternative models WITHOUT Source random effect (REML for coefficient estimates)
+# Fit alternative models WITHOUT the Source random effect (MPA only)
 meta_biomass_no_source <- if (!is.null(meta_biomass)) {
   tryCatch({
     rma.mv(
@@ -407,9 +472,11 @@ meta_density_no_source <- if (!is.null(meta_density)) {
   })
 } else NULL
 
-# Model comparison (AIC/BIC)
-# ML required for valid AIC comparison of models with different RE structures
-# (REML likelihoods are not comparable across different random-effects specifications)
+# --- AIC/BIC model comparison ---
+# Technical note: We must refit with ML (not REML) for valid AIC comparison.
+# REML likelihoods cannot be compared across models with different random-effect
+# structures. The REML models above are used for inference (coefficient estimates);
+# these ML refits are used only for model selection (AIC/BIC).
 cat("\n--- Model Comparison: With vs Without Source Random Effect ---\n")
 cat("(Models refit with ML for valid AIC/BIC comparison)\n")
 
@@ -471,7 +538,9 @@ if (!is.null(meta_density) && !is.null(meta_density_no_source)) {
   }
 }
 
-# Compare coefficient estimates (from REML models — appropriate for inference)
+# --- Coefficient comparison (from REML models -- these are the estimates we'd report) ---
+# If the "with Source" and "without Source" columns are similar, the Source random
+# effect is not meaningfully changing the taxa-level conclusions.
 cat("\n--- Effect of Source on Coefficient Estimates ---\n")
 if (!is.null(meta_biomass) && !is.null(meta_biomass_no_source)) {
   coef_with <- coef(summary(meta_biomass))[, c("estimate", "se", "pval")]
@@ -505,8 +574,9 @@ if (!is.null(meta_density) && !is.null(meta_density_no_source)) {
   print(coef_diff_den)
 }
 
-# --- Export source sensitivity analysis to CSV ---
-# Model comparison table: AIC, BIC, logLik for with/without Source
+# --- Export source sensitivity results to CSV ---
+
+# Table S3a: Model comparison (AIC, BIC) for with/without Source random effect
 source_model_comparison <- data.frame(
   Response = character(), Model = character(),
   AIC = numeric(), BIC = numeric(), logLik = numeric(),
@@ -522,12 +592,13 @@ if (exists("comparison_density")) {
     dplyr::mutate(Response = "Density"))
 }
 if (nrow(source_model_comparison) > 0) {
+  # Manuscript Table S3a
   write.csv(source_model_comparison,
             here::here("tables", "table_s_source_sensitivity_models.csv"), row.names = FALSE)
   cat("\nSource sensitivity model comparison exported to: tables/table_s_source_sensitivity_models.csv\n")
 }
 
-# Coefficient comparison table: effect estimates with/without Source
+# Table S3b: Side-by-side coefficient estimates with/without Source random effect
 source_coef_comparison <- data.frame(
   Response = character(), Taxa = character(),
   Est_with = numeric(), Est_without = numeric(),
@@ -544,16 +615,28 @@ if (exists("coef_diff_den")) {
     coef_diff_den %>% dplyr::mutate(Response = "Density"))
 }
 if (nrow(source_coef_comparison) > 0) {
+  # Manuscript Table S3b
   write.csv(source_coef_comparison,
             here::here("tables", "table_s_source_sensitivity_coefficients.csv"), row.names = FALSE)
   cat("Source sensitivity coefficients exported to: tables/table_s_source_sensitivity_coefficients.csv\n")
 }
 
 ####################################################################################################
-## Variance Component Confidence Intervals ########################################################
+## SECTION E: Variance Component Confidence Intervals (Table S2) ###################################
 ####################################################################################################
-# NOTE: With only 3-4 Source levels, variance component estimates have high uncertainty.
-# Reporting confidence intervals provides transparency about this limitation.
+#
+# WHAT: Report how much of the variation in MPA effect sizes comes from:
+#   (a) real differences among MPAs (tau2_MPA), vs.
+#   (b) differences among monitoring programs (tau2_Source), vs.
+#   (c) sampling noise within each study.
+#   Confidence intervals show how precisely we can estimate these components.
+#
+# WHY: Reviewers and readers want to know whether the high I2 (heterogeneity)
+#   is driven by biological variation among MPAs (interesting) or by
+#   methodological differences among PISCO/KFM/LTER (concerning).
+#
+# NOTE: With only 3-4 Source levels, the tau2_Source CI will be wide. That is
+#   expected and should be reported transparently.
 
 cat("\n")
 cat("==========================================\n")
@@ -561,7 +644,8 @@ cat("VARIANCE COMPONENT CONFIDENCE INTERVALS\n")
 cat("==========================================\n")
 cat("(Using profile likelihood method from metafor::confint)\n")
 
-# Extract confidence intervals for variance components
+# Profile likelihood CIs: the most reliable method for variance components
+# (better than Wald CIs, which can go negative for variance parameters)
 ci_biomass <- tryCatch({
   confint(meta_biomass)
 }, error = function(e) {
@@ -586,12 +670,17 @@ if (!is.null(ci_density)) {
   print(ci_density)
 }
 
-# Create summary table for supplementary materials
-# confint() on rma.mv with multiple random effects returns a list of lists.
-# Structure may be: list of confint objects indexed by number (1, 2, ...)
-# Each contains a $random matrix with rows: tau^2, tau, I^2(?)
-# OR it may have a "random" slot. Handle both.
+# --- Build a tidy summary table for Table S2 ---
+# Technical note: metafor::confint() on rma.mv returns a nested list whose
+# structure varies across metafor versions. The helper function below handles
+# both the newer (numeric indexing) and older ("random" slot) formats, with
+# a fallback to point estimates if neither works.
 
+#' Extract variance component CIs from a metafor confint object
+#' @param ci_obj   Output of confint(rma.mv model), or NULL
+#' @param response_label  "Biomass" or "Density"
+#' @param model_obj  The rma.mv model (used as fallback for point estimates)
+#' @return List of data.frame rows, one per variance component
 extract_varcomp_ci <- function(ci_obj, response_label, model_obj) {
   rows <- list()
   if (is.null(ci_obj)) return(rows)
@@ -674,7 +763,7 @@ if (length(tau2_rows) > 0) {
   cat("\n--- Summary Table: Variance Components with CIs ---\n")
   print(tau2_summary)
 
-  # Export to supplementary materials
+  # Manuscript Table S2
   write.csv(tau2_summary, here::here("tables", "table_s_variance_components.csv"), row.names = FALSE)
   cat("\nVariance component summary exported to: tables/table_s_variance_components.csv\n")
 } else if (!is.null(meta_biomass) || !is.null(meta_density)) {
@@ -713,21 +802,30 @@ cat("which is below the recommended minimum of 5-6 for reliable variance estimat
 cat("Interpret tau²_Source estimates with caution; wide CIs are expected.\n")
 
 ####################################################################################################
-## PER-TAXA META-ANALYSIS (Sensitivity Analysis) ##################################################
+## SECTION F: Per-Taxa Meta-Analysis (Sensitivity Check) ###########################################
 ####################################################################################################
 #
-# Per-taxa models are a SENSITIVITY CHECK showing robustness to modeling choice.
-# The joint model (above) is the primary analysis.
+# WHAT: Instead of fitting one big model with all 5 taxa (the joint model above),
+#   fit a separate model for each taxon individually. This lets each taxon have
+#   its own variance component, rather than sharing tau2 across all taxa.
 #
-# Per-taxa models fit separate rma.mv/rma for each taxon-response combination.
-# For taxa with k >= 5 and >= 3 MPAs: rma.mv() with MPA random effect
-# For taxa with 2 <= k < 5: rma() simple random-effects model
-# For taxa with k < 2: report descriptively (no model)
+# WHY: If the joint model and per-taxa models give similar answers, we can be
+#   confident the results are not an artifact of the modeling choice. The joint
+#   model is preferred (primary) because it borrows strength for small-k taxa,
+#   but per-taxa models are the more traditional approach in ecology.
 #
-# Cook's D outlier detection is also applied per-taxa as an additional sensitivity.
+# MODEL SELECTION LOGIC:
+#   k >= 5 and >= 3 MPAs: rma.mv() with MPA random effect (accounts for MPA clustering)
+#   2 <= k < 5:           rma() simple random-effects model (not enough data for MPA RE)
+#   k < 2:                report the single value descriptively (no model fitting possible)
 #
+# Cook's D outlier detection is also applied within each taxon as an additional
+# sensitivity check (separate from the joint-model Cook's D in Sections B-C).
 
 #' Fit per-taxa meta-analysis with within-taxon outlier detection
+#'
+#' Loops over each taxon in the data, fits the appropriate model based on sample
+#' size, optionally removes Cook's D outliers, and returns tidy summary tables.
 #'
 #' @param data Data frame with columns: Taxa, MPA, Source, Mean, vi
 #' @param response_label Character: "Biomass" or "Density"
@@ -746,10 +844,9 @@ run_per_taxa_meta <- function(data, response_label) {
 
     cat(sprintf("\n  %s (%s): k_input = %d\n", taxon, response_label, k_input))
 
-    # --- Handle k < 2: report descriptively ---
+    # --- Handle k < 2: only one effect size, so no model can be fit ---
+    # We just report the single value with a z-based CI. Interpret with caution.
     if (k_input < 2) {
-      # k < 2: Using normal approximation (z-test, 1.96 critical value) since t-distribution
-      # is undefined with 0 df. P-value and CI should be interpreted with caution.
       cat(sprintf("    -> k < 2: reporting descriptively\n"))
       mean_val <- as.numeric(sub$Mean[1])
       se_val <- as.numeric(sub$SE[1])
@@ -778,7 +875,10 @@ run_per_taxa_meta <- function(data, response_label) {
       next
     }
 
-    # --- Fit initial model ---
+    # --- Fit initial model (model type depends on sample size) ---
+    # With enough data (k>=5, >=3 MPAs): multilevel model that accounts for MPA clustering
+    # With less data (k 2-4): simple random-effects model (no MPA random effect)
+    # If model fails: fall back to fixed-effect model as last resort
     model_full <- tryCatch({
       if (k_input >= 5 && length(unique(sub$MPA)) >= 3) {
         rma.mv(yi = Mean, V = vi, random = list(~ 1 | MPA),
@@ -792,7 +892,8 @@ run_per_taxa_meta <- function(data, response_label) {
       rma(yi = Mean, vi = vi, data = sub, method = "FE")
     })
 
-    # --- Extract full-model results (before any outlier removal) ---
+    # --- Extract results from the full model (before any outlier removal) ---
+    # These go into the "no outlier removal" sensitivity row in the outlier table
     {
       coef_tbl_full <- coef(summary(model_full))
       stat_col_full <- if ("tval" %in% colnames(coef_tbl_full)) "tval" else "zval"
@@ -833,7 +934,8 @@ run_per_taxa_meta <- function(data, response_label) {
       full_data_list[[taxon]] <- sub
     }
 
-    # --- Per-taxa Cook's distance ---
+    # --- Per-taxa Cook's distance (within-taxon influence diagnostic) ---
+    # Same approach as the joint model (Sections B-C), but applied within each taxon
     cooks_vals <- tryCatch(cooks.distance(model_full), error = function(e) rep(0, k_input))
     threshold <- 4 / k_input
     outlier_idx <- which(cooks_vals > threshold)
@@ -845,7 +947,7 @@ run_per_taxa_meta <- function(data, response_label) {
     sub$Cooks_Distance <- cooks_vals
     sub$Cooks_Threshold <- threshold
 
-    # --- Remove outliers and refit (if any, and if enough data remains) ---
+    # --- Remove outliers and refit (only if we'd still have k >= 2 after removal) ---
     if (length(outlier_idx) > 0 && (k_input - length(outlier_idx)) >= 2) {
       sub_clean <- sub[-outlier_idx, ]
       k_clean <- nrow(sub_clean)
@@ -883,13 +985,11 @@ run_per_taxa_meta <- function(data, response_label) {
     audit_list[[taxon]] <- sub
     clean_data_list[[taxon]] <- sub[sub$In_Final_Analysis, ]
 
-    # --- Extract results ---
+    # --- Extract results from the final (possibly cleaned) model ---
     coef_tbl <- coef(summary(model))
     stat_col <- if ("tval" %in% colnames(coef_tbl)) "tval" else "zval"
 
-    # Extract heterogeneity statistics
-    # For rma.mv: sigma2 vector (one per random effect), no QE/I2 by default
-    # For rma: tau2, I2, QE, QEp are available directly
+    # Extract heterogeneity statistics (format differs between rma.mv and rma)
     if (inherits(model, "rma.mv")) {
       model_tau2 <- model$sigma2[1]
       model_type <- "multilevel RE (rma.mv)"
@@ -981,13 +1081,16 @@ pertaxa_audit <- rbind(pertaxa_biomass$audit, pertaxa_density$audit)
 write.csv(pertaxa_audit, here::here("outputs", "filter_audit_pertaxa_meta.csv"), row.names = FALSE)
 cat("Per-taxa audit saved to: outputs/filter_audit_pertaxa_meta.csv\n")
 
-# --- Outlier sensitivity table: 4 approaches side by side ---
+# --- Outlier sensitivity table (Table S9): 4 approaches side by side ---
+# This table lets readers verify that the main conclusions hold regardless
+# of how outliers are handled. If all 4 approaches agree on the direction
+# and significance of effects, the results are robust.
 cat("\n")
 cat("============================================\n")
 cat("OUTLIER SENSITIVITY TABLE\n")
 cat("============================================\n")
 
-# Helper to extract sensitivity-table columns from a joint rma.mv model
+# Helper: extract a summary row from a joint rma.mv model for the sensitivity table
 extract_meta_table_helper <- function(model, data, response_label) {
   coef_tbl <- coef(summary(model))
   stat_col <- if ("tval" %in% colnames(coef_tbl)) "tval" else "zval"
@@ -1002,23 +1105,23 @@ extract_meta_table_helper <- function(model, data, response_label) {
   )
 }
 
-# Approach 1: Joint model, no removal (primary)
+# Approach 1: Joint model, ALL data, no outliers removed (THIS IS THE PRIMARY ANALYSIS)
 joint_full_bio <- extract_meta_table_helper(meta_biomass_full, biomass_data, "Biomass")
 joint_full_den <- extract_meta_table_helper(meta_density_full, density_data, "Density")
 joint_full_tbl <- rbind(joint_full_bio, joint_full_den)
 joint_full_tbl$Method <- "Joint model, no removal (primary)"
 
-# Approach 2: Per-taxa models, no removal (sensitivity)
+# Approach 2: Per-taxa models, ALL data, no outliers removed
 pertaxa_full_tbl <- rbind(pertaxa_biomass$table_full, pertaxa_density$table_full)
 pertaxa_full_tbl_sens <- pertaxa_full_tbl[, c("Taxa", "k", "Estimate", "SE", "pval", "Response")]
 pertaxa_full_tbl_sens$Method <- "Per-taxa models, no removal (sensitivity)"
 
-# Approach 3: Per-taxa Cook's D (sensitivity)
+# Approach 3: Per-taxa models WITH Cook's D outlier removal (within each taxon)
 pertaxa_tbl <- rbind(pertaxa_biomass$table, pertaxa_density$table)
 pertaxa_tbl_sens <- pertaxa_tbl[, c("Taxa", "k", "Estimate", "SE", "pval", "Response")]
 pertaxa_tbl_sens$Method <- "Per-taxa Cook's D (4/k) (sensitivity)"
 
-# Approach 4: Joint Cook's D (legacy)
+# Approach 4: Joint model WITH Cook's D outlier removal (legacy V5 approach)
 joint_cooksd_tbl <- NULL
 if (!is.null(meta_biomass) && !is.null(meta_density)) {
   joint_bio_tbl <- extract_meta_table_helper(meta_biomass, biomass_clean, "Biomass")
@@ -1033,11 +1136,20 @@ sensitivity_table <- sensitivity_table[order(sensitivity_table$Response,
                                               sensitivity_table$Taxa,
                                               sensitivity_table$Method), ]
 
+# Manuscript Table S9
 write.csv(sensitivity_table, here::here("tables", "table_s_outlier_sensitivity.csv"), row.names = FALSE)
 cat("Outlier sensitivity table saved to: tables/table_s_outlier_sensitivity.csv\n")
 print(sensitivity_table)
 
-# --- Leave-one-out analysis for kelp biomass ---
+# --- Leave-one-out analysis for kelp biomass (Table S8) ---
+#
+# WHAT: Drop each MPA one at a time and re-estimate the kelp biomass effect.
+#   If the result flips from significant to non-significant (or vice versa)
+#   when a single MPA is removed, the finding is fragile.
+#
+# WHY KELP SPECIFICALLY: The giant kelp biomass result is borderline significant
+#   in the primary analysis. This test shows whether it depends on any single
+#   MPA's extreme effect size (e.g., Scorpion SMR with very high lnRR).
 cat("\n")
 cat("============================================\n")
 cat("LEAVE-ONE-OUT: M. pyrifera biomass\n")
@@ -1045,8 +1157,9 @@ cat("============================================\n")
 
 kelp_clean <- pertaxa_biomass$full_data[pertaxa_biomass$full_data$Taxa == "M. pyrifera", ]
 if (nrow(kelp_clean) >= 3) {
-  # NOTE: leave1out() does not support rma.mv objects, so we use rma() (no MPA random effect)
-  # for the sensitivity analysis. Results may differ slightly from the multilevel primary model.
+  # Technical note: metafor::leave1out() only works with rma() objects (not rma.mv),
+  # so this uses a simple random-effects model without the MPA random effect.
+  # Results may differ slightly from the multilevel primary model.
   kelp_model <- rma(yi = Mean, vi = vi, data = kelp_clean, method = "REML")
   loo_kelp <- leave1out(kelp_model)
 
@@ -1068,6 +1181,7 @@ if (nrow(kelp_clean) >= 3) {
   cat(sprintf("\nKelp is significant (p < 0.05) in %d of %d leave-one-out permutations (%.0f%%)\n",
               n_sig, nrow(loo_df), 100 * n_sig / nrow(loo_df)))
 
+  # Manuscript Table S8
   write.csv(loo_df, here::here("tables", "table_s_kelp_leave1out.csv"), row.names = FALSE)
   cat("Leave-one-out results saved to: tables/table_s_kelp_leave1out.csv\n")
 } else {
@@ -1075,8 +1189,20 @@ if (nrow(kelp_clean) >= 3) {
 }
 
 ####################################################################################################
-## Build Table 2: Summary of meta-analysis results ################################################
+## SECTION G: Build Table 2 -- The Main Results Table ##############################################
 ####################################################################################################
+#
+# WHAT: Assemble manuscript Table 2 from the PRIMARY joint models (meta_biomass_full
+#   and meta_density_full -- no outlier removal). This is the central results table:
+#   one row per taxon x response, showing the average MPA effect, 95% CI,
+#   FDR-corrected p-value, and back-transformed response ratio (e.g., "1.84x").
+#
+# KEY COLUMNS IN THE OUTPUT:
+#   Estimate:   mean lnRR (positive = higher inside MPAs)
+#   CI_lower/upper: 95% confidence interval on lnRR
+#   pval_fdr:   p-value corrected for multiple testing (Benjamini-Hochberg)
+#   RR:         response ratio = exp(Estimate); RR=2 means 2x higher inside MPAs
+#   Pct_Change: percent change = (RR - 1) * 100; e.g., +84% means 84% more inside MPAs
 
 #' Extract a tidy summary table from an rma.mv model
 #'
@@ -1089,21 +1215,23 @@ if (nrow(kelp_clean) >= 3) {
 #' @return A dataframe with columns: Taxa, k, Estimate, SE, tval, pval, CI_lower, CI_upper, Response
 extract_meta_table <- function(model, data, response) {
   coef_table <- coef(summary(model))
-  # Column name is "zval" in rma.mv (not "tval" unless test="t" is used)
+  # metafor column name is "zval" by default, but "tval" when test="t" was used
   stat_col <- if ("tval" %in% colnames(coef_table)) "tval" else "zval"
 
-  # Calculate sample size (k = number of effect sizes) per taxon
+  # Strip the "Taxa" prefix from row names to get clean species names
   taxa_names <- gsub("^Taxa", "", rownames(coef_table))
+
+  # k = number of effect sizes (MPA-level estimates) per taxon
   k_per_taxa <- vapply(taxa_names, function(taxon) {
     sum(data$Taxa == taxon, na.rm = TRUE)
   }, integer(1))
 
-  # Count unique MPAs per taxon
+  # How many distinct MPAs contribute to each taxon's estimate
   n_mpas_per_taxa <- vapply(taxa_names, function(taxon) {
     length(unique(data$MPA[data$Taxa == taxon]))
   }, integer(1))
 
-  # Heterogeneity statistics from the joint model (shared across all taxa)
+  # Heterogeneity statistics (shared across all taxa in the joint model)
   total_tau2 <- sum(model$sigma2)
   typical_v <- 1 / mean(1 / data$vi)
   pseudo_I2 <- round(100 * total_tau2 / (total_tau2 + typical_v), 1)
@@ -1131,23 +1259,18 @@ extract_meta_table <- function(model, data, response) {
   )
 }
 
-# PRIMARY: Joint model Table 2 (full data, no outlier removal)
-# Joint rma.mv with Taxa moderator borrows strength across taxa for shared
-# tau2(MPA) and tau2(Source), yielding more stable estimates for small-k taxa
-# (Borenstein & Higgins 2013; Cochrane Handbook Ch. 10; Noble et al. 2017).
+# --- PRIMARY TABLE 2: From the joint model with ALL data (no outlier removal) ---
+# This is the table that goes in the manuscript. The joint model borrows strength
+# across taxa for shared tau2 components (Borenstein & Higgins 2013; Noble et al. 2017).
 Table2 <- rbind(
   extract_meta_table(meta_biomass_full, biomass_data, "Biomass"),
   extract_meta_table(meta_density_full, density_data, "Density")
 )
 
-# SENSITIVITY: Per-taxa models (full data, no outlier removal)
-Table2_pertaxa <- rbind(pertaxa_biomass$table_full, pertaxa_density$table_full)
-
-# SENSITIVITY: Per-taxa Cook's D (4/k threshold)
-Table2_cooksd <- rbind(pertaxa_biomass$table, pertaxa_density$table)
-
-# LEGACY: Joint model with Cook's D (retained for comparison)
-Table2_joint_cooksd <- NULL
+# Alternative Table 2 versions (for sensitivity comparisons, not in main manuscript)
+Table2_pertaxa <- rbind(pertaxa_biomass$table_full, pertaxa_density$table_full)     # Per-taxa, no removal
+Table2_cooksd <- rbind(pertaxa_biomass$table, pertaxa_density$table)                # Per-taxa, Cook's D
+Table2_joint_cooksd <- NULL                                                          # Joint, Cook's D (legacy)
 if (!is.null(meta_biomass) && !is.null(meta_density)) {
   Table2_joint_cooksd <- rbind(
     extract_meta_table(meta_biomass, biomass_clean, "Biomass"),
@@ -1155,7 +1278,7 @@ if (!is.null(meta_biomass) && !is.null(meta_density)) {
   )
 }
 
-# Use full data for sample size reporting (no outlier removal)
+# Full data references for sample size reporting
 biomass_full_pertaxa <- pertaxa_biomass$full_data
 density_full_pertaxa <- pertaxa_density$full_data
 
@@ -1174,14 +1297,15 @@ if ("N" %in% names(density_full_pertaxa)) {
   cat("  - Total underlying observations (N):", sum(as.numeric(density_full_pertaxa$N), na.rm = TRUE), "\n")
 }
 
-# Order taxa to match manuscript Table 2 presentation
+# Order taxa to match manuscript Table 2 layout
+# (urchins first, then kelp, then predators -- matches trophic cascade narrative)
 taxa_order <- c("S. purpuratus", "M. franciscanus", "M. pyrifera",
                 "P. interruptus", "S. pulcher")
 Table2$Taxa <- factor(Table2$Taxa, levels = taxa_order)
 Table2 <- Table2[order(Table2$Response, Table2$Taxa), ]
 rownames(Table2) <- NULL
 
-# Flag taxa with very few effect sizes (k < 5)
+# Flag taxa with very few effect sizes -- these estimates are less reliable
 Table2$Flag <- ifelse(Table2$k < 5, "preliminary (k<5)", "")
 
 low_k <- Table2[Table2$k < 5, ]
@@ -1198,14 +1322,18 @@ if (nrow(very_low_k) > 0) {
                             collapse = "; "), "\n")
 }
 
-# Back-transform to Response Ratio scale for interpretability
-# RR = exp(lnRR); RR = 1 means no difference, RR > 1 = higher inside MPA
+# Back-transform from lnRR to Response Ratio scale for the manuscript text
+# lnRR = 0 -> RR = 1 -> no MPA effect
+# lnRR > 0 -> RR > 1 -> higher inside MPAs (e.g., RR = 2 means 2x more)
+# lnRR < 0 -> RR < 1 -> lower inside MPAs (e.g., RR = 0.5 means half as much)
 Table2$RR        <- round(exp(Table2$Estimate), 3)
 Table2$RR_lower  <- round(exp(Table2$CI_lower), 3)
 Table2$RR_upper  <- round(exp(Table2$CI_upper), 3)
 Table2$Pct_Change <- round((exp(Table2$Estimate) - 1) * 100, 1)
 
-# FDR-corrected p-values for multiple testing across all taxa-response tests
+# Correct for multiple testing: we run 10 tests (5 taxa x 2 response types),
+# so apply Benjamini-Hochberg FDR correction to control the false discovery rate.
+# Use pval_fdr (not raw pval) for significance statements in the manuscript.
 Table2$pval_fdr <- p.adjust(Table2$pval, method = "fdr")
 
 cat("\n--- Multiple Testing Correction (FDR) ---\n")
@@ -1220,7 +1348,7 @@ cat("TABLE 2: Meta-analysis results\n")
 cat("============================\n")
 print(Table2)
 
-# --- OUTPUT VALIDATION: Ensure RR columns are present before export ---
+# --- Validate and export Table 2 ---
 required_cols <- c("Taxa", "k", "n_MPAs", "Estimate", "SE", "tval", "pval",
                    "CI_lower", "CI_upper", "tau2", "I2", "QE", "QEp",
                    "model_type", "Response",
@@ -1235,24 +1363,30 @@ if (length(missing_cols) > 0) {
        paste(missing_cols, collapse = ", "))
 }
 
-# Export Table 2 as CSV to tables directory (with explicit column order)
+# Manuscript Table 2
 write.csv(Table2[, required_cols], here::here("tables", "table_02_meta_analysis.csv"), row.names = FALSE)
 cat("\nTable 2 exported to:", here::here("tables", "table_02_meta_analysis.csv"), "\n")
 cat("  Columns:", paste(required_cols, collapse = ", "), "\n")
 
 ####################################################################################################
-## META-ANALYSIS FILTERING AUDIT: Track exactly what enters meta-analysis #########################
+## SECTION H: Filtering Audit -- Track exactly which observations enter the meta-analysis ##########
 ####################################################################################################
+#
+# WHAT: Create a row-by-row audit trail showing which effect sizes were included
+#   in the joint meta-analysis and which were flagged as outliers (Cook's D).
+#   Each row in the output CSV has the original data plus columns for:
+#   Is_Outlier, Cooks_Distance, In_Final_Analysis, Exclusion_Reason.
+#
+# WHY: Transparency and reproducibility. Reviewers (and Emily) can verify exactly
+#   which MPAs contributed to each taxa's estimate, and why any were excluded.
+#   This is especially important for the lobster detail below, where k is very small.
 
 cat("\n")
 cat("==========================================\n")
 cat("META-ANALYSIS FILTERING AUDIT\n")
 cat("==========================================\n")
 
-# Create comprehensive audit of what enters meta-analysis
-# Start with all data entering this script (SumStats.Final)
-
-# Track biomass data through filtering
+# --- Biomass audit ---
 cat("\n--- BIOMASS Meta-Analysis Filtering ---\n")
 cat("Input to meta-analysis (SumStats.Final, Resp='Bio'):", nrow(biomass_data), "\n")
 
@@ -1285,7 +1419,7 @@ for (i in seq_len(nrow(bio_k))) {
               bio_k$In_Final_Analysis[i, "final"]))
 }
 
-# Track density data through filtering
+# --- Density audit ---
 cat("\n--- DENSITY Meta-Analysis Filtering ---\n")
 cat("Input to meta-analysis (SumStats.Final, Resp='Den'):", nrow(density_data), "\n")
 
@@ -1335,7 +1469,9 @@ meta_audit_file <- here::here("outputs", "filter_audit_meta_analysis.csv")
 write.csv(MetaAnalysisAudit, meta_audit_file, row.names = FALSE)
 cat("\nMeta-analysis filter audit saved to:", meta_audit_file, "\n")
 
-# LOBSTER SPECIFIC DETAIL
+# --- Lobster detail ---
+# P. interruptus has the fewest effect sizes of any taxon (often k=2 for biomass),
+# so it's worth inspecting every single data point that goes into its estimate.
 cat("\n--- LOBSTER (P. interruptus) META-ANALYSIS DETAIL ---\n")
 lob_bio <- subset(BiomassAudit, Taxa == "P. interruptus")
 lob_den <- subset(DensityAudit, Taxa == "P. interruptus")
@@ -1381,32 +1517,43 @@ cat("  2. outputs/filter_audit_meta_analysis.csv (09_meta_analysis.R outlier rem
 cat("  3. outputs/filter_summary_by_taxa.csv (taxa-level summary)\n")
 
 ####################################################################################################
-## Table 3: Meta-regressions between taxa (trophic cascade relationships) ##########################
+## SECTION I: Table 3 -- Cross-Taxa Meta-Regressions (Trophic Cascade Tests) ######################
 ####################################################################################################
-
-# Table 3 tests the trophic cascade relationship: whether urchin density effect sizes
-# predict kelp biomass effect sizes across MPAs.
-# Uses metafor::rma() meta-regression instead of OLS because:
-#   1. Both X and Y are estimated effect sizes with measurement error
-#   2. OLS biases slopes toward zero when the predictor has error (attenuation bias)
-#   3. rma() properly weights by the response's sampling variance (vi = SE^2)
 #
-# METHODOLOGICAL NOTE: Errors-in-variables / attenuation bias
-# These cross-taxa meta-regressions use estimated effect sizes as moderators.
-# Because moderator values are measured with error (they are themselves estimates
-# with SEs), regression slopes are attenuated toward zero (errors-in-variables
-# problem). This makes these tests conservative — significant results are
-# reliable, but non-significant results may reflect measurement error rather
-# than absence of a biological relationship. With k=4 observations per
-# regression, statistical power is inherently limited.
+# WHAT: Test whether the MPA effects on different trophic levels are correlated
+#   in the direction predicted by a trophic cascade. For example:
+#   - Do MPAs where purple urchins decreased more also show larger kelp increases?
+#   - Do MPAs where lobsters increased more also show larger urchin decreases?
+#
+#   Each regression has one row per MPA (k is typically ~4), with the predictor
+#   being one taxon's effect size and the response being another taxon's.
+#
+# WHY META-REGRESSION INSTEAD OF OLS:
+#   Both the X and Y values are estimated with uncertainty (they are effect sizes
+#   with SEs). Ordinary regression (lm) would ignore this uncertainty and bias
+#   slopes toward zero. Meta-regression (metafor::rma with mods=) properly
+#   weights by the response variable's sampling variance.
+#
+# IMPORTANT CAVEAT -- ATTENUATION BIAS:
+#   Even with meta-regression, the predictor is measured with error, which
+#   attenuates (shrinks) slopes toward zero. This means:
+#   - Significant results are reliable (real signal overcame the bias)
+#   - Non-significant results are ambiguous (could be no relationship, or
+#     could be a real relationship masked by measurement error)
+#   - With only k~4 MPAs per regression, statistical power is inherently limited
+#
+# ECOLOGICAL MODELS TESTED:
+#   Model 1: S. purpuratus density  -> M. pyrifera biomass  (urchin grazing on kelp)
+#   Model 2: M. franciscanus density -> M. pyrifera biomass (red urchin grazing on kelp)
+#   Model 3: P. interruptus density -> S. purpuratus density (lobster predation on purple urchin)
+#   Model 4: S. pulcher density -> S. purpuratus density    (sheephead predation on purple urchin)
+#   Model 5: P. interruptus biomass -> S. purpuratus biomass (same as 3, but biomass)
+#   Model 6: S. pulcher biomass -> S. purpuratus biomass    (same as 4, but biomass)
 
-# Merge effect sizes by MPA to test cross-taxa relationships
-# We need MPA-level estimates for different taxa in the same row
+# --- Reshape data: one row per MPA with columns for each taxon's effect size ---
+# We need each MPA's effect sizes for different taxa side-by-side in one row
 
-# Get primary effect sizes per MPA for each taxa x response combination
-# Pivot both Mean and SE so we can use sampling variance in meta-regression
-
-# Check for duplicate MPA x Taxa_Resp combinations (averaged by pivot_wider)
+# Check for duplicate MPA x Taxa_Resp combinations (will be averaged if found)
 dup_check <- SumStats.Final %>%
   tidyr::unite("Taxa_Resp", Taxa, Resp, sep = "_", remove = FALSE) %>%
   dplyr::count(MPA, Taxa_Resp) %>%
@@ -1415,42 +1562,46 @@ if (nrow(dup_check) > 0) {
   message("NOTE: ", nrow(dup_check), " MPA x Taxa_Resp duplicates will be averaged for Table 3 cross-taxa regressions")
 }
 
+# Pivot effect sizes to wide format: one column per taxon_response combination
 es_wide_mean <- SumStats.Final %>%
-  dplyr::select(Taxa, MPA, Mean, Resp) %>%
-  dplyr::mutate(Mean = as.numeric(Mean)) %>%
-  tidyr::unite("Taxa_Resp", Taxa, Resp, sep = "_") %>%
+  dplyr::select(Taxa, MPA, Mean, Resp) %>%          # Keep only needed columns
+  dplyr::mutate(Mean = as.numeric(Mean)) %>%         # Ensure numeric
+  tidyr::unite("Taxa_Resp", Taxa, Resp, sep = "_") %>%  # e.g., "S_purpuratus_Den"
   tidyr::pivot_wider(names_from = Taxa_Resp, values_from = Mean, values_fn = mean)
+  # values_fn = mean: if an MPA has multiple sources, average their effect sizes
 
-# Pivot sampling variance (vi = SE^2) instead of SE, using correct pooling formula.
-# Variance of average: Var(mean) = sum(Var_i) / n^2 (assumes independence)
-# NOTE: Different monitoring programs at the same MPA observe the same biological
-# population, so estimates may be positively correlated. This formula is
-# anti-conservative (underestimates variance) if sources are correlated.
-# However, most MPA-taxa-response combinations have n=1 source, making
-# the formula irrelevant. For the minority with n≥2, the pooled meta-regression
-# uncertainty (k≈4) dominates any variance underestimation.
-# This is correct when averaging effect sizes from multiple sources for the same MPA-Taxa-Resp.
+# Pivot sampling variances to wide format (needed to weight the meta-regression)
+# When averaging n effect sizes: Var(mean) = sum(Var_i) / n^2 (assumes independence)
+# NOTE: Most MPA-taxa-response combinations have only 1 source, so this rarely
+# matters. For the few with 2+ sources, the overall uncertainty from k~4 MPAs
+# dominates any variance underestimation from assumed independence.
 es_wide_vi <- SumStats.Final %>%
   dplyr::select(Taxa, MPA, vi, Resp) %>%
-  tidyr::unite("Taxa_Resp", Taxa, Resp, sep = "_vi_") %>%
+  tidyr::unite("Taxa_Resp", Taxa, Resp, sep = "_vi_") %>%  # e.g., "M_pyrifera_vi_Bio"
   tidyr::pivot_wider(names_from = Taxa_Resp, values_from = vi,
                      values_fn = function(x) sum(x) / length(x)^2)
 
+# Join effect sizes and their variances into one wide table
 es_wide <- dplyr::left_join(es_wide_mean, es_wide_vi, by = "MPA")
 
-# Clean column names for formula use (replace spaces and dots, collapse multiples)
+# Clean column names: replace spaces/dots with underscores for formula compatibility
 names(es_wide) <- gsub("[. ]+", "_", names(es_wide))
 
 cat("\n============================\n")
 cat("TABLE 3: Cross-taxa meta-regressions (metafor::rma)\n")
 cat("============================\n")
 
-#' Helper to print AND extract rma meta-regression results
-#' @param model An rma model object
-#' @param label Character string describing the model
-#' @param predictor Character: name of predictor taxon + response
-#' @param response Character: name of response taxon + response
-#' @return data.frame row with all key statistics for CSV export
+#' Print and extract results from a single cross-taxa meta-regression
+#'
+#' For each trophic cascade test (e.g., "urchin density -> kelp biomass"),
+#' this prints the key statistics to the console and returns a tidy data.frame
+#' row for assembling Table 3.
+#'
+#' @param model An rma model object with one moderator
+#' @param label Character description (e.g., "S. purpuratus density -> M. pyrifera biomass")
+#' @param predictor Character: predictor taxon + response type
+#' @param response Character: response taxon + response type
+#' @return data.frame row with intercept, slope, CIs, QM test, tau2, I2, R2
 extract_meta_reg <- function(model, label, predictor, response) {
   cat("\n---", label, "---\n")
   cat(sprintf("k = %d effect sizes\n", model$k))
@@ -1499,8 +1650,8 @@ extract_meta_reg <- function(model, label, predictor, response) {
 # Collector for all Table 3 meta-regression results
 table3_rows <- list()
 
-# Model 1: S. purpuratus density predicts M. pyrifera biomass
-# (urchin grazing hypothesis: more urchins -> less kelp)
+# Model 1: Does purple urchin density change predict kelp biomass change?
+# Cascade prediction: negative slope (MPAs where urchins decreased more -> kelp increased more)
 if (all(c("S_purpuratus_Den", "M_pyrifera_Bio") %in% names(es_wide))) {
   w_col <- "M_pyrifera_vi_Bio"
   req_cols <- c("S_purpuratus_Den", "M_pyrifera_Bio", w_col)
@@ -1519,7 +1670,8 @@ if (all(c("S_purpuratus_Den", "M_pyrifera_Bio") %in% names(es_wide))) {
   }
 }
 
-# Model 2: M. franciscanus density predicts M. pyrifera biomass
+# Model 2: Does red urchin density change predict kelp biomass change?
+# Same cascade logic as Model 1, but for M. franciscanus instead of S. purpuratus
 if (all(c("M_franciscanus_Den", "M_pyrifera_Bio") %in% names(es_wide))) {
   w_col <- "M_pyrifera_vi_Bio"
   req_cols <- c("M_franciscanus_Den", "M_pyrifera_Bio", w_col)
@@ -1538,8 +1690,8 @@ if (all(c("M_franciscanus_Den", "M_pyrifera_Bio") %in% names(es_wide))) {
   }
 }
 
-# Model 3: P. interruptus density predicts S. purpuratus density
-# (predator-prey: more lobsters -> fewer urchins)
+# Model 3: Does lobster density increase predict purple urchin density decrease?
+# Cascade prediction: negative slope (more lobsters -> fewer urchins via predation)
 if (all(c("P_interruptus_Den", "S_purpuratus_Den") %in% names(es_wide))) {
   w_col <- "S_purpuratus_vi_Den"
   req_cols <- c("P_interruptus_Den", "S_purpuratus_Den", w_col)
@@ -1558,8 +1710,8 @@ if (all(c("P_interruptus_Den", "S_purpuratus_Den") %in% names(es_wide))) {
   }
 }
 
-# Model 4: S. pulcher density predicts S. purpuratus density
-# (predator-prey: more sheephead -> fewer urchins)
+# Model 4: Does sheephead density increase predict purple urchin density decrease?
+# Cascade prediction: negative slope (more sheephead -> fewer urchins via predation)
 if (all(c("S_pulcher_Den", "S_purpuratus_Den") %in% names(es_wide))) {
   w_col <- "S_purpuratus_vi_Den"
   req_cols <- c("S_pulcher_Den", "S_purpuratus_Den", w_col)
@@ -1578,7 +1730,8 @@ if (all(c("S_pulcher_Den", "S_purpuratus_Den") %in% names(es_wide))) {
   }
 }
 
-# Model 5: P. interruptus biomass predicts S. purpuratus biomass
+# Model 5: Same as Model 3 but using biomass instead of density
+# (lobster biomass increase -> purple urchin biomass decrease?)
 if (all(c("P_interruptus_Bio", "S_purpuratus_Bio") %in% names(es_wide))) {
   w_col <- "S_purpuratus_vi_Bio"
   req_cols <- c("P_interruptus_Bio", "S_purpuratus_Bio", w_col)
@@ -1597,7 +1750,8 @@ if (all(c("P_interruptus_Bio", "S_purpuratus_Bio") %in% names(es_wide))) {
   }
 }
 
-# Model 6: S. pulcher biomass predicts S. purpuratus biomass
+# Model 6: Same as Model 4 but using biomass instead of density
+# (sheephead biomass increase -> purple urchin biomass decrease?)
 if (all(c("S_pulcher_Bio", "S_purpuratus_Bio") %in% names(es_wide))) {
   w_col <- "S_purpuratus_vi_Bio"
   req_cols <- c("S_pulcher_Bio", "S_purpuratus_Bio", w_col)
@@ -1620,6 +1774,7 @@ if (all(c("S_pulcher_Bio", "S_purpuratus_Bio") %in% names(es_wide))) {
 if (length(table3_rows) > 0) {
   Table3 <- do.call(rbind, table3_rows)
   rownames(Table3) <- NULL
+  # Manuscript Table 3
   write.csv(Table3, here::here("tables", "table_03_cross_taxa_meta_regression.csv"), row.names = FALSE)
   cat("\nTable 3 (cross-taxa meta-regressions) exported to: tables/table_03_cross_taxa_meta_regression.csv\n")
   cat("  Models exported:", nrow(Table3), "\n")
@@ -1629,18 +1784,22 @@ if (length(table3_rows) > 0) {
 }
 
 ####################################################################################################
-## Done ############################################################################################
+## DONE ############################################################################################
 ####################################################################################################
 
 cat("\nMeta-analysis complete.\n")
-cat("Objects available: meta_biomass_full, meta_density_full, Table2, Table2_pertaxa, Table2_cooksd\n")
-cat("\nExported CSV files from this script:\n")
-cat("  1. tables/table_02_meta_analysis.csv                    (Table 2: joint model estimates, no outlier removal)\n")
-cat("  2. tables/table_03_cross_taxa_meta_regression.csv       (Table 3: trophic cascade meta-regressions)\n")
-cat("  3. tables/table_s_outlier_sensitivity.csv               (Outlier sensitivity: 4 methods compared)\n")
-cat("  4. tables/table_s_kelp_leave1out.csv                    (Leave-one-out: M. pyrifera biomass)\n")
-cat("  5. tables/table_s_variance_components.csv               (Variance components with CIs)\n")
-cat("  6. tables/table_s_source_sensitivity_models.csv         (Source RE model comparison: AIC/BIC)\n")
-cat("  7. tables/table_s_source_sensitivity_coefficients.csv   (Source RE coefficient comparison)\n")
-cat("  8. outputs/filter_audit_meta_analysis.csv             (Joint model filter audit)\n")
-cat("  9. outputs/filter_audit_pertaxa_meta.csv              (Per-taxa model filter audit)\n")
+cat("\nR objects available for downstream scripts (10_temporal_analysis, 11_figures, etc.):\n")
+cat("  meta_biomass_full / meta_density_full : Primary joint models (no outlier removal)\n")
+cat("  meta_biomass / meta_density           : Joint models after Cook's D removal (sensitivity)\n")
+cat("  Table2                                : Main results table (manuscript Table 2)\n")
+cat("  Table2_pertaxa / Table2_cooksd        : Sensitivity versions of Table 2\n")
+cat("\nExported CSV files (manuscript table mapping):\n")
+cat("  1. tables/table_02_meta_analysis.csv                    -> Table 2 (main text)\n")
+cat("  2. tables/table_03_cross_taxa_meta_regression.csv       -> Table 3 (main text)\n")
+cat("  3. tables/table_s_variance_components.csv               -> Table S2\n")
+cat("  4. tables/table_s_source_sensitivity_models.csv         -> Table S3a\n")
+cat("  5. tables/table_s_source_sensitivity_coefficients.csv   -> Table S3b\n")
+cat("  6. tables/table_s_kelp_leave1out.csv                    -> Table S8\n")
+cat("  7. tables/table_s_outlier_sensitivity.csv               -> Table S9\n")
+cat("  8. outputs/filter_audit_meta_analysis.csv               (audit trail, not in manuscript)\n")
+cat("  9. outputs/filter_audit_pertaxa_meta.csv                (audit trail, not in manuscript)\n")

@@ -25,7 +25,7 @@
 #'   #   fig_s13 (from 11_figures.R, lmer residual diagnostics)
 #'   #   fig_s14 (from 11_figures.R, NLS model selection & DW autocorrelation)
 #'   #   fig_s15 (from 11_figures.R, sensitivity & robustness summary)
-#'   #   fig_s16 (from 11_figures.R, outlier removal rationale — 4-panel, = SI Fig S13)
+#'   #   fig_s16 (from 11_figures.R, outlier removal rationale, 4-panel, = SI Fig S13)
 #'   #   fig_s17 (from 11_figures.R, temporal outlier trajectories, = SI Fig S14)
 #'   #   fig_s18 (from 11_figures.R, raw data trajectories by outlier status, = SI Fig S15)
 #'   #   fig_s03, fig_s07, fig_s10 (from 11_figures.R, dropped from SI but still renderable)
@@ -72,7 +72,7 @@ if (!file.exists(snapshot_path)) {
 snapshot <- readRDS(snapshot_path)
 cat("Loaded snapshot from: ", format(snapshot$snapshot_time, "%Y-%m-%d %H:%M:%S"), "\n")
 
-# Check staleness (use file modification time for reliability — embedded snapshot_time
+# Check staleness (use file modification time for reliability. Embedded snapshot_time
 # may not reflect the actual file write time if the snapshot was copied or restored)
 snapshot_age <- difftime(Sys.time(), file.mtime(snapshot_path), units = "hours")
 if (as.numeric(snapshot_age) > 24) {

@@ -4,15 +4,26 @@
 #
 # PURPOSE:
 #   Generate comprehensive results summaries for easy review by collaborators.
-#   Creates both CSV files and a formatted markdown appendix.
+#   This script does NOT run any new analyses. It collects the key numbers
+#   produced by scripts 08-10 and packages them into human-readable formats:
+#     - CSVs for machine-readable tables
+#     - A markdown document (RESULTS_SUMMARY.md) for quick visual review
+#
+#   Think of this as the "reporting layer" that sits on top of the analysis.
 #
 # OUTPUTS:
-#   1. outputs/model_results_summary.csv - All meta-analysis test statistics
-#   2. outputs/replicate_effects.csv - Effect sizes for each MPA-taxa combination
-#   3. docs/RESULTS_SUMMARY.md - Formatted markdown with all results
+#   1. outputs/model_results_summary.csv  - Meta-analysis test statistics
+#   2. outputs/replicate_effects.csv      - Effect sizes for each MPA-taxa pair
+#   3. outputs/data_flow_summary.csv      - Sample attrition through pipeline
+#   4. docs/RESULTS_SUMMARY.md            - Formatted markdown with all results
+#   5. tables/table_s_mpa_data_availability.csv  - Per-MPA data availability (Table S1a)
+#   6. tables/table_s_sample_sizes.csv           - Sample sizes by taxa x source (Table S1b)
+#   7. tables/table_s_analysis_summary.csv       - High-level analysis summary
+#   8. tables/table_s_mpa_taxa_matrix.csv        - MPA x taxa cross-tabulation
 #
 # DEPENDENCIES:
-#   Requires 00-09 scripts to be sourced first (needs SumStats.Final, meta models, Table2)
+#   Requires scripts 00-09 to be sourced first.
+#   Key objects needed: SumStats.Final, Table2, All.RR.sub.trans, All.Resp.sub, Site
 #
 # AUTHORS: Emily Donham & Adrian Stier
 # PROJECT: CA MPA Kelp Forest pBACIPS Analysis
@@ -29,7 +40,14 @@ if (!dir.exists(here::here("outputs"))) {
 }
 
 # =============================================================================
-# 1. META-ANALYSIS SUMMARY (test statistics, p-values, DFs)
+# 1. META-ANALYSIS SUMMARY TABLE
+# =============================================================================
+# Repackages the joint-model Table2 (from 09_meta_analysis.R) into a flat
+# CSV with one row per taxa x response combination. This is the machine-
+# readable companion to Table 2 in the manuscript. All estimates are log
+# response ratios (lnRR) with back-transformed response ratios (RR).
+#
+# Output: outputs/model_results_summary.csv
 # =============================================================================
 
 cat("\n--- Building Meta-Analysis Summary ---\n")
@@ -39,6 +57,11 @@ cat("\n--- Building Meta-Analysis Summary ---\n")
 model_results <- data.frame()
 
 if (exists("Table2") && nrow(Table2) > 0) {
+  # Reshape Table2 into a flat data frame with interpretive columns added:
+  #   - RR_lower/RR_upper: back-transformed CIs on the response-ratio scale
+  #   - pct_change: percentage change inside MPA relative to reference
+  #   - direction/qualitative_effect: plain-English interpretation
+  #   - pval_fdr: Benjamini-Hochberg adjusted p-values (corrects for 10 tests)
   model_results <- data.frame(
     model = Table2$model_type,
     response = Table2$Response,
@@ -72,10 +95,10 @@ if (exists("Table2") && nrow(Table2) > 0) {
   )
   cat("  Built model_results from joint-model Table2 (", nrow(model_results), " rows)\n")
 } else {
-  cat("  WARNING: Table2 not found — model_results will be empty\n")
+  cat("  WARNING: Table2 not found. model_results will be empty\n")
 }
 
-# Write model results CSV
+# Write model results CSV  -->  outputs/model_results_summary.csv
 model_results_path <- here::here("outputs", "model_results_summary.csv")
 write.csv(model_results, model_results_path, row.names = FALSE)
 cat("  Wrote:", model_results_path, "\n")
@@ -83,17 +106,27 @@ cat("  Wrote:", model_results_path, "\n")
 # =============================================================================
 # 2. REPLICATE-LEVEL EFFECTS (every MPA-taxa combination)
 # =============================================================================
+# Each row in SumStats.Final is one effect size: one MPA x one species x one
+# response type (biomass or density). This section exports those individual
+# MPA-level effect sizes with CIs and a plain-English significance call.
+#
+# This is useful for seeing which specific MPAs drive the meta-analytic mean
+# (e.g., "Is the lobster biomass result driven by just one or two MPAs?").
+#
+# Output: outputs/replicate_effects.csv
+# =============================================================================
 
 cat("\n--- Building Replicate Effects Table ---\n")
 
 if (exists("SumStats.Final")) {
-  # Create comprehensive replicate effects table
-  # Note: CI column is the half-width of the confidence interval
+  # Note: CI column in SumStats.Final is the half-width of the confidence interval
   replicate_effects <- SumStats.Final %>%
+    # Compute full CI bounds from the half-width
     dplyr::mutate(
       CI_Lower = as.numeric(Mean) - as.numeric(CI),
       CI_Upper = as.numeric(Mean) + as.numeric(CI)
     ) %>%
+    # Rename columns for clarity in the output CSV
     dplyr::select(
       MPA = MPA,
       Taxa = Taxa,
@@ -105,11 +138,13 @@ if (exists("SumStats.Final")) {
       CI_Upper = CI_Upper,
       Model_Type = Model
     ) %>%
+    # Add interpretive columns
     dplyr::mutate(
       Effect_Size = round(as.numeric(Effect_Size), 4),
       SE = round(as.numeric(SE), 4),
       CI_Lower = round(CI_Lower, 4),
       CI_Upper = round(CI_Upper, 4),
+      # Significant if the 95% CI excludes zero (i.e., entirely positive or negative)
       Significant = (CI_Lower > 0 | CI_Upper < 0),
       Direction = ifelse(Effect_Size > 0, "Increase inside MPA",
                         ifelse(Effect_Size < 0, "Decrease inside MPA", "No change")),
@@ -130,6 +165,18 @@ if (exists("SumStats.Final")) {
 
 # =============================================================================
 # 3. MARKDOWN SUMMARY DOCUMENT
+# =============================================================================
+# Builds a self-contained markdown file (docs/RESULTS_SUMMARY.md) that
+# presents the key results in a format suitable for quick review. Includes:
+#   - Meta-analysis Table 2 (biomass + density, with RR and % change)
+#   - Heterogeneity statistics (tau2, I2) from the joint model
+#   - Replicate-level summary (how many MPAs show significant effects)
+#   - Cross-taxa meta-regression results (Table 3)
+#   - Variance components
+#   - Temporal recovery slopes
+#   - Outlier sensitivity summary
+#
+# Output: docs/RESULTS_SUMMARY.md
 # =============================================================================
 
 cat("\n--- Building Markdown Summary ---\n")
@@ -159,7 +206,7 @@ md_lines <- c(
   ""
 )
 
-# Helper for formatting meta-analysis table rows (no Flag column)
+# Helper: format one row of the meta-analysis table for markdown output
 format_meta_row <- function(row) {
   ci_rr_str <- paste0("[", row$RR_lower, ", ", row$RR_upper, "]")
   sig_str <- ifelse(row$p_value < 0.001, "***",
@@ -224,6 +271,8 @@ if (nrow(model_results) > 0) {
 }
 
 # ---- Summary statistics (replicate-level) ----
+# Count how many individual MPA-level effect sizes are significantly
+# positive, negative, or non-significant. Provides a "vote count" overview.
 if (!is.null(replicate_effects)) {
   sig_positive <- sum(replicate_effects$Qualitative == "Significant increase", na.rm = TRUE)
   sig_negative <- sum(replicate_effects$Qualitative == "Significant decrease", na.rm = TRUE)
@@ -269,6 +318,10 @@ if (!is.null(replicate_effects)) {
 }
 
 # ---- Cross-taxa meta-regression (Table 3) ----
+# Table 3 tests the trophic cascade hypothesis quantitatively: do MPAs with
+# larger predator effect sizes also show larger prey effect sizes? These are
+# Knapp-Hartung meta-regressions where one species' MPA effect is the
+# predictor and another species' effect is the response.
 table3_path <- here::here("tables", "table_03_cross_taxa_meta_regression.csv")
 if (file.exists(table3_path)) {
   table3_data <- read.csv(table3_path, stringsAsFactors = FALSE)
@@ -293,7 +346,10 @@ if (file.exists(table3_path)) {
   md_lines <- c(md_lines, "")
 }
 
-# ---- Variance components ----
+# ---- Variance components (Table S2) ----
+# Decomposes total heterogeneity into between-MPA and between-Source
+# components. High between-MPA variance means different MPAs have very
+# different effect sizes. Expected given ecological variation among sites.
 vc_path <- here::here("tables", "table_s_variance_components.csv")
 if (file.exists(vc_path)) {
   vc_data <- read.csv(vc_path, stringsAsFactors = FALSE)
@@ -316,7 +372,10 @@ if (file.exists(vc_path)) {
   md_lines <- c(md_lines, "")
 }
 
-# ---- Temporal recovery slopes ----
+# ---- Temporal recovery slopes (Table S4) ----
+# From the lmer model in 10_temporal_analysis.R. These slopes describe how
+# each species' MPA effect (lnRR) changes per year after MPA implementation.
+# A positive slope means the MPA effect is growing over time (recovery).
 slopes_path <- here::here("tables", "table_s_species_slopes.csv")
 if (file.exists(slopes_path)) {
   slopes_data <- read.csv(slopes_path, stringsAsFactors = FALSE)
@@ -344,6 +403,9 @@ if (file.exists(slopes_path)) {
 }
 
 # --- Outlier Sensitivity ---
+# Summarizes how many effect sizes were flagged as influential by Cook's
+# distance. The primary analysis retains all observations (no outlier
+# removal); this section documents the sensitivity check.
 outlier_audit_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
 pertaxa_audit_path <- here::here("outputs", "filter_audit_pertaxa_meta.csv")
 if (file.exists(outlier_audit_path)) {
@@ -392,80 +454,80 @@ writeLines(md_lines, md_path)
 cat("  Wrote:", md_path, "\n")
 
 # =============================================================================
-# 4. COMBINED DATA FLOW SUMMARY
+# 4. DATA FLOW / SAMPLE ATTRITION SUMMARY
+# =============================================================================
+# Tracks how many effect sizes survive each filtering stage, from initial
+# generation (script 08) through the final meta-analysis (script 09). This
+# is the "CONSORT diagram" equivalent for our pipeline. It shows exactly
+# where and why observations are dropped.
+#
+# Stages:
+#   1. Effect sizes generated by NLS/fallback models (08_effect_sizes.R)
+#   2. Successfully merged with Site metadata
+#   3. Pass type filter (pBACIPS or CI+Primary only)
+#   4. Pass MPA exclusion filter --> enter SumStats.Final
+#   5. Enter meta-analysis
+#   6. Pass outlier filter --> final k used in results
+#
+# Output: outputs/data_flow_summary.csv
 # =============================================================================
 
 cat("\n--- Building Combined Data Flow Summary ---\n")
 
-# Read filter audit files if they exist
+# Read filter audit files produced by scripts 08 and 09
 filter_audit_file <- here::here("outputs", "filter_audit_effect_sizes.csv")
 meta_audit_file <- here::here("outputs", "filter_audit_meta_analysis.csv")
 
 if (file.exists(filter_audit_file) && file.exists(meta_audit_file)) {
 
-  # Read audits
   effect_audit <- read.csv(filter_audit_file, stringsAsFactors = FALSE)
   meta_audit <- read.csv(meta_audit_file, stringsAsFactors = FALSE)
 
-  # Create comprehensive data flow table
+  # Build the stage-by-stage attrition table
   cat("\n")
   cat("============================================\n")
   cat("COMPLETE DATA FLOW: Effect Size Generation\n")
   cat("============================================\n")
 
-  # Stage 1: Effect sizes generated
+  # Stage 1: All effect sizes initially generated by NLS/fallback models
   stage1 <- effect_audit %>%
     dplyr::group_by(Taxa, Resp) %>%
-    dplyr::summarise(
-      Stage1_Generated = dplyr::n(),
-      .groups = "drop"
-    )
+    dplyr::summarise(Stage1_Generated = dplyr::n(), .groups = "drop")
 
-  # Stage 2: Pass site merge
+  # Stage 2: Successfully linked to Site metadata (drops unmatched MPAs)
   stage2 <- effect_audit %>%
     dplyr::filter(Step1_SiteMerge) %>%
     dplyr::group_by(Taxa, Resp) %>%
-    dplyr::summarise(
-      Stage2_SiteMerge = dplyr::n(),
-      .groups = "drop"
-    )
+    dplyr::summarise(Stage2_SiteMerge = dplyr::n(), .groups = "drop")
 
-  # Stage 3: Pass type filter (pBACIPS or CI+Primary)
+  # Stage 3: Pass analysis-type filter (keep pBACIPS or CI+Primary only)
   stage3 <- effect_audit %>%
     dplyr::filter(Step2_TypeFilter) %>%
     dplyr::group_by(Taxa, Resp) %>%
-    dplyr::summarise(
-      Stage3_TypeFilter = dplyr::n(),
-      .groups = "drop"
-    )
+    dplyr::summarise(Stage3_TypeFilter = dplyr::n(), .groups = "drop")
 
-  # Stage 4: Pass MPA exclusion filter
+  # Stage 4: Pass MPA exclusion filter (remove problem MPAs) --> SumStats.Final
   stage4 <- effect_audit %>%
     dplyr::filter(Passes_All) %>%
     dplyr::group_by(Taxa, Resp) %>%
-    dplyr::summarise(
-      Stage4_SumStatsFinal = dplyr::n(),
-      .groups = "drop"
-    )
+    dplyr::summarise(Stage4_SumStatsFinal = dplyr::n(), .groups = "drop")
 
-  # Stage 5: Enter meta-analysis (same as Stage 4)
-  # Stage 6: Pass outlier filter (in meta_audit)
+  # Stage 5 = Stage 4 (all of SumStats.Final enters meta-analysis)
+  # Stage 6: Observations retained after outlier diagnostics in meta-analysis
   stage6 <- meta_audit %>%
     dplyr::filter(In_Final_Analysis) %>%
     dplyr::group_by(Taxa, Response) %>%
-    dplyr::summarise(
-      Stage6_FinalK = dplyr::n(),
-      .groups = "drop"
-    ) %>%
+    dplyr::summarise(Stage6_FinalK = dplyr::n(), .groups = "drop") %>%
     dplyr::rename(Resp = Response) %>%
     dplyr::mutate(Resp = ifelse(Resp == "Biomass", "Bio", "Den"))
 
-  # Merge all stages
+  # Join all stages into one summary table (one row per Taxa x Response)
   data_flow <- stage1 %>%
     dplyr::left_join(stage2, by = c("Taxa", "Resp")) %>%
     dplyr::left_join(stage3, by = c("Taxa", "Resp")) %>%
     dplyr::left_join(stage4, by = c("Taxa", "Resp")) %>%
     dplyr::left_join(stage6, by = c("Taxa", "Resp")) %>%
+    # Replace NAs with 0 (taxa that lost all observations at a stage)
     dplyr::mutate(dplyr::across(dplyr::everything(), ~replace(., is.na(.), 0))) %>%
     dplyr::arrange(Taxa, Resp)
 
@@ -493,12 +555,12 @@ if (file.exists(filter_audit_file) && file.exists(meta_audit_file)) {
                 row$Stage6_FinalK))
   }
 
-  # Write data flow summary
+  # Write data flow summary  -->  outputs/data_flow_summary.csv
   data_flow_file <- here::here("outputs", "data_flow_summary.csv")
   write.csv(data_flow, data_flow_file, row.names = FALSE)
   cat("\nData flow summary written to:", data_flow_file, "\n")
 
-  # Identify attrition points
+  # Flag where the biggest sample losses occur for each taxa x response
   cat("\n--- Major Attrition Points ---\n")
 
   for (i in seq_len(nrow(data_flow))) {
@@ -527,7 +589,7 @@ if (file.exists(filter_audit_file) && file.exists(meta_audit_file)) {
     }
   }
 
-  # Detailed exclusion reasons
+  # Tabulate why observations were excluded (e.g., "BACI_excluded", "MPA_excluded")
   cat("\n--- Exclusion Reason Summary ---\n")
   reason_counts <- table(effect_audit$Exclusion_Reason)
   for (reason in names(sort(reason_counts, decreasing = TRUE))) {
@@ -541,45 +603,46 @@ if (file.exists(filter_audit_file) && file.exists(meta_audit_file)) {
 # =============================================================================
 # 5. SAMPLE SIZE & DATA PROVENANCE TABLES (Conservation Letters requirements)
 # =============================================================================
-# A Conservation Letters manuscript must fully document:
-#   - Total number of MPAs analyzed
-#   - Number of MPAs per data source
-#   - Number of reference sites per MPA
-#   - Years of data per MPA (before/after implementation)
-#   - Number of observations per species x response type
-#   - Any data exclusions and reasons
+# Conservation Letters requires transparent reporting of sample sizes and data
+# provenance. This section builds four publication-ready tables documenting:
+#   - Which MPAs were analyzed and their characteristics (Table S1a)
+#   - Sample sizes by species x response type x data source (Table S1b)
+#   - High-level summary statistics for the Methods section
+#   - A cross-tabulation matrix showing which MPA has data for which species
 #
-# These tables complement the existing filter_audit and data_flow CSVs by
-# providing concise, publication-ready summaries.
+# These tables complement the filter_audit and data_flow CSVs (which track
+# individual observation-level inclusion/exclusion decisions).
+# =============================================================================
 
 cat("\n--- Building Sample Size & Data Provenance Tables ---\n")
 
 # -------------------------------------------------------------------------
-# 5a. MPA-level data availability matrix (Table S1a)
+# 5a. MPA-level data availability (Table S1a)
 # -------------------------------------------------------------------------
-# For each MPA in the final analysis: which taxa have data, data source,
-# MPA type, implementation year, location, N time-series observations,
-# years of data before/after implementation.
+# For each MPA in the final analysis: which taxa have data, data source(s),
+# MPA type (SMR/SMCA), implementation year, geographic location, number of
+# time-series observations, and years of data before/after MPA establishment.
+#
+# Output: tables/table_s_mpa_data_availability.csv
 
 if (exists("SumStats.Final") && exists("All.RR.sub.trans") && exists("Site")) {
 
-  # Build per-MPA x taxa availability from SumStats.Final
+  # Summarize which taxa and response types are available at each MPA
   mpa_avail <- SumStats.Final %>%
     dplyr::group_by(MPA) %>%
     dplyr::summarise(
-      Data_Sources   = paste(sort(unique(Source)), collapse = ", "),
-      Taxa_Biomass   = paste(sort(unique(Taxa[Resp == "Bio"])), collapse = "; "),
-      Taxa_Density   = paste(sort(unique(Taxa[Resp == "Den"])), collapse = "; "),
-      n_taxa_bio     = dplyr::n_distinct(Taxa[Resp == "Bio"]),
-      n_taxa_den     = dplyr::n_distinct(Taxa[Resp == "Den"]),
-      n_effects_bio  = sum(Resp == "Bio"),
-      n_effects_den  = sum(Resp == "Den"),
+      Data_Sources    = paste(sort(unique(Source)), collapse = ", "),
+      Taxa_Biomass    = paste(sort(unique(Taxa[Resp == "Bio"])), collapse = "; "),
+      Taxa_Density    = paste(sort(unique(Taxa[Resp == "Den"])), collapse = "; "),
+      n_taxa_bio      = dplyr::n_distinct(Taxa[Resp == "Bio"]),
+      n_taxa_den      = dplyr::n_distinct(Taxa[Resp == "Den"]),
+      n_effects_bio   = sum(Resp == "Bio"),
+      n_effects_den   = sum(Resp == "Den"),
       n_effects_total = dplyr::n(),
       .groups = "drop"
     )
 
-  # Merge MPA metadata from Site
-  # Detect which column in Site holds the MPA name
+  # Merge MPA metadata (type, location, implementation year) from Site table
   site_mpa_col <- if ("CA_MPA_Name_Short" %in% names(Site)) "CA_MPA_Name_Short" else "Site"
   site_meta <- Site %>%
     dplyr::distinct(.data[[site_mpa_col]], .keep_all = TRUE) %>%
@@ -589,8 +652,8 @@ if (exists("SumStats.Final") && exists("All.RR.sub.trans") && exists("Site")) {
 
   mpa_avail <- dplyr::left_join(mpa_avail, site_meta, by = "MPA")
 
-  # Add years before/after from response ratio data
-  # Compute from All.RR.sub.trans using BA column
+  # Count years of data before vs after MPA implementation for each site
+  # (uses the BA = "Before"/"After" column in the response ratio data)
   ba_summary <- All.RR.sub.trans %>%
     dplyr::filter(CA_MPA_Name_Short %in% mpa_avail$MPA) %>%
     dplyr::group_by(CA_MPA_Name_Short) %>%
@@ -607,7 +670,7 @@ if (exists("SumStats.Final") && exists("All.RR.sub.trans") && exists("Site")) {
 
   mpa_avail <- dplyr::left_join(mpa_avail, ba_summary, by = "MPA")
 
-  # Add reference site counts from All.Resp.sub (if available)
+  # Count reference (control) site observations per MPA from raw response data
   if (exists("All.Resp.sub")) {
     status_col <- if ("status" %in% names(All.Resp.sub)) "status"
                   else if ("Status" %in% names(All.Resp.sub)) "Status"
@@ -627,10 +690,11 @@ if (exists("SumStats.Final") && exists("All.RR.sub.trans") && exists("Site")) {
     }
   }
 
-  # Sort by location then MPA name
+  # Sort by geographic region (Channel Islands first) then alphabetically
   mpa_avail <- mpa_avail %>%
     dplyr::arrange(Location, MPA)
 
+  # Output: Table S1a  -->  tables/table_s_mpa_data_availability.csv
   mpa_avail_path <- here::here("tables", "table_s_mpa_data_availability.csv")
   write.csv(mpa_avail, mpa_avail_path, row.names = FALSE)
   cat("  Wrote:", mpa_avail_path, "\n")
@@ -641,14 +705,18 @@ if (exists("SumStats.Final") && exists("All.RR.sub.trans") && exists("Site")) {
 }
 
 # -------------------------------------------------------------------------
-# 5b. Sample sizes by taxa x response, broken down by data source (Table S1b)
+# 5b. Sample sizes by taxa x response x data source (Table S1b)
 # -------------------------------------------------------------------------
-# For each taxa x response type: total k (number of MPA-level effect sizes),
-# number of unique MPAs, broken down by data source.
+# For each species x response type: total k (number of MPA-level effect
+# sizes), number of unique MPAs, and breakdown by data source (PISCO, KFM,
+# LTER, Landsat). This table answers "how much data do we have for each
+# species, and where did it come from?"
+#
+# Output: tables/table_s_sample_sizes.csv
 
 if (exists("SumStats.Final")) {
 
-  # Per taxa x response totals
+  # Total k and number of MPAs per taxa x response combination
   taxa_k_total <- SumStats.Final %>%
     dplyr::group_by(Taxa, Resp) %>%
     dplyr::summarise(
@@ -658,7 +726,7 @@ if (exists("SumStats.Final")) {
       .groups = "drop"
     )
 
-  # Per taxa x response x source breakdown
+  # Break down by data source (PISCO, KFM, LTER, Landsat)
   taxa_k_by_source <- SumStats.Final %>%
     dplyr::group_by(Taxa, Resp, Source) %>%
     dplyr::summarise(
@@ -668,7 +736,7 @@ if (exists("SumStats.Final")) {
       .groups = "drop"
     )
 
-  # Pivot to wide format: one row per taxa x response, columns for each source's k
+  # Reshape to wide format: one row per taxa x response, one column per source
   taxa_k_wide <- taxa_k_by_source %>%
     dplyr::select(Taxa, Resp, Source, k) %>%
     tidyr::pivot_wider(
@@ -678,12 +746,11 @@ if (exists("SumStats.Final")) {
       names_prefix = "k_"
     )
 
-  # Merge with totals
+  # Combine totals with per-source breakdown
   sample_sizes <- dplyr::left_join(taxa_k_total, taxa_k_wide, by = c("Taxa", "Resp"))
 
-  # Also add meta-analysis final k (after outlier removal) from data_flow if available
-  # Use in-memory data_flow object (created in section 4 above) if available;
-  # fall back to reading from disk if the section was skipped.
+  # Append the final k (after outlier filtering) from the data-flow summary.
+  # Try the in-memory object first; fall back to reading from disk.
   if (exists("data_flow") && is.data.frame(data_flow) && "Stage6_FinalK" %in% names(data_flow)) {
     data_flow_k <- data_flow %>%
       dplyr::select(Taxa, Resp, k_final_meta = Stage6_FinalK)
@@ -698,7 +765,7 @@ if (exists("SumStats.Final")) {
     }
   }
 
-  # Order by canonical trophic order
+  # Sort rows in trophic cascade order (predators first, kelp last)
   trophic_order <- c("P. interruptus", "S. pulcher", "S. purpuratus",
                      "M. franciscanus", "M. pyrifera")
   sample_sizes <- sample_sizes %>%
@@ -715,9 +782,13 @@ if (exists("SumStats.Final")) {
 }
 
 # -------------------------------------------------------------------------
-# 5c. High-level analysis summary (Table S1c / Methods paragraph)
+# 5c. High-level analysis summary (for Methods paragraph)
 # -------------------------------------------------------------------------
-# Single-row summary with key numbers for the manuscript methods section.
+# A single table of key numbers that can be copy-pasted into the Methods
+# section: total MPAs, total effect sizes, data sources, years spanned,
+# excluded sites, etc. Not a formal SI table. Just a convenient reference.
+#
+# Output: tables/table_s_analysis_summary.csv
 
 if (exists("SumStats.Final") && exists("All.RR.sub.trans")) {
 
@@ -779,7 +850,7 @@ if (exists("SumStats.Final") && exists("All.RR.sub.trans")) {
     stringsAsFactors = FALSE
   )
 
-  # Add data exclusion summary
+  # Append data exclusion details (which sites/MPAs were dropped and why)
   exclusion_rows <- data.frame(
     Metric = c(
       "--- DATA EXCLUSIONS ---",
@@ -813,27 +884,33 @@ if (exists("SumStats.Final") && exists("All.RR.sub.trans")) {
 }
 
 # -------------------------------------------------------------------------
-# 5d. Per-MPA detailed effect size table with source breakdown
+# 5d. MPA x taxa cross-tabulation matrix
 # -------------------------------------------------------------------------
-# Cross-tabulation: for each MPA, show which taxa x response combinations
-# are available and from which source. This is the "data availability matrix"
-# that Conservation Letters reviewers expect in supplementary materials.
+# A "data availability matrix" showing, for each MPA, which species x
+# response combinations have data and which monitoring program/model type
+# produced them. Reviewers use this to assess data completeness, e.g.,
+# "Do all MPAs have all five species?" (No, coverage varies by source.)
+#
+# Output: tables/table_s_mpa_taxa_matrix.csv
 
 if (exists("SumStats.Final")) {
 
-  # Define canonical trophic order for column ordering
+  # Columns are ordered in trophic cascade sequence (predators -> kelp)
   trophic_taxa <- c("P. interruptus", "S. pulcher", "S. purpuratus",
                      "M. franciscanus", "M. pyrifera")
   trophic_resp <- c("Bio", "Den")
   canonical_col_order <- as.vector(outer(trophic_taxa, trophic_resp,
                                           function(t, r) paste0(t, " (", r, ")")))
 
+  # Each cell = "Source/Model" (e.g., "PISCO/NLS_exp") or "" if no data
   mpa_taxa_matrix <- SumStats.Final %>%
+    # Create column labels like "P. interruptus (Bio)"
     dplyr::mutate(
       taxa_resp = factor(paste0(Taxa, " (", Resp, ")"), levels = canonical_col_order),
       source_model = paste0(Source, "/", Model)
     ) %>%
     dplyr::select(MPA, taxa_resp, source_model) %>%
+    # Pivot so each taxa x response becomes its own column
     tidyr::pivot_wider(
       names_from  = taxa_resp,
       values_from = source_model,
@@ -842,7 +919,7 @@ if (exists("SumStats.Final")) {
     ) %>%
     dplyr::arrange(MPA)
 
-  # Reorder columns: MPA first, then canonical trophic order
+  # Reorder columns: MPA first, then trophic cascade order
   col_order <- c("MPA", intersect(canonical_col_order, names(mpa_taxa_matrix)))
   mpa_taxa_matrix <- mpa_taxa_matrix[, col_order]
 

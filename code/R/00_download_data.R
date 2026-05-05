@@ -1,5 +1,5 @@
 # =============================================================================
-# 00_download_data.R — Download data from Dryad and set up data/ directory
+# 00_download_data.R - Download data from Dryad and set up data/ directory
 # =============================================================================
 #
 # This script downloads the data archived on Dryad, including:
@@ -216,10 +216,10 @@ if (status$all_present) {
   cat("       See README.md 'Data Setup' section for symlink commands\n\n")
   cat("  3. Run the analysis pipeline (harmonized CSVs are tracked in git):\n")
   cat("       source(here::here('code', 'R', 'run_all.R'))\n")
-  cat("       (No raw data needed — uses data/harmonized/ CSVs)\n\n")
+  cat("       (No raw data needed. Uses data/harmonized/ CSVs)\n\n")
   cat("  4. Regenerate figures only:\n")
   cat("       source(here::here('code', 'R', 'run_figures_only.R'))\n")
-  cat("       (Uses cached intermediate results — no raw data needed)\n\n")
+  cat("       (Uses cached intermediate results. No raw data needed)\n\n")
 
   if (status$n_present > 0) {
     cat("Missing files:\n")

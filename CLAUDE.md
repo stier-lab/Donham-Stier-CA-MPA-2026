@@ -6,6 +6,8 @@ This project analyzes the effects of California Marine Protected Areas (MPAs) on
 
 **Target Journal:** Conservation Letters
 **Manuscript Title:** Restoration of trophic cascades within kelp forests following the establishment of a network of marine protected areas
+**Authors:** Emily Donham (lead) & Adrian Stier
+**Status:** Analysis pipeline complete; manuscript revision in progress (Emily leading rewrite)
 
 ## Conservation Letters Figure & Design Specifications
 
@@ -183,7 +185,7 @@ Additional outputs (not numbered as manuscript tables):
 | `tables/table_data_provenance_raw.csv` | Raw data provenance (observations per source/taxon) | data-processing repo (07) |
 | `tables/table_sample_sizes_per_taxa.csv` | Sample size breakdown per taxa (input counts) | 08_effect_sizes.R |
 | `tables/table_model_selection.csv` | NLS model type selection per MPA/taxa | 08_effect_sizes.R |
-| `data/sumstats_final.csv` | Full SumStats.Final export (all 132 effect sizes) | 08_effect_sizes.R |
+| `data/sumstats_final.csv` | Full SumStats.Final export (all 146 effect sizes) | 08_effect_sizes.R |
 | `outputs/table_cascade_analysis.csv` | Cascade meta-regression results | 11_figures.R |
 | `outputs/model_results_summary.csv` | Meta-analysis results in machine-readable format | 12_results_summary.R |
 | `outputs/replicate_effects.csv` | All MPA-taxa-response replicate effect sizes | 12_results_summary.R |
@@ -465,8 +467,8 @@ When adding new figures or outputs:
 
 ## Documentation
 
-- `docs/MPA_Kelp_MS_V5.pdf` - Archived manuscript draft (reference for revision)
-- `docs/ANALYSIS_REVISIONS.md` - Comprehensive comparison of V5 archived code vs current pipeline (12 sections)
+- `docs/MPA_Kelp_MS_V5.pdf` - Archived original manuscript draft (reference for revision)
+- `docs/ANALYSIS_REVISIONS.md` - Comprehensive comparison of original archived code vs current pipeline (12 sections)
 - `docs/analysis_revisions.html` - Styled HTML rendering of ANALYSIS_REVISIONS.md (with sidebar TOC)
 - `docs/BEFORE_AFTER_COMPARISON.md` - Line-by-line manuscript revision guide (old vs new values)
 - `docs/email_draft_for_emily.md` - Summary email for Emily with reading order and action items
@@ -502,7 +504,7 @@ These limitations are documented in code comments throughout the pipeline and sh
 - **No climate covariates**: ENSO, marine heatwaves, and sea star wasting disease are potential confounds not formally included as covariates. Should be acknowledged in Discussion.
 - **SSWD confound**: Sea Star Wasting Disease (2013-2014) affected urchin populations differentially inside vs outside MPAs during the study period.
 - **Fishing displacement**: Potential concentration of fishing effort near MPA boundaries is not modeled.
-- **M. franciscanus mixed response**: Red urchin biomass is significantly higher inside MPAs (+84%, FDR = 0.026) but density is non-significant (-33%, FDR = 0.365). This is consistent with prior findings: Malakhoff & Miller (2021, *Proc. R. Soc. B* 288: 20203061) found red urchin biomass nearly quadrupled (+397%) inside Channel Islands reserves, driven by release from fishing pressure; Teck et al. (2017, *Biol. Conserv.* 210: 321–330) showed red urchins were larger inside MPAs with greater adult biomass and reproductive biomass density. The most parsimonious explanation is a direct fishing effect (reduced harvest → larger individuals → higher biomass per capita) overlaid on indirect cascade effects. This complicates the simple trophic cascade narrative but is ecologically coherent and well-precedented.
+- **M. franciscanus mixed response**: Red urchin biomass is significantly higher inside MPAs (+82%, FDR = 0.004) but density is non-significant (-33%, FDR = 0.365). This is consistent with prior findings: Malakhoff & Miller (2021, *Proc. R. Soc. B* 288: 20203061) found red urchin biomass nearly quadrupled (+397%) inside Channel Islands reserves, driven by release from fishing pressure; Teck et al. (2017, *Biol. Conserv.* 210: 321–330) showed red urchins were larger inside MPAs with greater adult biomass and reproductive biomass density. The most parsimonious explanation is a direct fishing effect (reduced harvest → larger individuals → higher biomass per capita) overlaid on indirect cascade effects. This complicates the simple trophic cascade narrative but is ecologically coherent and well-precedented.
 
 ### Reproducibility
 - **renv.lock**: Package versions are captured in `renv.lock` at the repo root.

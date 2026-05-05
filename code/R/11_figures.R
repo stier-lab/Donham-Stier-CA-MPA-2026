@@ -1,87 +1,91 @@
 # =============================================================================
-# 11_figures.R
+# 11_figures.R - Publication Figures for the MPA Kelp Forest Manuscript
 # =============================================================================
 #
 # PURPOSE:
-#   Generate publication-quality figures for the Conservation Letters manuscript
-#   on MPA effects on kelp forest trophic cascades.
-#
-# WHAT THIS SCRIPT DOES:
-#   Produces publication figures for the manuscript:
-#
-#   Figure 1: MPA map with bathymetry
-#     - Ocean bathymetry (depth gradient)
-#     - MPA boundaries with monitoring sites
-#
-#   Figure 2: Trophic cascade case studies (before/after)
-#     - 3×3 grid: trophic rows × 3 exemplar MPAs (Scorpion, Gull Is., SB Is.)
-#     - Before/after MPA implementation, with linear trends on after period
-#     - Demonstrates predators↑, urchins↓, kelp↑ unfolding over time
-#
-#   Figure 3: Mean effect sizes from meta-analysis
-#     - Summarizes Table 2 graphically
-#     - Shows meta-analytic means with 95% CIs (diamonds)
-#     - Individual MPA effect sizes shown as background points (circles)
-#
-#   Figure 4: Recovery trajectories over time (biomass)
-#     - 3×2 trophic grid: predators/herbivores/producer rows
-#     - lmer prediction lines with 95% CI
-#
-#   Figure S1 (Supplemental): Data processing pipeline example
-#     - 4-panel illustration using KFM purple urchin at Scorpion SMR
-#
-#   Figure S2 (Supplemental): Forest plot of effect sizes
-#     - Individual effect sizes by MPA and taxa
-#     - Color-coded by response type (density vs biomass)
-#     - Shape-coded by data source (PISCO, KFM, LTER, Landsat)
-#
-#   Dropped from SI (code retained, files still generated on disk):
-#     - Figure S3 (old): All taxa time series at example MPAs
-#     - Figure S7 (old): Statistical transparency
-#
-#   Figure S7a-e (Supplemental): Comprehensive site-level appendix
-#     - Individual lnRR time series for ALL taxa at ALL sites
-#     - Includes sites excluded from final analysis (marked with dagger)
-#     - One file per taxa: fig_s08_appendix_*.pdf
-#
-# DESIGN PRINCIPLES:
-#   - Uses colorblind-safe palette from 00b_color_palette.R
-#   - Publication-ready sizing for Conservation Letters (80-170mm width)
-#   - Consistent theme_mpa() styling across all figures
-#   - Exported as both PDF (vector) and PNG (raster at 600 DPI)
-#
-# INPUTS:
-#   - All.RR.sub.trans: Response ratio data
-#   - All.Resp.sub: Raw response data
-#   - SumStats.Final: Effect size estimates
-#   - Table2: Meta-analysis summary
-#   - Site: Site metadata
-#   - Color palette objects from 00b_color_palette.R
-#
-# OUTPUTS (saved to plots/ directory):
-#   Main text:
-#   - fig_01_mpa_map.pdf / .png
-#   - fig_02_cascade_case_studies.pdf / .png
-#   - fig_03_mean_effects.pdf / .png
-#   - fig_04_recovery_curves.pdf / .png
-#   Supplemental:
-#   - fig_s01_data_processing.pdf / .png
-#   - fig_s02_forest_plot.pdf / .png
-#   - fig_s08_appendix_*.pdf / .png  (one per taxa, = SI Fig S7a-e)
-#   Dropped from SI (still generated on disk):
-#   - fig_s03_all_taxa_timeseries.pdf / .png
-#   - fig_s07_statistical_transparency.pdf / .png
-#   - fig_s10_recovery_bio_den.pdf / .png
-#
-# DEPENDENCIES:
-#   Requires 00-10 scripts to be sourced first
+#   Generate all publication-quality figures for the Conservation Letters
+#   manuscript on MPA effects on kelp forest trophic cascades. This is the
+#   largest script in the pipeline (~4600 lines). Each figure is wrapped in a
+#   should_render() guard so you can regenerate a single figure without
+#   running the full pipeline (see run_figures_only.R).
 #
 # AUTHORS: Emily Donham & Adrian Stier
 # PROJECT: CA MPA Kelp Forest pBACIPS Analysis
+#
+# INPUTS (from prior scripts):
+#   All.RR.sub.trans  : Log response ratios (from 03_load_harmonized_data.R)
+#   All.Resp.sub      : Raw density/biomass data (from 03_load_harmonized_data.R)
+#   SumStats.Final    : Per-MPA effect sizes (from 08_effect_sizes.R)
+#   Table2            : Meta-analysis summary by taxa (from 09_meta_analysis.R)
+#   Site              : MPA site metadata (from 03_load_harmonized_data.R)
+#   meta_biomass_full : Joint rma.mv model, biomass (from 09_meta_analysis.R)
+#   meta_density_full : Joint rma.mv model, density (from 09_meta_analysis.R)
+#   Color palette     : col_taxa, col_response, theme_mpa, etc. (from 00b_color_palette.R)
+#
+# OUTPUTS (saved to plots/ as paired PDF + PNG at 600 DPI):
+#   Main text:  fig_01 through fig_04
+#   Supplemental: fig_s01, fig_s02, fig_s08 (appendix), fig_s11 through fig_s18
+#   See TABLE OF CONTENTS below for the full list.
+#
+# DESIGN PRINCIPLES:
+#   - Colorblind-safe palette (Okabe-Ito-based) from 00b_color_palette.R
+#   - Conservation Letters sizing: 80-180mm width, min 8pt text, 600 DPI
+#   - Consistent theme_mpa() styling across all figures
+#   - All y-axes showing MPA effects use RR-scaled labels (scale_y_rr)
+#     where RR = 1 (lnRR = 0) means no MPA effect
+#
+# DEPENDENCIES:
+#   Requires scripts 00-10 to be sourced first (run_all.R handles this).
+#
+# =============================================================================
+#
+# TABLE OF CONTENTS
+# =================
+# Jump to any figure by searching for its tag (e.g., "=== FIGURE 1" or "fig01").
+#
+# SECTION                                        APPROX LINES    OUTPUT FILE(S)
+# -------                                        ------------    --------------
+# Setup & validation                               88 -  353
+#
+# --- MAIN TEXT FIGURES ---
+# Figure 1:  MPA map with bathymetry              354 -  721      fig_01_mpa_map
+# Figure 2:  Trophic cascade case studies         3167 - 3466      fig_02_cascade_case_studies
+#            (3x3: predators/urchins/kelp x
+#             Scorpion, Gull Is., SB Is.)
+# Figure 3:  Meta-analytic mean effect sizes      1167 - 1346      fig_03_mean_effects
+# Figure 4:  Recovery trajectories (biomass)      2099 - 2519      fig_04_recovery_curves
+#            (3x2: predators/herbivores/producer
+#             lmer predictions with 95% CI)
+#
+# --- SUPPLEMENTAL FIGURES ---
+# Figure S1:  Data processing pipeline             742 -  993      fig_s01_data_processing
+#             (simulated kelp example)
+# Figure S2:  Forest plot of effect sizes           997 - 1165      fig_s02_forest_plot
+# Figure S7a-e: Site-level appendix               2949 - 3165      fig_s08_appendix_*
+#             (lnRR time series, all taxa, all sites)
+# Figure S8:  DHARMa model diagnostics            3472 - 3732      fig_s11_dharma_diagnostics
+# Figure S9:  Funnel plots (publication bias)     3734 - 3853      fig_s12_funnel_plots
+# Figure S10: lmer residual diagnostics           3855 - 4002      fig_s13_lmer_residuals
+# Figure S11: NLS model selection & DW stats      4004 - 4080      fig_s14_model_selection
+# Figure S12: Cook's D & outlier sensitivity      4082 - 4233      fig_s15_sensitivity_summary
+#
+# --- NOT IN CURRENT MANUSCRIPT (code retained, renders on disk) ---
+# (dropped) S3:  All taxa time series             2661 - 2808      fig_s03_all_taxa_timeseries
+# (dropped) S7:  Statistical transparency         2810 - 2947      fig_s07_statistical_transparency
+# (dropped) S10: Bio + den recovery grid          2521 - 2659      fig_s10_recovery_bio_den
+# (dropped) S16: Outlier removal rationale        4277 - 4506      fig_s16_outlier_rationale
+# (dropped) S17: Temporal outlier trajectories    4508 - 4649      fig_s17_temporal_outlier_trajectories
+# (dropped) S18: Raw data outlier trajectories    4651 - 4811      fig_s18_raw_trajectories_outlier_status
+#
+# --- NON-FIGURE OUTPUT ---
+# Cascade analysis table (always runs)            1351 - 2097      outputs/table_cascade_analysis.csv
+#   (Comprehensive 20-pathway meta-regression
+#    supporting Table 3 in manuscript)
+#
 # =============================================================================
 
 # =============================================================================
-# Setup
+# SETUP: Output directory, selective rendering, shared constants
 # =============================================================================
 
 dir.create(here::here("plots"), showWarnings = FALSE)
@@ -119,16 +123,16 @@ FIG_WIDTH_SUPP   <- 17.8 # cm, Conservation Letters max width for supplemental f
 
 # Figure-specific dimensions (width, height in cm)
 # Note: Figure 1 dimensions are defined inside the should_render("fig01") block below
-FIG_S01_DIMS <- c(w = 17, h = 20)   # Data processing pipeline — 3 vertical panels, double-column
-FIG3_DIMS <- c(w = 17, h = 11)   # Mean effects — trophic cascade layout, double-column
-FIG4_DIMS <- c(w = 17, h = 12)  # Recovery curves — 3×2 trophic grid, 170mm double-column
-FIG_S10_DIMS <- c(w = 17, h = 22)  # Recovery curves — 5×2 grid (biomass + density) + legend
-# FIG_S11_DIMS <- c(w = 17, h = 9) # Recovery curves — density [DROPPED: merged concept into Fig 4]
+FIG_S01_DIMS <- c(w = 17, h = 20)   # Data processing pipeline. 3 vertical panels, double-column
+FIG3_DIMS <- c(w = 17, h = 11)   # Mean effects. trophic cascade layout, double-column
+FIG4_DIMS <- c(w = 17, h = 12)  # Recovery curves. 3x2 trophic grid, 170mm double-column
+FIG_S10_DIMS <- c(w = 17, h = 22)  # Recovery curves. 5x2 grid (biomass + density) + legend
+# FIG_S11_DIMS <- c(w = 17, h = 9) # Recovery curves. density [DROPPED: merged concept into Fig 4]
 FIG_S2_DIMS <- c(w = 17.8, h = 23.5) # Forest plot (supplemental)
 FIG_S3_DIMS <- c(w = 17.8, h = 26) # All taxa time series (supplemental, faceted layout)
-FIG_S16_DIMS <- c(w = 17, h = 18)  # Outlier removal rationale — 2×2 panel layout
-FIG_S17_DIMS <- c(w = 17.8, h = 25) # Temporal trajectories with outlier status — 5×2 faceted
-FIG_S18_DIMS <- c(w = 17.8, h = 25) # Raw data trajectories with outlier status — 5×2 faceted
+FIG_S16_DIMS <- c(w = 17, h = 18)  # Outlier removal rationale. 2x2 panel layout
+FIG_S17_DIMS <- c(w = 17.8, h = 25) # Temporal trajectories with outlier status. 5x2 faceted
+FIG_S18_DIMS <- c(w = 17.8, h = 25) # Raw data trajectories with outlier status. 5x2 faceted
 
 # =============================================================================
 # Shared variables used across multiple figure sections
@@ -223,8 +227,10 @@ cat("  Color palette verified: col_taxa, col_response, col_site, theme_mpa loade
 cat("  Scale functions verified: scale_color_site, scale_color_response, scale_shape_source, scale_color_taxa\n")
 
 # =============================================================================
-# Input validation: Check required data objects exist and have expected structure
+# Input validation: verify that scripts 00-10 populated the expected objects
 # =============================================================================
+# These checks prevent cryptic errors deep in the plotting code if a
+# prerequisite script was skipped or failed silently.
 
 # Required data objects from previous scripts
 required_objects <- c(
@@ -280,8 +286,11 @@ if ("y" %in% names(All.RR.sub.trans)) {
 }
 
 # =============================================================================
-# Helper function to standardize status values (used in multiple figures)
+# Helper: Standardize Inside/Outside status labels
 # =============================================================================
+# Different data sources use different names for MPA vs reference sites
+# (e.g., "mpa", "Inside", "I", "Impact"). This function maps them all to
+# a consistent "Inside" / "Outside" pair used by the plotting code.
 standardize_status <- function(status) {
   status <- as.character(status)
   result <- dplyr::case_when(
@@ -294,9 +303,9 @@ standardize_status <- function(status) {
 }
 
 # =============================================================================
-# Consistent MPA implementation annotation style
+# Consistent MPA implementation line style (used across multiple figures)
 # =============================================================================
-# Standard visual settings for MPA implementation vertical lines
+# Dashed grey vertical lines marking the year each MPA was established.
 MPA_LINE_COLOR <- "grey40"
 MPA_LINE_TYPE <- "dashed"
 MPA_LINE_WIDTH <- 0.5
@@ -342,13 +351,15 @@ theme_legend_right <- function(title_size = 9, text_size = 8.5, italic = TRUE) {
 
 
 # =============================================================================
-# Figure 1: MPA Map with Bathymetry
+# === FIGURE 1 (Main Text): MPA Map with Bathymetry ===
 # =============================================================================
-# Publication-quality map showing:
-#   - Ocean bathymetry (depth gradient)
-#   - MPA boundaries
-#   - Monitoring sites with paired Inside/Outside design
-#   - 4 kelp biomass time series panels
+# WHAT: Map of Southern California showing all monitoring sites used in
+#   this study, overlaid on ocean bathymetry and MPA boundaries. Sites are
+#   labeled (b)-(n) matching the figure caption; shapes indicate which
+#   monitoring program collected data at each site (KFM, LTER, or PISCO).
+# DATA: Site metadata (Site_List_All.csv), MPA shapefiles, NOAA bathymetry
+# SAVES: plots/fig_01_mpa_map.pdf, plots/fig_01_mpa_map.png
+# =============================================================================
 
 # Load packages needed for figures (outside guards so always available)
 library(patchwork)
@@ -368,7 +379,7 @@ if (has_fig1_pkgs) {
   # Figure 1 specific constants
   FIG1_PLOT_MARGIN <- ggplot2::margin(2, 2, 2, 2)
   # Reduce overall height to avoid unused vertical whitespace (esp. with square bottom panels).
-  FIG1_DIMS <- c(w = 17, h = 10)  # cm — map only (time series moved to Fig 2)
+  FIG1_DIMS <- c(w = 17, h = 10)  # cm. Map only (time series moved to Fig 2)
 
   # --- 1. Define Study Region ---
   BBOX_LONLAT <- c(xmin = -120.75, ymin = 33.28, xmax = -117.65, ymax = 34.50)
@@ -483,7 +494,7 @@ if (has_fig1_pkgs) {
   # --- 5. Load Monitoring Sites ---
   site_csv <- here::here("data", "Site_List_All.csv")
   if (!file.exists(site_csv)) {
-    warning("data/Site_List_All.csv not found — skipping Fig 1 site overlay")
+    warning("data/Site_List_All.csv not found. Skipping Fig 1 site overlay")
     sites_base <- data.frame(Lon = numeric(0), Lat = numeric(0), program = character(0),
                              CA_MPA_Name_Short = character(0))
     sites_labels <- data.frame(Lon = numeric(0), Lat = numeric(0),
@@ -540,19 +551,19 @@ if (has_fig1_pkgs) {
 
   # Manual nudge offsets (lon, lat) for label readability in dense areas
   label_nudge <- list(
-    "b" = c( 0.08, -0.05),   # Campus Point — right-below
-    "c" = c(-0.14, -0.02),   # Harris Point — left
-    "d" = c(-0.14, -0.04),   # South Point — far left-below
-    "e" = c(-0.10, -0.07),   # Santa Barbara Is. — left-below
-    "f" = c( 0.12,  0.07),   # Carrington Pt — right-above (separated from h)
-    "g" = c(-0.12,  0.03),   # Skunk Pt — left-above, scooted
-    "h" = c(-0.05,  0.08),   # Painted Cave — left-above (separated from f)
-    "i" = c(-0.12, -0.05),   # Gull Island — further left-below
-    "j" = c( 0.10,  0.05),   # Scorpion — right-above
-    "k" = c( 0.12,  0.08),   # Anacapa SMR — right-above (separated from j)
-    "l" = c(-0.13, -0.04),   # Anacapa SMCA — further left-below
-    "m" = c(-0.10,  0.00),   # Naples — left, scooted down
-    "n" = c( 0.08, -0.05)    # Point Vicente — right-below
+    "b" = c( 0.08, -0.05),   # Campus Point: right-below
+    "c" = c(-0.14, -0.02),   # Harris Point: left
+    "d" = c(-0.14, -0.04),   # South Point: far left-below
+    "e" = c(-0.10, -0.07),   # Santa Barbara Is.: left-below
+    "f" = c( 0.12,  0.07),   # Carrington Pt: right-above (separated from h)
+    "g" = c(-0.12,  0.03),   # Skunk Pt: left-above, scooted
+    "h" = c(-0.05,  0.08),   # Painted Cave: left-above (separated from f)
+    "i" = c(-0.12, -0.05),   # Gull Island: further left-below
+    "j" = c( 0.10,  0.05),   # Scorpion: right-above
+    "k" = c( 0.12,  0.08),   # Anacapa SMR: right-above (separated from j)
+    "l" = c(-0.13, -0.04),   # Anacapa SMCA: further left-below
+    "m" = c(-0.10,  0.00),   # Naples: left, scooted down
+    "n" = c( 0.08, -0.05)    # Point Vicente: right-below
   )
 
   all_label_df <- tibble::tibble(
@@ -591,8 +602,12 @@ if (has_fig1_pkgs) {
   )
 
 	  # --- 8. Build Main Map ---
+	  # The map is built layer by layer: ocean bathymetry (bottom) -> MPA boundaries
+	  # -> land hillshade -> coastline outline -> site markers -> labels (top).
+	  # Two new_scale_fill() calls allow three different fill scales (bathymetry,
+	  # MPA protection type, hillshade terrain).
 		  main_map <- ggplot() +
-		    # Use positive depth (meters) for legend readability and intuitive left-to-right scale.
+		    # Layer 1: Ocean depth gradient (positive meters for readable legend)
 		    geom_raster(data = bathy_ocean, aes(x = lon, y = lat, fill = -depth),
 		                interpolate = TRUE, alpha = 0.85) +
 		    scale_fill_gradientn(
@@ -619,31 +634,39 @@ if (has_fig1_pkgs) {
 		        order = 3
 		      )
 		    ) +
+	    # Layer 2: Depth contour lines (subtle white lines at key depths)
 	    geom_contour(data = bathy_ocean, aes(x = lon, y = lat, z = depth),
 	                 breaks = c(-100, -200, -500, -1000, -2000, -3000), color = "white",
 	                 linewidth = 0.20, alpha = 0.25) +
+    # --- Switch to fill scale #2: MPA protection type ---
     new_scale_fill() +
+    # Layer 3: MPA boundary polygons (dark = no-take, light = partial protection)
     geom_sf(data = mpa, aes(fill = mpa_group), color = fig1_map_colors$mpa_border,
             alpha = 0.65, linewidth = 0.5, inherit.aes = FALSE) +
     scale_fill_manual(name = NULL, values = mpa_fill_colors,
                       guide = guide_legend(order = 2, nrow = 1,
                                            override.aes = list(alpha = 0.6))) +
+    # --- Switch to fill scale #3: land hillshade terrain ---
     new_scale_fill() +
+    # Layer 4: Semi-transparent land base (behind hillshade)
     geom_sf(data = coast, fill = alpha("#F5F0E1", 0.50), color = NA, inherit.aes = FALSE) +
+    # Layer 5: Hillshade terrain relief (from multi-angle DEM)
     geom_spatraster(data = hillshade, maxcell = 1e6) +
     scale_fill_gradientn(colors = terrain_pal, na.value = NA, guide = "none") +
+    # Layer 6: Coastline outline (drawn on top of hillshade)
     geom_sf(data = coast, fill = NA, color = fig1_map_colors$coastline,
             linewidth = 0.4, inherit.aes = FALSE) +
-    # Single point per site (shape by data source)
+    # Layer 7: Monitoring site markers (shape = KFM/LTER/PISCO)
     geom_point(data = sites_base, aes(x = Lon, y = Lat, shape = program),
                size = 2.8, fill = "grey40", color = "white", stroke = 0.7) +
     scale_shape_manual(name = NULL, values = program_shapes,
                        guide = guide_legend(order = 1, nrow = 1, byrow = TRUE,
                                             override.aes = list(fill = "grey40", size = 2.5))) +
-    # Letter labels at nudged positions with leader lines
+    # Layer 8: Leader lines from site markers to letter labels
     geom_segment(data = sites_labels,
                  aes(x = Lon, y = Lat, xend = label_x, yend = label_y),
                  color = "grey30", linewidth = 0.5, alpha = 1.0) +
+    # Layer 9: Letter labels (b)-(n) corresponding to figure caption
     geom_label(
       data = sites_labels,
       aes(x = label_x, y = label_y, label = site_abbrev),
@@ -659,7 +682,7 @@ if (has_fig1_pkgs) {
              ylim = c(BBOX_LONLAT["ymin"], BBOX_LONLAT["ymax"]), expand = FALSE, crs = 4326) +
     annotation_scale(location = "bl", width_hint = 0.2, pad_x = unit(0.3, "in"),
                      pad_y = unit(0.3, "in"), style = "ticks", text_cex = 0.90, line_width = 0.5) +
-    # North arrow — top-right, fancy orienteering style
+    # North arrow: top-right, fancy orienteering style
     annotation_north_arrow(location = "tr", which_north = "true", pad_x = unit(0.15, "in"),
                            pad_y = unit(0.4, "in"), style = north_arrow_fancy_orienteering,
                            height = unit(0.7, "cm"), width = unit(0.7, "cm")) +
@@ -696,7 +719,7 @@ if (has_fig1_pkgs) {
 
   # --- 9. California Inset Map (removed per author request) ---
 
-  # --- 10. Time Series Panels (removed — time series now in Figure 2) ---
+  # --- 10. Time Series Panels (removed. Time series now in Figure 2) ---
 
   # --- 11. Finalize map ---
   fig1 <- main_map + plot_annotation(theme = theme(plot.margin = margin(1, 8, 2, 2)))
@@ -716,8 +739,16 @@ if (has_ggrepel) library(ggrepel)
 
 
 # =============================================================================
-# Figure S1: Conceptual diagram — simulated kelp biomass (3 vertical panels)
-# Simulated data modeled on real M. pyrifera patterns at Scorpion SMR
+# === FIGURE S1 (Supplemental): Data Processing Pipeline ===
+# =============================================================================
+# WHAT: Three-panel conceptual diagram illustrating how raw kelp biomass
+#   data is transformed into log response ratios (lnRR) for causal inference.
+#   Panel (a) = raw biomass inside vs outside MPA
+#   Panel (b) = standardized (proportion of site maximum)
+#   Panel (c) = lnRR (estimated MPA effect) with post-MPA linear trend
+#   Uses SIMULATED data modeled on real M. pyrifera patterns at Scorpion SMR.
+# DATA: Simulated data (not real observations). Seed set for reproducibility
+# SAVES: plots/fig_s01_data_processing.pdf, plots/fig_s01_data_processing.png
 # =============================================================================
 
 if (should_render("fig_s01")) {
@@ -830,7 +861,7 @@ fig2_theme_causal <- theme_mpa(base_size = 10.5) +
   )
 
 # ----------------------------------------------------------
-# Panel (a): Raw data — communicate divergence, not noise
+# Panel (a): Raw data. Communicate divergence, not noise
 # ----------------------------------------------------------
 p2a <- ggplot(sim_raw, aes(x = year, y = value, color = status, linetype = status)) +
   add_mpa_vline(mpa_year) +
@@ -854,7 +885,7 @@ p2a <- ggplot(sim_raw, aes(x = year, y = value, color = status, linetype = statu
         axis.ticks.x = element_blank())
 
 # ----------------------------------------------------------
-# Panel (b): Standardization — schematic, process-oriented
+# Panel (b): Standardization. Schematic, process-oriented
 # ----------------------------------------------------------
 p2b <- ggplot(sim_prop, aes(x = year, y = prop, color = status, linetype = status)) +
   add_mpa_vline(mpa_year) +
@@ -879,7 +910,7 @@ p2b <- ggplot(sim_prop, aes(x = year, y = prop, color = status, linetype = statu
         axis.ticks.x = element_blank())
 
 # ----------------------------------------------------------
-# Panel (c): Causal inference — dominant visual focal point
+# Panel (c): Causal inference. Dominant visual focal point
 # ----------------------------------------------------------
 sim_lnrr_after <- dplyr::filter(sim_lnrr, BA == "After")
 
@@ -895,7 +926,8 @@ p2c <- ggplot(sim_lnrr, aes(x = year, y = lnRR, shape = BA)) +
   annotate("text", x = sim_x_limits[1] + 1, y = 0,
            label = "No MPA effect", hjust = 0, vjust = -0.6,
            size = 2.8, color = "grey35", fontface = "italic") +
-  # Trend line and CI ribbon (drawn before points so points overlay)
+  # Post-MPA linear trend with 95% CI (drawn before points so points overlay)
+  # Conditional: only added if enough after-period data points exist
   {
     if (nrow(sim_lnrr_after) >= 3) {
       geom_smooth(
@@ -933,7 +965,7 @@ p2c <- ggplot(sim_lnrr, aes(x = year, y = lnRR, shape = BA)) +
   fig2_theme_causal
 
 # ----------------------------------------------------------
-# Assemble: 3 vertical panels — (c) is 25% taller
+# Assemble: 3 vertical panels. (c) is 25% taller
 # ----------------------------------------------------------
 fig2_final <- (p2a / p2b / p2c) +
   plot_layout(heights = c(1, 1, 1.35), guides = "collect") +
@@ -962,8 +994,15 @@ save_fig(fig2_final, "fig_s01_data_processing", FIG_S01_DIMS["w"], FIG_S01_DIMS[
 } # end fig_s01
 
 # =============================================================================
-# Figure S2 (Supplemental): Forest plot of effect sizes by MPA and taxa
-# Manuscript: Supplemental Figure S2
+# === FIGURE S2 (Supplemental): Forest Plot of Effect Sizes ===
+# =============================================================================
+# WHAT: Individual MPA-level effect sizes (lnRR with 95% CI) for all five
+#   taxa, faceted by species. Each point is one MPA's effect size from
+#   SumStats.Final. Points are colored by response type (density vs biomass)
+#   and shaped by data source (KFM, LTER, PISCO, Landsat). Meta-analytic
+#   means from Table2 appear as dashed vertical lines with shaded CI bands.
+# DATA: SumStats.Final (effect sizes), Table2 (meta-analytic summary)
+# SAVES: plots/fig_s02_forest_plot.pdf, plots/fig_s02_forest_plot.png
 # =============================================================================
 
 if (should_render("fig_s02")) {
@@ -1009,9 +1048,12 @@ meta_summary_s1 <- Table2 %>%
     CI_hi = CI_upper
   )
 
-# Dynamic RR-labelled breaks: each free-scaled panel picks its own ticks.
-# Data is on the lnRR scale internally; labels show back-transformed RR values
-# where RR = 1 (lnRR = 0) means no MPA effect.
+# --- Dynamic RR-labelled x-axis breaks for the forest plot ---
+# Because each facet has its own x-axis range (scales = "free"), we need a
+# function that picks sensible tick positions for any lnRR range. The data
+# is stored on the lnRR scale, but tick labels show back-transformed RR
+# values (e.g., 0.5, 1, 2, 4) so readers see the ratio directly.
+# RR = 1 (lnRR = 0) is always included as the "no MPA effect" reference.
 rr_breaks_fn <- function(lim) {
   rr_pool <- c(0.01, 0.05, 0.1, 0.25, 0.5, 1, 2, 4, 10, 20, 100)
   candidates <- log(rr_pool)
@@ -1022,7 +1064,7 @@ rr_breaks_fn <- function(lim) {
     idx <- round(seq(1, length(in_range), length.out = 4))
     in_range <- unique(in_range[idx])
   }
-  # Always include RR = 1 (lnRR = 0) — the key no-effect reference value.
+  # Always include RR = 1 (lnRR = 0): the key no-effect reference value.
   # If it crowds a neighbor, drop that neighbor instead.
   if (0 >= lim[1] && 0 <= lim[2] && !(0 %in% in_range)) {
     range_width <- diff(lim)
@@ -1046,18 +1088,22 @@ meta_summary_s1$Taxa <- factor(meta_summary_s1$Taxa,
   labels = paste0("(", letters[seq_along(taxa_levels)], ")  ", taxa_levels))
 
 pd_s1 <- position_dodge(width = 0.55)
+# Build forest plot: each point = one MPA's effect size, faceted by species.
+# The meta-analytic mean (from Table2) appears as a dashed vertical line
+# with a faint shaded CI band, so readers can compare individual MPAs
+# to the overall pooled estimate.
 fig_s1 <- ggplot(
   fig_s1_data,
   aes(
-    y = MPA_order,
-    x = Mean,
-    xmin = Mean - CI,
-    xmax = Mean + CI,
-    color = Resp,
-    shape = Source
+    y = MPA_order,       # MPAs ordered by mean effect size within taxa
+    x = Mean,            # Effect size (lnRR)
+    xmin = Mean - CI,    # Lower 95% CI
+    xmax = Mean + CI,    # Upper 95% CI
+    color = Resp,        # Density vs Biomass
+    shape = Source       # KFM, LTER, PISCO, or Landsat
   )
 ) +
-  # Meta-analytic CI as a subtle vertical band behind everything
+  # Faint shaded band showing meta-analytic 95% CI (from Table2)
   geom_rect(
     data = meta_summary_s1,
     aes(xmin = CI_lo, xmax = CI_hi, ymin = -Inf, ymax = Inf, fill = Resp),
@@ -1118,8 +1164,18 @@ save_fig(fig_s1, "fig_s02_forest_plot", FIG_S2_DIMS["w"], FIG_S2_DIMS["h"])
 } # end fig_s02
 
 # =============================================================================
-# Figure 3: Mean effect sizes by taxa from meta-analysis
-# Manuscript: Main Text Figure 3
+# === FIGURE 3 (Main Text): Mean Effect Sizes by Taxa ===
+# =============================================================================
+# WHAT: The central result figure. Shows meta-analytic mean effect sizes
+#   (from Table2) for all five species, organized left-to-right by trophic
+#   level: Predators (lobster, sheephead) | Urchins (purple, red) | Kelp.
+#   Each species has up to two response types (density, biomass) shown as
+#   dodged points with 95% CIs. Individual MPA effect sizes from
+#   SumStats.Final are plotted as faded background points. FDR-corrected
+#   significance stars appear above significant CIs. Sample sizes (k = N)
+#   are annotated below each point.
+# DATA: Table2 (meta-analytic summary), SumStats.Final (individual effects)
+# SAVES: plots/fig_03_mean_effects.pdf, plots/fig_03_mean_effects.png
 # =============================================================================
 
 if (should_render("fig03")) {
@@ -1221,36 +1277,37 @@ fig2_sep_x <- c(2.5, 4.5)
 fig2_header_y <- fig2_y_max + 1.2
 
 fig2 <- ggplot() +
-  # Faint vertical separators between trophic groups
+  # Faint vertical separators between the three trophic groups
   geom_vline(xintercept = fig2_sep_x, color = "grey85", linewidth = 0.3) +
-  # Zero-effect reference line
+  # Horizontal dashed line at lnRR = 0 (RR = 1, no MPA effect)
   geom_hline(yintercept = 0, color = "grey30", linewidth = 0.5, linetype = "dashed") +
-  # Layer 1: Individual MPA effect sizes (subdued background, shape by Response)
+  # Layer 1: Individual MPA effect sizes as faded background points
+  # (jittered horizontally so overlapping points are visible)
   geom_point(data = fig2_individual,
              aes(x = x_jitter, y = Mean, color = Response, shape = Response),
              size = 1.6, alpha = 0.30) +
-  # Layer 2: White halo behind focal points
+  # Layer 2: White halo behind focal diamonds. Ensures readability
   geom_point(data = fig2_meta,
              aes(x = x_dodge, y = Estimate, shape = Response),
              size = 5.5, color = "white", show.legend = FALSE) +
-  # Layer 3: 95% CIs
+  # Layer 3: 95% confidence intervals for meta-analytic means
   geom_errorbar(data = fig2_meta,
                 aes(x = x_dodge, ymin = CI_lower, ymax = CI_upper, color = Response),
                 width = 0.12, linewidth = 0.9) +
-  # Layer 4: Meta-analytic means (shape by Response for grayscale safety)
+  # Layer 4: Meta-analytic mean estimates (the key result values from Table 2)
   geom_point(data = fig2_meta,
              aes(x = x_dodge, y = Estimate, color = Response, shape = Response),
              size = 4.5) +
-  # Sample size labels
+  # Sample size annotations below each point (k = number of MPAs)
   geom_text(data = fig2_meta,
             aes(x = x_dodge, y = fig2_label_y, label = paste0("k=", k),
                 color = Response),
             size = 3.2, show.legend = FALSE) +
-  # FDR significance stars above CI
+  # FDR-corrected significance stars (*, **, ***) above the upper CI limit
   geom_text(data = fig2_meta %>% dplyr::filter(sig_star != ""),
             aes(x = x_dodge, y = CI_upper + 0.25, label = sig_star),
             size = 4.0, color = "grey20", show.legend = FALSE) +
-  # Trophic group headers (above plot area)
+  # Trophic group headers above the plot area (clip = "off" in coord_cartesian)
   annotate("text", x = c(1.5, 3.5, 5), y = fig2_header_y,
            label = c("PREDATORS", "URCHINS", "KELP"),
            size = 3.3, color = "grey35", fontface = "bold") +
@@ -1291,25 +1348,36 @@ save_fig(fig2, "fig_03_mean_effects", FIG3_DIMS["w"], FIG3_DIMS["h"])
 } # end fig03
 
 # =============================================================================
-# Figure S11 (Supplemental): Trophic cascade meta-regression scatterplots
-# Uses metafor::rma() meta-regression with Knapp-Hartung adjustment.
-# 12-panel layout: 3 columns (Sheephead→Urchin, Lobster→Urchin, Urchin→Kelp)
-#                  4 rows (Purple Urchin Bio, Purple Urchin Den, Red Urchin Bio, Red Urchin Den)
-# Also exports comprehensive cascade results table (20 pathways) to outputs/.
+# CASCADE ANALYSIS: Cross-taxa meta-regression (supports manuscript Table 3)
+# =============================================================================
+# This section tests trophic cascade predictions by regressing one species'
+# MPA effect size against another (e.g., does higher sheephead lnRR predict
+# lower purple urchin lnRR?). Uses metafor::rma() with Knapp-Hartung
+# adjustment. Covers all 20 possible predator-prey pathways (same-response
+# + cross-response combinations). FDR correction applied across all tests.
+#
+# OUTPUT: outputs/table_cascade_analysis.csv (always generated)
+#
+# NOTE: The 12-panel scatter figure (fig_s11_cascade_scatter) that used to
+# live here is DROPPED from the manuscript. The code is retained inside an
+# `if (FALSE) { ... }` block for reproducibility but never executes.
 # =============================================================================
 
 # ---------------------------------------------------------------------------
-# Cascade data prep (always runs — needed for table_cascade_analysis.csv)
+# Cascade data prep (always runs. needed for table_cascade_analysis.csv)
 # ---------------------------------------------------------------------------
 cat("Building cascade wide-format data for table export...\n")
 
 # ---------------------------------------------------------------------------
-# Build wide-format MPA-level data (same methodology as 09_meta_analysis.R)
-# One row per MPA; columns = {Taxa}_{Resp} for effect sizes and SEs
+# Build wide-format MPA-level data for cascade cross-taxa regressions
 # ---------------------------------------------------------------------------
+# Each row = one MPA. Columns = effect size and SE for each species x response
+# type (e.g., S_pulcher_Bio, S_pulcher_SE_Bio). This format allows us to ask:
+# "At MPAs where sheephead increased more, did urchins decrease more?"
+#
 # NOTE: If an MPA has multiple effect sizes for the same Taxa-Resp (e.g., from
-# different data sources), pivot_wider averages them. This is documented and
-# intentional — the meta-regression in create_cascade_panel() weights by SE.
+# different data sources), pivot_wider averages them (Mean) or pools SEs by
+# inverse-variance weighting. This matches the methodology in 09_meta_analysis.R.
 fig4_wide_mean <- SumStats.Final %>%
   dplyr::select(Taxa, MPA, Mean, Resp) %>%
   dplyr::mutate(Mean = as.numeric(Mean)) %>%
@@ -1341,7 +1409,7 @@ fig4_find_col <- function(pattern) {
   return(NA_character_)
 }
 
-# Panel column mappings — all 3 predator/prey pairs
+# Panel column mappings: all 3 predator/prey pairs
 fig4_cols <- list(
   # Sheephead
   sp_bio      = fig4_find_col("pulcher_Bio$"),
@@ -1371,7 +1439,7 @@ fig4_cols <- list(
 cat("  Column mapping:\n")
 for (nm in names(fig4_cols)) cat("    ", nm, "=", fig4_cols[[nm]], "\n")
 
-# (Raw annual scatter removed — figure shows only the MPA-level effect sizes
+# (Raw annual scatter removed. Figure shows only the MPA-level effect sizes
 #  that enter the rma() meta-regression, matching the actual analysis.)
 
 if (FALSE) {  # DROPPED: cascade scatter figure (weak cross-sectional evidence; "fig_s11" namespace now used by DHARMa diagnostics)
@@ -1548,7 +1616,7 @@ create_cascade_panel <- function(wide_data,
                     ymax = .data[[y_col]] + .data[[se_y_col]]),
                 width = 0, linewidth = 0.5, color = "grey30", alpha = 0.6)
 
-  # Horizontal error bars (x SE) — only if column exists
+  # Horizontal error bars (x SE): only if column exists
   if (se_x_col %in% names(mpa_df)) {
     mpa_df[[se_x_col]] <- as.numeric(mpa_df[[se_x_col]])
     p <- p + geom_errorbarh(data = mpa_df,
@@ -1558,7 +1626,7 @@ create_cascade_panel <- function(wide_data,
                    height = 0, linewidth = 0.5, color = "grey30", alpha = 0.6)
   }
 
-  # Regression line + stats (optional — suppressed for descriptive main figure)
+  # Regression line + stats (optional. suppressed for descriptive main figure)
   if (show_regression) {
     sig <- display_p < 0.05
     reg_linetype <- ifelse(sig, "solid", "dashed")
@@ -1817,6 +1885,13 @@ save_fig(fig4_supp, "fig_s11_cascade_scatter", FIG_S11_DIMS["w"], FIG_S11_DIMS["
 # ---------------------------------------------------------------------------
 cat("Running comprehensive cascade analysis (all pathways for table)...\n")
 
+# Each pathway tests one trophic link via rma() meta-regression:
+#   yi = prey effect size, mods = ~ predator effect size, vi = prey SE^2
+# Expected signs: Predator->Urchin = negative (predators suppress urchins),
+#   Urchin->Kelp = negative (urchins suppress kelp).
+# The 20 pathways cover all combinations of:
+#   2 predators (sheephead, lobster) x 2 urchins (purple, red) x
+#   2 response types (bio, den) + 4 urchin->kelp links
 cascade_pathways <- list(
   # --- Purple urchin same-response ---
   list(x = "sp_bio",  y = "spur_bio", sex = "sp_se_bio",  sey = "spur_se_bio",
@@ -2021,15 +2096,22 @@ cat("  Tested:", sum(testable), " | Sig (raw):", sum(cascade_table$sig_raw == "*
 
 
 # =============================================================================
-# Figure 4 (Main Text): Recovery Trajectories Over Time
+# === FIGURE 4 (Main Text): Recovery Trajectories Over Time ===
 # =============================================================================
-# Validates the t=11 standardization by showing approximately linear
-# trajectories for all five species. The linearity confirms that evaluating
-# MPAs at a common time horizon captures the same rate-based process.
-#
-# This is a simplified main-text version of Figure S3 (which shows full
-# MPA-level spaghetti). Here we emphasize the population-level smooth and
-# mark the t=11 standardization point.
+# WHAT: Shows how MPA effects (biomass lnRR) change over time for all five
+#   species, arranged in a 3x2 trophic grid:
+#     Row 1 (Predators):  P. interruptus (a) | S. pulcher (b)
+#     Row 2 (Herbivores): S. purpuratus (c)  | M. franciscanus (d)
+#     Row 3 (Producers):  M. pyrifera (e)    | [legend]
+#   Each panel shows individual MPA trajectories (faint spaghetti lines)
+#   behind population-level lmer predictions with 95% CI ribbons. A dotted
+#   vertical line marks t=11 years (the standardized comparison point used
+#   for effect size extraction in 08_effect_sizes.R).
+# DATA: All.RR.sub.trans (response ratios, after-period, t <= 15),
+#   lmer slope parameters from tables/table_s_lmer_prediction_params.csv
+#   (produced by 10_temporal_analysis.R)
+# SAVES: plots/fig_04_recovery_curves.pdf, plots/fig_04_recovery_curves.png
+# =============================================================================
 
 # --- Shared data prep for Fig 4 and S10 (runs if either is rendered) ---
 if (should_render("fig04") || should_render("fig_s10")) {
@@ -2084,14 +2166,23 @@ fig5_n_mpas_den <- fig5_data_den %>%
   dplyr::group_by(Species) %>%
   dplyr::summarise(n_mpa = dplyr::n_distinct(CA_MPA_Name_Short), .groups = "drop")
 
-# --- Helper: extract lmer prediction parameters from vcov-derived CSV ---
-# Reads table_s_lmer_prediction_params.csv (exported by 10_temporal_analysis.R)
-# which contains per-species intercept, slope, their SEs, covariance, and df.
-# The CSV has a `resp` column ("Bio" or "Den") — pass resp_filter to select.
-# Falls back to the old coefficient CSV (approximate, independence-assumed SEs)
-# with a warning if the new CSV is not yet available.
-# Returns a list with named vectors: slopes, intercepts, slope_ses,
-#   intercept_ses, cov_int_slopes, df_slopes (keyed by full species name).
+# --- Helper: extract lmer prediction parameters for Figure 4 curves ---
+# This function reads the species-specific slope/intercept parameters needed
+# to draw lmer prediction lines with correct 95% CIs in Figure 4.
+#
+# Primary source: table_s_lmer_prediction_params.csv (from 10_temporal_analysis.R)
+#   Contains per-species intercept, slope, their SEs, covariance, and df
+#   derived from the lmer model's variance-covariance matrix.
+#
+# Fallback: old coefficient CSVs (approximate, assumes independent SEs).
+#
+# Arguments:
+#   pred_params_path  : path to the new prediction params CSV
+#   resp_filter       : "Bio" or "Den" (selects response type)
+#   fallback_csv_path : path to the old coefficient CSV (if new one missing)
+#
+# Returns a list with named vectors keyed by full species name:
+#   slopes, intercepts, slope_ses, intercept_ses, cov_int_slopes, df_slopes
 extract_lmer_slopes <- function(pred_params_path, resp_filter, fallback_csv_path) {
   null_result <- list(slopes = NULL, intercepts = NULL, slope_ses = NULL,
                       intercept_ses = NULL, cov_int_slopes = NULL,
@@ -2217,12 +2308,20 @@ fig5_ylims_all <- fig5_data_all %>%
     ymax = q_hi + pad
   )
 
-# --- Helper: build one species x response panel ---
-# sp_data: data filtered to species AND response type
-# sp_lmer: list from extract_lmer_slopes() with slopes, intercepts,
-#   slope_ses, intercept_ses, cov_int_slopes, df_slopes (named vectors)
-# n_mpas_df: data.frame with Species, n_mpa (response-specific)
-# ylims_df: data.frame with Species, ymin, ymax for axis limits
+# --- Helper: build one species recovery panel (used by Fig 4 and Fig S10) ---
+# Creates a single panel showing lnRR vs time since MPA implementation:
+#   - Faint spaghetti lines for individual MPA trajectories
+#   - Bold lmer prediction line with 95% CI ribbon (or OLS fallback)
+#   - Dotted vertical at t=11 with a point marker at the predicted value
+#
+# Arguments:
+#   sp          : full species name (e.g., "Panulirus interruptus")
+#   tag_label   : panel letter (e.g., "a")
+#   show_xlab   : TRUE for bottom row only
+#   sp_data     : data filtered to species AND response type
+#   sp_lmer     : list from extract_lmer_slopes() with slopes, intercepts, SEs
+#   n_mpas_df   : data.frame with Species and n_mpa columns
+#   ylims_df    : data.frame with Species, ymin, ymax for axis limits
 make_fig5_panel <- function(sp, tag_label, show_xlab = FALSE,
                             sp_data, sp_lmer,
                             n_mpas_df, ylims_df) {
@@ -2243,37 +2342,38 @@ make_fig5_panel <- function(sp, tag_label, show_xlab = FALSE,
   lnRR_at_11 <- if (!is.na(sp_int)) sp_int + sp_slope * 11 else NA
 
   p <- ggplot(panel_data, aes(x = time, y = lnDiff)) +
-    # Individual MPA trajectories — species-tinted behind trend
+    # Individual MPA trajectories (faint spaghetti lines, one per MPA)
     geom_line(aes(group = CA_MPA_Name_Short),
               color = sp_color, alpha = 0.18, linewidth = 0.4) +
-    # Reference line at zero effect (solid, subtle)
+    # Horizontal reference at lnRR = 0 (RR = 1, no MPA effect)
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey30",
                linewidth = 0.5) +
-    # Vertical reference at t=11 (standardized comparison point)
+    # Dotted vertical at t=11 years: the standardized time point used
+    # in 08_effect_sizes.R to extract comparable effect sizes across MPAs
     geom_vline(xintercept = 11, linetype = "dotted", color = "grey50",
                linewidth = 0.5) +
     annotate("text", x = 11.3, y = Inf, label = "t = 11",
              hjust = 0, vjust = 1.3, size = 2.85, color = "grey40")
 
-  # lmer prediction line with 95% CI ribbon (matches formal temporal
-  # meta-regression). Falls back to OLS geom_smooth if lmer unavailable.
+  # --- Population-level trend line from lmer (the bold line in each panel) ---
+  # Uses species-specific intercept and slope from the pooled lmer temporal
+  # model (10_temporal_analysis.R). The 95% CI ribbon uses the full
+  # prediction variance: Var(pred) = Var(int) + t^2*Var(slope) + 2*t*Cov.
+  # Falls back to simple OLS geom_smooth if lmer coefficients unavailable.
   if (!is.na(sp_int) && !is.na(sp_slope) && !is.na(sp_slope_se)) {
-    # Build prediction data.frame from lmer fixed effects
     pred_df <- data.frame(
       time_seq = seq(0, 15, length.out = 50)
     )
     pred_df$pred <- sp_int + sp_slope * pred_df$time_seq
 
-    # Correct prediction variance: Var(pred) = Var(int) + t^2*Var(slope) + 2*t*Cov(int,slope)
-    # Use vcov-derived params if available; fall back to slope-only SE otherwise.
+    # Prediction variance using vcov-derived parameters (preferred) or
+    # slope-only SE (fallback, produces narrower CI at t near 0)
     if (!is.na(sp_int_se) && !is.na(sp_cov) && !is.na(sp_df)) {
-      # Full variance formula with intercept-slope covariance
       pred_se <- sqrt(sp_int_se^2 +
                       pred_df$time_seq^2 * sp_slope_se^2 +
                       2 * pred_df$time_seq * sp_cov)
       t_crit <- qt(0.975, sp_df)
     } else {
-      # Approximate: slope SE only (collapses to zero at t=0)
       pred_se <- sp_slope_se * pred_df$time_seq
       t_crit <- 1.96
     }
@@ -2305,7 +2405,7 @@ make_fig5_panel <- function(sp, tag_label, show_xlab = FALSE,
   }
 
   p <- p +
-    # Shared y-axis within trophic group — clip ON to prevent spaghetti overflow
+    # Shared y-axis within trophic group. Clip ON to prevent spaghetti overflow
     coord_cartesian(ylim = c(ylims$ymin, ylims$ymax),
                     clip = "on") +
     scale_x_continuous(breaks = seq(0, 15, by = 5),
@@ -2335,7 +2435,7 @@ make_fig5_panel <- function(sp, tag_label, show_xlab = FALSE,
 }
 
 if (should_render("fig04")) {
-cat("Building Figure 4 (Main Text): Recovery trajectories — 3×2 trophic grid...\n")
+cat("Building Figure 4 (Main Text): Recovery trajectories. 3x2 trophic grid...\n")
 # --- Build 3×2 trophic grid: rows = trophic groups, columns = species pairs ---
 # Row 1 (Predators):  P. interruptus (a) | S. pulcher (b)
 # Row 2 (Herbivores): S. purpuratus (c)  | M. franciscanus (d)
@@ -2418,9 +2518,15 @@ cat("  Figure 4 saved: plots/fig_04_recovery_curves.pdf\n")
 } # end fig04 inner block
 
 # =============================================================================
-# Figure S10 (Supplemental): Biomass + density recovery trajectories (5×2 grid)
-# Companion to main text Figure 4 (biomass only). Shows both response types
-# side-by-side. M. pyrifera has biomass only (no density metric).
+# === FIGURE S10 (Dropped from SI): Biomass + Density Recovery (5x2 grid) ===
+# =============================================================================
+# WHAT: Companion to Figure 4 showing BOTH biomass (left column) and density
+#   (right column) recovery trajectories for all five species. Same lmer
+#   prediction lines as Fig 4. M. pyrifera has biomass only (bottom-right
+#   cell is a placeholder). Dropped from the current SI numbering but the
+#   code still runs and the file is still generated on disk.
+# DATA: Same as Figure 4 (All.RR.sub.trans + lmer prediction params)
+# SAVES: plots/fig_s10_recovery_bio_den.pdf, plots/fig_s10_recovery_bio_den.png
 # =============================================================================
 
 if (should_render("fig_s10")) {
@@ -2552,8 +2658,15 @@ cat("  Figure S10 saved: plots/fig_s10_recovery_bio_den.pdf\n")
 
 
 # =============================================================================
-# Figure S3 (Supplemental): All taxa log response ratios at example MPAs
-# Not in current manuscript - kept as supplemental
+# === FIGURE S3 (Dropped from SI): All Taxa Time Series at Example MPAs ===
+# =============================================================================
+# WHAT: Density lnRR time series for four animal species (excludes M. pyrifera)
+#   at three example MPAs (Naples, Scorpion, Anacapa). Faceted grid with
+#   species on rows and sites on columns. Before-period shaded grey; after-
+#   period includes a linear trend overlay. Dropped from the current SI but
+#   the code still runs and the file is generated on disk.
+# DATA: All.RR.sub.trans (density response ratios), Site (MPA start years)
+# SAVES: plots/fig_s03_all_taxa_timeseries.pdf/.png
 # =============================================================================
 
 if (should_render("fig_s03")) {
@@ -2585,7 +2698,7 @@ fig_s2_data <- All.RR.sub.trans %>%
     CA_MPA_Name_Short %in% fig_s2_mpas,
     resp == "Den",
     !stringr::str_to_lower(y) %in% exclude_species,
-    # M. pyrifera has no density data — exclude to avoid empty facets
+    # M. pyrifera has no density data. Exclude to avoid empty facets
     y != "Macrocystis pyrifera"
   ) %>%
   dplyr::mutate(
@@ -2634,7 +2747,7 @@ fig_s2_shade <- fig_s2_data %>%
                    xmax = fig_s2_starts[as.character(CA_MPA_Name_Short[1])],
                    .groups = "drop")
 
-# Panel tag labels (uses taxa_levels_s3 — M. pyrifera excluded)
+# Panel tag labels (uses taxa_levels_s3. M. pyrifera excluded)
 s2_tagged_levels <- paste0("(", letters[seq_along(taxa_levels_s3)], ")  ", taxa_levels_s3)
 fig_s2_data$species_short <- factor(fig_s2_data$species_short,
   levels = taxa_levels_s3, labels = s2_tagged_levels)
@@ -2661,7 +2774,7 @@ fig_s2 <- ggplot(fig_s2_data, aes(x = year, y = lnDiff,
   geom_smooth(data = fig_s2_data %>% dplyr::filter(period == "After"),
               method = "lm", formula = y ~ x, se = TRUE,
               linewidth = 0.8, alpha = 0.15) +
-  # Data points — slightly transparent, before period more muted
+  # Data points: slightly transparent, before period more muted
   geom_point(aes(alpha = period), size = 1.1, shape = 16, na.rm = TRUE) +
   scale_alpha_manual(values = c("Before" = 0.35, "After" = 0.65), guide = "none") +
   scale_color_manual(values = col_taxa_s2, name = "Species") +
@@ -2689,14 +2802,21 @@ fig_s2 <- ggplot(fig_s2_data, aes(x = year, y = lnDiff,
 save_fig(fig_s2, "fig_s03_all_taxa_timeseries", FIG_S3_DIMS["w"], FIG_S3_DIMS["h"])
 } # end fig_s03
 
-# (Old Figures S3 and S4 removed — superseded by species-level versions
+# (Old Figures S3 and S4 removed. superseded by species-level versions
 #  in 10_temporal_analysis.R: fig_s03 through fig_s06)
 
 
 # =============================================================================
-# Figure S7: Model Selection & Heterogeneity
+# === FIGURE S7 (Dropped from SI): Statistical Transparency ===
 # =============================================================================
-# Statistical transparency: variance components and model selection
+# WHAT: Two-panel overview of effect-size model selection and variance
+#   decomposition. Panel (a) shows stacked bars of NLS model type
+#   (Linear/Mean/Sigmoid) frequency by taxa. Panel (b) shows MPA-level and
+#   Source-level tau-squared from the multilevel meta-analysis. Dropped from
+#   current SI but still generates on disk.
+# DATA: SumStats.Final (model types), meta_biomass/meta_density (variance)
+# SAVES: plots/fig_s07_statistical_transparency.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s07")) {
 cat("\n--- Figure S7: Statistical Transparency ---\n")
@@ -2713,7 +2833,7 @@ model_dist <- SumStats.Final %>%
 
 model_dist$Taxa <- factor(model_dist$Taxa, levels = taxa_levels)
 
-# Model colors — from centralized palette (00b_color_palette.R)
+# Model colors: from centralized palette (00b_color_palette.R)
 
 # Pre-compute cumulative positions for Sigmoid labels
 sigmoid_labels <- model_dist %>%
@@ -2826,11 +2946,23 @@ save_fig(fig_s6, "fig_s07_statistical_transparency", FIG_S7_DIMS["w"], FIG_S7_DI
 
 
 # =============================================================================
-# Figure S8: Comprehensive Site-Level Appendix
+# === FIGURE S7a-e (Supplemental): Comprehensive Site-Level Appendix ===
 # =============================================================================
-# Individual lnRR time series for ALL taxa at ALL sites, including sites
-# excluded from the final analysis. Provides transparency and allows readers
-# to inspect site-level variation underlying the meta-analytic summaries.
+# WHAT: One figure per taxa showing lnRR time series at EVERY monitoring site,
+#   including sites excluded from the final analysis (marked with a dagger).
+#   Each site gets its own facet panel with annual mean lnRR, 95% CI ribbon,
+#   and an MPA implementation vertical line. Ordered: included sites first,
+#   then excluded. Uses density as primary response (biomass for M. pyrifera).
+#   Provides full transparency for readers wanting to see site-level variation
+#   behind the meta-analytic means in Figure 3.
+# DATA: All.RR.sub.trans (response ratios), Site (MPA start years),
+#   SumStats.Final (to identify which MPAs are in the final analysis)
+# SAVES: plots/fig_s08_appendix_pinterruptus.pdf/.png
+#         plots/fig_s08_appendix_spulcher.pdf/.png
+#         plots/fig_s08_appendix_spurpuratus.pdf/.png
+#         plots/fig_s08_appendix_mfranciscanus.pdf/.png
+#         plots/fig_s08_appendix_mpyrifera.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s08")) {
 cat("\n--- Figure S8: Site-Level Appendix ---\n")
@@ -2852,7 +2984,7 @@ taxa_plot_order <- c("P. interruptus", "S. pulcher",
                      "S. purpuratus", "M. franciscanus",
                      "M. pyrifera")
 
-# Use All.RR.sub.trans — the combined response ratio dataset with all sites
+# Use All.RR.sub.trans: the combined response ratio dataset with all sites
 appendix_data <- All.RR.sub.trans %>%
   mutate(
     Taxa_Short = ifelse(y %in% names(taxa_name_map),
@@ -3032,17 +3164,25 @@ cat("  Site-level appendix complete. Dagger (\u2020) marks sites excluded from a
 
 
 # =============================================================================
-# FIGURE 2: Trophic Cascade Case Studies — 3×3 trophic grid
+# === FIGURE 2 (Main Text): Trophic Cascade Case Studies ===
 # =============================================================================
-# Three Channel Islands MPAs with long time series (19-20 years) that show
-# the full trophic cascade: predators ↑, urchins ↓, kelp ↑.
-# Layout: 3 rows (Predators / Urchins / Kelp) × 3 columns (sites)
-# Each panel shows 1-2 species within the same trophic group.
+# WHAT: The narrative figure showing the trophic cascade unfolding at three
+#   Channel Islands MPAs chosen for cascade consistency and long time series
+#   (19-20 years post-MPA). Layout is a 3x3 grid:
+#     Rows: Predators (lobster + sheephead), Urchins (purple + red), Kelp
+#     Columns: Scorpion SMR, Gull Island SMR, SB Island SMR
+#   Each panel shows annual mean lnRR before and after MPA implementation.
+#   Before-period data is faded; after-period has full color plus a linear
+#   trend with 95% CI. Predators trend upward, urchins downward, kelp
+#   upward: the signature of a recovering trophic cascade.
+# DATA: All.RR.sub.trans (response ratios), Site (MPA start years)
+# SAVES: plots/fig_02_cascade_case_studies.pdf/.png
+# =============================================================================
 
-FIG2_DIMS <- c(w = 17, h = 16)  # 170mm × 160mm, double-column (increased from 130mm to reduce vertical cramping in 3×3 grid)
+FIG2_DIMS <- c(w = 17, h = 16)  # 170mm x 160mm, double-column
 
 if (should_render("fig02")) {
-cat("\n--- Figure 2 (Main Text): Trophic cascade case studies (3×3 grid) ---\n")
+cat("\n--- Figure 2 (Main Text): Trophic cascade case studies (3x3 grid) ---\n")
 
 # Sites selected based on cascade consistency analysis (table_s_cascade_consistency.csv)
 # and per-MPA slope analysis (table_s_per_mpa_slopes.csv):
@@ -3143,7 +3283,10 @@ fig4_row_ylims <- fig4_annual %>%
     ymax = q_hi + pad
   )
 
-# --- Helper: build one panel (site × trophic group) ---
+# --- Helper: build one panel of the 3x3 cascade grid ---
+# Each panel shows annual mean lnRR for 1-2 species at one MPA site.
+# Before-period data is faded; after-period is full color + linear trend.
+# Y-axis limits are shared within each trophic row for comparability.
 make_fig4_panel <- function(site, species_vec, tag_label,
                              show_xaxis = FALSE, show_yaxis = TRUE) {
   panel_data <- fig4_annual %>%
@@ -3161,32 +3304,38 @@ make_fig4_panel <- function(site, species_vec, tag_label,
   p <- ggplot(panel_data,
               aes(x = time_since, y = mean_lnRR,
                   color = Taxa_Short, fill = Taxa_Short)) +
-    # Reference line at lnRR = 0 (no MPA effect)
+    # Horizontal dashed line at lnRR = 0 (RR = 1, no MPA effect)
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey55",
                linewidth = 0.35) +
-    # Vertical line at MPA implementation (time = 0)
+    # Vertical dashed line at time = 0 (year MPA was implemented)
     geom_vline(xintercept = 0, linetype = "dashed", color = "grey40",
                linewidth = 0.45) +
-    # Before-MPA period: lighter alpha, 95% CI (Conservation Letters requirement)
+    # --- BEFORE-MPA period: faded to de-emphasize ---
+    # 95% CI ribbon (very faint)
     geom_ribbon(data = panel_before,
                 aes(ymin = mean_lnRR - 1.96 * se_lnRR,
                     ymax = mean_lnRR + 1.96 * se_lnRR),
                 alpha = 0.06, colour = NA) +
+    # Connecting line (low alpha)
     geom_line(data = panel_before,
               aes(group = Taxa_Short), alpha = 0.25, linewidth = 0.4) +
+    # Annual mean points (small, faded)
     geom_point(data = panel_before,
                size = 0.7, alpha = 0.30, shape = 16) +
-    # After-MPA period: full visual weight, 95% CI (Conservation Letters requirement)
+    # --- AFTER-MPA period: full visual weight, the key data ---
+    # 95% CI ribbon
     geom_ribbon(data = panel_after,
                 aes(ymin = mean_lnRR - 1.96 * se_lnRR,
                     ymax = mean_lnRR + 1.96 * se_lnRR),
                 alpha = 0.12, colour = NA) +
+    # Connecting line
     geom_line(data = panel_after,
               aes(group = Taxa_Short), alpha = 0.55, linewidth = 0.5) +
+    # Annual mean points
     geom_point(data = panel_after,
                size = 1.0, alpha = 0.7, shape = 16) +
-    # Linear trend overlay: after-period only (the cascade signal)
-    # 95% CI shown per Conservation Letters requirement
+    # Linear trend overlay on after-period: this is the cascade signal
+    # (shows direction and strength of MPA effect over time)
     geom_smooth(data = panel_after,
                 method = "lm", formula = y ~ x, se = TRUE, level = 0.95,
                 linewidth = 1.1, alpha = 0.2) +
@@ -3320,17 +3469,26 @@ cat("  Figure 2 saved: plots/fig_02_cascade_case_studies.pdf\n")
 
 
 # =============================================================================
-# FIGURE S11: DHARMa Model Diagnostics (4-panel)
+# === FIGURE S8 (Supplemental, disk name fig_s11): DHARMa Model Diagnostics ===
 # =============================================================================
-# Reads data/model_diagnostics.csv produced by 08_effect_sizes.R and creates
-# a 2×2 panel figure summarizing residual diagnostics for all effect-size models (pBACIPS + NLS).
+# WHAT: Four-panel summary of residual diagnostics for all NLS/pBACIPS
+#   effect-size models (produced by 08_effect_sizes.R). Verifies that the
+#   models generating SumStats.Final are well-behaved:
+#     (a) Pass rate by diagnostic test (uniformity, dispersion, outlier,
+#         normality, homoscedasticity): grouped bar chart by taxa
+#     (b) Failure type breakdown (stacked horizontal bars by taxa)
+#     (c) Shapiro-Wilk p-value distribution (violin + jitter)
+#     (d) R-squared distribution (boxplot + jitter, shape = overall pass/fail)
+# DATA: data/model_diagnostics.csv (from 08_effect_sizes.R)
+# SAVES: plots/fig_s11_dharma_diagnostics.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s11")) {
 cat("\n--- Figure S11: DHARMa model diagnostics ---\n")
 
 diag_path <- here::here("data", "model_diagnostics.csv")
 if (!file.exists(diag_path)) {
-  warning("model_diagnostics.csv not found — skipping fig_s11")
+  warning("model_diagnostics.csv not found. skipping fig_s11")
 } else {
 
 diag <- read.csv(diag_path, stringsAsFactors = FALSE)
@@ -3349,7 +3507,7 @@ diag$fail_type <- factor(diag$fail_type,
 n_models <- nrow(diag)
 
 # -------------------------------------------------------------------------
-# Panel (a): Pass rate by diagnostic test — Grouped bar chart
+# Panel (a): Pass rate by diagnostic test. Grouped bar chart
 # -------------------------------------------------------------------------
 # Pivot the four p-value columns to long form, classify pass/fail at α=0.05
 # Heteroscedasticity (|cor| > 0.5) is appended separately below.
@@ -3364,7 +3522,7 @@ diag_hetero <- diag %>%
                 p_value  = NA_real_,
                 pass     = abs(Hetero_Cor) <= 0.5)
 diag_long$pass <- diag_long$p_value > 0.05
-# Count NAs (tests that couldn't be computed) — these are excluded from pass rates
+# Count NAs (tests that couldn't be computed). These are excluded from pass rates
 na_pass <- sum(is.na(diag_long$pass)) + sum(is.na(diag_hetero$pass))
 if (na_pass > 0) {
   cat("  Note:", na_pass, "diagnostic tests returned NA (excluded from pass rates)\n")
@@ -3412,7 +3570,7 @@ pa <- ggplot(pass_summary, aes(x = Test, y = pass_rate, fill = Taxa)) +
   )
 
 # -------------------------------------------------------------------------
-# Panel (b): Failure type breakdown — Stacked count bar
+# Panel (b): Failure type breakdown. Stacked count bar
 # -------------------------------------------------------------------------
 # Reverse taxa levels so coord_flip() puts predators at top
 diag_b <- diag
@@ -3446,7 +3604,7 @@ pb <- ggplot(fail_counts, aes(x = Taxa, y = n, fill = fail_type)) +
   )
 
 # -------------------------------------------------------------------------
-# Panel (c): Shapiro-Wilk p-value distribution — Violin + jitter
+# Panel (c): Shapiro-Wilk p-value distribution. Violin + jitter
 # -------------------------------------------------------------------------
 diag$shapiro_pass <- dplyr::case_when(
   is.na(diag$Shapiro_p) ~ "Not tested",
@@ -3476,7 +3634,7 @@ pc <- ggplot(diag, aes(x = Taxa, y = Shapiro_p)) +
   )
 
 # -------------------------------------------------------------------------
-# Panel (d): R² distribution — Boxplot + jitter
+# Panel (d): R² distribution. Boxplot + jitter
 # -------------------------------------------------------------------------
 if (!"Pass_All" %in% names(diag)) {
   warning("Fig S11: 'Pass_All' column not found in model_diagnostics.csv")
@@ -3573,16 +3731,25 @@ cat("  Models:", n_models, "| Pass all:", sum(diag$Pass_All),
 
 
 # =============================================================================
-# FIGURE S12: Meta-Analysis Publication Bias — Funnel Plots
+# === FIGURE S9 (Supplemental, disk name fig_s12): Funnel Plots ===
 # =============================================================================
-# Assesses publication bias of the multilevel meta-analysis.
-# Panel a/b: Funnel plots (biomass/density) with Egger's regression test.
+# WHAT: Assesses publication bias in the multilevel meta-analysis (rma.mv).
+#   Two side-by-side funnel plots (effect size vs standard error):
+#     Panel (a) = Biomass model
+#     Panel (b) = Density model
+#   Points colored by taxa. Egger's regression test result annotated on
+#   each panel. Asymmetry would suggest small-study bias. Egger's test is
+#   run manually (regress residuals on SE) because metafor::regtest() does
+#   not support rma.mv models.
+# DATA: meta_biomass_full, meta_density_full (rma.mv objects from 09_meta_analysis.R)
+# SAVES: plots/fig_s12_funnel_plots.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s12")) {
-cat("\n--- Figure S12: Meta-analysis funnel plots & leave-one-out ---\n")
+cat("\n--- Figure S12: Meta-analysis funnel plots ---\n")
 
 if (!exists("meta_biomass_full") || !exists("meta_density_full")) {
-  warning("meta_biomass_full / meta_density_full not found — skipping fig_s12")
+  warning("meta_biomass_full / meta_density_full not found. skipping fig_s12")
 } else {
 
   # --- Helper: build funnel data from an rma.mv model ---
@@ -3602,7 +3769,7 @@ if (!exists("meta_biomass_full") || !exists("meta_density_full")) {
     data.frame(yi = yi, sei = sei, taxa = taxa, stringsAsFactors = FALSE)
   }
 
-  # --- Panel (a): Funnel plot — Biomass ---
+  # --- Panel (a): Funnel plot. Biomass ---
   funnel_bio <- build_funnel_df(meta_biomass_full)
   funnel_bio$taxa <- factor(funnel_bio$taxa, levels = taxa_levels)
 
@@ -3633,7 +3800,7 @@ if (!exists("meta_biomass_full") || !exists("meta_density_full")) {
     theme_mpa() +
     theme(legend.position = "none")
 
-  # --- Panel (b): Funnel plot — Density ---
+  # --- Panel (b): Funnel plot. Density ---
   funnel_den <- build_funnel_df(meta_density_full)
   funnel_den$taxa <- factor(funnel_den$taxa, levels = taxa_levels)
 
@@ -3685,11 +3852,20 @@ if (!exists("meta_biomass_full") || !exists("meta_density_full")) {
 
 
 # =============================================================================
-# FIGURE S13: lmer Temporal Model Residual Diagnostics
+# === FIGURE S10 (Supplemental, disk name fig_s13): lmer Residual Diagnostics ===
 # =============================================================================
-# 4-panel residual diagnostics for the pooled lmer temporal meta-regression.
-# Data read from outputs/lmer_residual_diagnostics.csv (generated by
-# 10_temporal_analysis.R).
+# WHAT: Standard four-panel residual diagnostics for the pooled lmer temporal
+#   meta-regression (the model behind Figure 4's recovery trajectories):
+#     (a) Residuals vs fitted values (with loess smooth)
+#     (b) Normal Q-Q plot of standardized residuals
+#     (c) Scale-location plot (sqrt of |standardized residuals| vs fitted)
+#     (d) Random effects Q-Q plot (MPA random intercepts, with ggrepel
+#         labels for extreme MPAs beyond 1.5 IQR)
+# DATA: outputs/lmer_residual_diagnostics.csv (residuals/fitted from lmer,
+#   generated by 10_temporal_analysis.R),
+#   outputs/lmer_ranef_diagnostics.csv (MPA random intercepts)
+# SAVES: plots/fig_s13_lmer_residuals.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s13")) {
 cat("\n--- Figure S13: lmer residual diagnostics ---\n")
@@ -3698,7 +3874,7 @@ resid_path  <- here::here("outputs", "lmer_residual_diagnostics.csv")
 ranef_path  <- here::here("outputs", "lmer_ranef_diagnostics.csv")
 
 if (!file.exists(resid_path)) {
-  warning("lmer_residual_diagnostics.csv not found — skipping fig_s13. ",
+  warning("lmer_residual_diagnostics.csv not found. skipping fig_s13. ",
           "Run 10_temporal_analysis.R first.")
 } else {
 
@@ -3825,18 +4001,24 @@ if (!file.exists(resid_path)) {
 
 
 # =============================================================================
-# FIGURE S14: NLS Model Selection & Durbin-Watson Autocorrelation
+# === FIGURE S11 (Supplemental, disk name fig_s14): NLS Model Selection ===
 # =============================================================================
-# Panel a: Stacked bar of model selection frequencies by taxa.
-# Panel b: Dot plot of Durbin-Watson statistics by taxa.
-# Data from tables/table_model_selection.csv.
+# WHAT: Two-panel overview of NLS effect-size model selection:
+#     (a) Stacked horizontal bar: how many MPAs selected each model type
+#         (Linear, Mean, or Sigmoid) for each taxa
+#     (b) Dot plot of Durbin-Watson statistics by taxa and model type.
+#         Grey band marks DW = 1.5-2.5 (no autocorrelation zone); DW near 2
+#         means no temporal autocorrelation in the residuals.
+# DATA: tables/table_model_selection.csv (from 08_effect_sizes.R)
+# SAVES: plots/fig_s14_model_selection.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s14")) {
 cat("\n--- Figure S14: NLS model selection & DW autocorrelation ---\n")
 
 ms_path <- here::here("tables", "table_model_selection.csv")
 if (!file.exists(ms_path)) {
-  warning("table_model_selection.csv not found — skipping fig_s14")
+  warning("table_model_selection.csv not found. skipping fig_s14")
 } else {
 
   ms <- read.csv(ms_path, stringsAsFactors = FALSE)
@@ -3897,13 +4079,18 @@ if (!file.exists(ms_path)) {
 
 
 # =============================================================================
-# FIGURE S15: Sensitivity & Robustness — Cook's Distance + Outlier Methods
+# === FIGURE S12 (Supplemental, disk name fig_s15): Sensitivity & Robustness ===
 # =============================================================================
-# Panel a/b: Cook's distance for each observation (biomass/density) with
-#   threshold line at 4/n.
-# Panel c: Outlier sensitivity comparison across 4 methods.
-# Data from outputs/filter_audit_meta_analysis.csv and
-# tables/table_s_outlier_sensitivity.csv.
+# WHAT: Three-panel sensitivity analysis for the meta-analysis:
+#     (a) Cook's distance for each biomass observation. Points above 4/n
+#         threshold are labeled (these are potential influential observations)
+#     (b) Same for density observations
+#     (c) Outlier sensitivity: meta-analytic estimates compared across
+#         multiple outlier removal methods, showing robustness of conclusions
+# DATA: outputs/filter_audit_meta_analysis.csv (Cook's D from 09_meta_analysis.R),
+#   tables/table_s_outlier_sensitivity.csv (sensitivity comparison)
+# SAVES: plots/fig_s15_sensitivity_summary.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s15")) {
 cat("\n--- Figure S15: Sensitivity & robustness summary ---\n")
@@ -3912,7 +4099,7 @@ audit_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
 outlier_path <- here::here("tables", "table_s_outlier_sensitivity.csv")
 
 if (!file.exists(audit_path) || !file.exists(outlier_path)) {
-  warning("Required CSV files not found — skipping fig_s15. ",
+  warning("Required CSV files not found. skipping fig_s15. ",
           "Need: outputs/filter_audit_meta_analysis.csv, tables/table_s_outlier_sensitivity.csv")
 } else {
 
@@ -3923,7 +4110,7 @@ if (!file.exists(audit_path) || !file.exists(outlier_path)) {
   audit_bio <- audit[audit$Response == "Biomass", ]
   audit_den <- audit[audit$Response == "Density", ]
 
-  # --- Panel (a): Cook's distance — Biomass ---
+  # --- Panel (a): Cook's distance. Biomass ---
   if (nrow(audit_bio) > 0 && "Cooks_Distance" %in% names(audit_bio)) {
     audit_bio$obs <- seq_len(nrow(audit_bio))
     threshold_bio <- 4 / nrow(audit_bio)
@@ -3947,7 +4134,7 @@ if (!file.exists(audit_path) || !file.exists(outlier_path)) {
       theme_void()
   }
 
-  # --- Panel (b): Cook's distance — Density ---
+  # --- Panel (b): Cook's distance. Density ---
   if (nrow(audit_den) > 0 && "Cooks_Distance" %in% names(audit_den)) {
     audit_den$obs <- seq_len(nrow(audit_den))
     threshold_den <- 4 / nrow(audit_den)
@@ -4039,11 +4226,11 @@ if (!file.exists(audit_path) || !file.exists(outlier_path)) {
 } # end file check
 } # end fig_s15
 
-####################################################################################################
-## Shared constants for outlier figures (S16–S18) #################################################
-####################################################################################################
-# These mappings are used by fig_s17 and fig_s18 which work with full species names.
-# Defined once here to avoid duplication.
+# =============================================================================
+# Shared constants for outlier diagnostic figures (S16-S18)
+# =============================================================================
+# These name-mapping vectors are used by Figures S16, S17, and S18, which
+# work with full species names. Defined once here to avoid duplication.
 
 # Abbreviated → full species name mapping
 outlier_abbrev_to_full <- c(
@@ -4077,7 +4264,7 @@ outlier_full_to_abbrev <- c(
 outlier_sp_colors <- setNames(col_taxa[outlier_full_to_abbrev],
                                names(outlier_full_to_abbrev))
 
-# Facet ordering: "Species — Response" (excluding M. pyrifera Density)
+# Facet ordering: "Species - Response" (excluding M. pyrifera Density)
 outlier_facet_order <- as.vector(t(outer(
   outlier_sp_order_full, c("Biomass", "Density"),
   function(sp, r) paste0(sp, " \u2014 ", r)
@@ -4086,12 +4273,22 @@ outlier_facet_order <- outlier_facet_order[
   outlier_facet_order != "Macrocystis pyrifera \u2014 Density"
 ]
 
-####################################################################################################
-## Figure S16: Outlier removal rationale ##########################################################
-####################################################################################################
-# WHY we chose not to remove Cook's D outliers as the primary analysis.
-# Four panels: (a) effect sizes by taxon with outlier highlighting, (b) between- vs
-# within-taxa distance decomposition, (c) % flagged bar chart, (d) paired forest plot.
+# =============================================================================
+# === FIGURE S16 (Dropped): Outlier Removal Rationale ===
+# =============================================================================
+# WHAT: Four-panel argument for WHY we chose NOT to remove Cook's D outliers:
+#     (a) Effect sizes by taxon: "outliers" are normal members of their
+#         trophic group, flagged only because the global 4/n threshold
+#         conflates between-taxa and within-taxa variation
+#     (b) Between-taxa vs within-taxa distance scatter: points below the
+#         diagonal were flagged due to taxon membership, not anomalous values
+#     (c) Percent of observations flagged: global 4/n vs per-taxon 4/k
+#     (d) Paired forest plot: full-data vs outlier-removed estimates showing
+#         conclusions are robust to removal choice
+# DATA: outputs/filter_audit_meta_analysis.csv, outputs/filter_audit_pertaxa_meta.csv,
+#   tables/table_s_outlier_sensitivity.csv
+# SAVES: plots/fig_s16_outlier_rationale.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s16")) {
 cat("\n--- Figure S16: Outlier removal rationale ---\n")
@@ -4200,7 +4397,7 @@ if (!file.exists(audit_global_path) || !file.exists(audit_pertaxa_path) ||
     theme_mpa(base_size = 8) +
     theme(legend.position = "none")
 
-  # ---- Panel (c): % flagged — global vs per-taxon ----
+  # ---- Panel (c): % flagged: global vs per-taxon ----
   # Global flagging rate per taxa (combining bio + den)
   flag_global <- aggregate(Is_Outlier ~ Taxa, data = audit_g,
                            FUN = function(x) round(100 * mean(x), 1))
@@ -4246,7 +4443,7 @@ if (!file.exists(audit_global_path) || !file.exists(audit_pertaxa_path) ||
           legend.key.size = unit(3, "mm"),
           legend.text = element_text(size = 7))
 
-  # ---- Panel (d): Meta-analytic estimates — full vs removed ----
+  # ---- Panel (d): Meta-analytic estimates: full vs removed ----
   sens_sub <- sensitivity[sensitivity$Method %in%
     c("Joint model, no removal (primary)", "Joint Cook's D (4/n) (legacy)"), ]
   sens_sub$Method_short <- ifelse(
@@ -4307,12 +4504,17 @@ if (!file.exists(audit_global_path) || !file.exists(audit_pertaxa_path) ||
 } # end file check
 } # end fig_s16
 
-####################################################################################################
-## Figure S17: Temporal trajectories with outlier status ##########################################
-####################################################################################################
-# Companion to fig_s16. Shows that "outlier" MPA-taxa combinations follow coherent
-# recovery trajectories over time — not erratic noise. If these were genuine outliers,
-# their time series would be random; instead, they track the cascade prediction.
+# =============================================================================
+# === FIGURE S17 (Dropped): Temporal Trajectories by Outlier Status ===
+# =============================================================================
+# WHAT: Companion to S16. For each species x response type (faceted 5x2),
+#   shows lnRR time series (after-period, t <= 15) for every MPA. MPAs that
+#   would be removed by global Cook's D are shown as colored lines; retained
+#   MPAs are grey. A GAM smooth across ALL data demonstrates that "outlier"
+#   trajectories follow the same coherent recovery pattern as retained ones.
+# DATA: All.RR.sub.trans (response ratios), outputs/filter_audit_meta_analysis.csv
+# SAVES: plots/fig_s17_temporal_outlier_trajectories.pdf/.png
+# =============================================================================
 
 if (should_render("fig_s17")) {
 cat("\n--- Figure S17: Temporal trajectories by outlier status ---\n")
@@ -4365,7 +4567,7 @@ if (!file.exists(audit_global_path)) {
   # Use shared constants for species ordering and colors
   ts_data[[taxa_col_ts]] <- factor(ts_data[[taxa_col_ts]], levels = outlier_sp_order_full)
 
-  # Combined facet label: "Species — Response"
+  # Combined facet label: "Species - Response"
   ts_data <- ts_data %>%
     dplyr::mutate(
       facet_label = paste0(.data[[taxa_col_ts]], " \u2014 ", resp_label)
@@ -4446,12 +4648,16 @@ if (!file.exists(audit_global_path)) {
 
 
 # =============================================================================
-# Figure S18: Raw data trajectories by outlier status
+# === FIGURE S18 (Dropped): Raw Data Trajectories by Outlier Status ===
 # =============================================================================
-# Shows raw observed values (not response ratios) for MPA and reference sites
-# through time, highlighting MPA-taxa combos flagged by global Cook's D.
-# Complements fig_s17 (lnRR trajectories) by showing the underlying data
-# are well-behaved — flagged combos don't have erratic raw values.
+# WHAT: Complement to S17 showing raw observed values (not response ratios)
+#   for both MPA (solid lines) and reference (dashed lines) sites through
+#   time. MPA-taxa combos flagged by global Cook's D are colored; retained
+#   combos are grey. Demonstrates that flagged combos don't have erratic
+#   raw values. They are normal ecological data. Y-axis uses sqrt scale
+#   to compress extreme values while preserving relative patterns.
+# DATA: All.Resp.sub (raw density/biomass), outputs/filter_audit_meta_analysis.csv
+# SAVES: plots/fig_s18_raw_trajectories_outlier_status.pdf/.png
 # =============================================================================
 
 if (should_render("fig_s18")) {
@@ -4603,6 +4809,9 @@ if (!file.exists(audit_global_path)) {
 } # end fig_s18
 
 
+# =============================================================================
+# COMPLETION SUMMARY
+# =============================================================================
 cat("\n")
 cat("========================================================================\n")
 if (identical(RENDER_FIGURES, "all")) {

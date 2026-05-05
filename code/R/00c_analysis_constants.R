@@ -24,7 +24,11 @@
 #' PISCO swath transect area (2m wide × 30m long = 60 m²)
 PISCO_SWATH_AREA_M2 <- 60
 
-#' KFM quadrat area (2 m²)
+#' KFM quadrat area (default 2 m²; data-repo code uses row-level `area`)
+#' KFM urchin quads were 1 m² in 1982-1984, then 2 m² from 1985 onward.
+#' Macro quads were 1, 2, or 10 m² (analysis uses 10 m² subset only).
+#' See data-repo 05_kfm_processing.R for density normalization that uses
+#' the row-level `area` column rather than this constant.
 KFM_QUAD_AREA_M2 <- 2
 
 #' LTER lobster plot area (300 m²)
@@ -60,8 +64,11 @@ SURVEY_MONTH_END <- 10    # October
 UCSB_LOBSTER_SIZE_START_YEAR <- 2010
 VRG_LOBSTER_SIZE_START_YEAR <- 2011
 
-#' KFM RDFC (roving diver fish count) survey methodology start year
-KFM_RDFC_SURVEY_START_YEAR <- 2003
+#' KFM RDFC (Roving Diver Fish Count) survey methodology start year.
+#' Per Davis et al. 1997 (NPS Kelp Forest Monitoring Handbook Vol 1, p.48),
+#' RDFC was implemented in 1996. Earlier value of 2003 was incorrect;
+#' corrected 2026-05-04. See data-repo 00c_analysis_constants.R for full note.
+KFM_RDFC_SURVEY_START_YEAR <- 1996
 
 #' Minimum years of data required for site inclusion
 #' RATIONALE: Sites with fewer years provide unreliable trend estimates

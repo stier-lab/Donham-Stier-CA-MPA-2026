@@ -5,27 +5,34 @@
 #' project: "Donham-Stier-CA-MPA-2026"
 #' ---
 #'
-#' This script runs the full analysis pipeline from data import through publication
-#' figures. Each module is sourced in sequence with error handling and checkpoint
-#' validation of key intermediate objects.
+#' HOW TO RUN THE FULL ANALYSIS:
+#'   Open R in the project directory, then:
+#'     source(here::here("code", "R", "run_all.R"))
+#'   This takes ~2 minutes and produces all tables, figures, and summary docs.
 #'
-#' Usage:
-#'   source("code/R/run_all.R")
-#'   # or from the project root:
-#'   source(here::here("code", "R", "run_all.R"))
+#' HOW TO REGENERATE JUST THE FIGURES (faster, ~17 seconds):
+#'     source(here::here("code", "R", "run_figures_only.R"))
 #'
-#' Pipeline:
-#'   00  - Load packages and set global options
-#'   00b - Define unified color palette and ggplot theme
-#'   01  - Utility functions
-#'   02  - Define pBACIPS function
-#'   03  - Load harmonized data (CSVs from data-processing repo)
-#'   08  - Calculate effect sizes (pBACIPS)
-#'   09  - Multilevel meta-analysis
-#'   10  - Temporal dynamics appendix
-#'   11  - Publication figures (Figs 1-4, S1-S2, S7a-e appendix; also generates dropped S3, S7, S10)
-#'   13  - Additional analyses (Fig S9, moderator meta-regression)
-#'   12  - Results summary (CSVs and markdown)
+#' WHAT EACH SCRIPT DOES (in order):
+#'   00_libraries.R         - Load R packages (tidyverse, metafor, lme4, etc.)
+#'   00b_color_palette.R    - Colors, shapes, and ggplot theme for all figures
+#'   00c_analysis_constants.R - Named constants (survey areas, size thresholds, etc.)
+#'   01_utils.R             - Shared helper functions + excluded MPA list
+#'   02_pBACIPS_function.R  - The core pBACIPS method (step/linear/asymptotic/sigmoid)
+#'   03_load_harmonized_data.R - Load the 4 harmonized CSVs into R objects
+#'   08_effect_sizes.R      - Calculate effect sizes for each MPA x taxa x response
+#'                            -> produces SumStats.Final (146 effect sizes)
+#'   09_meta_analysis.R     - Multilevel meta-analysis: Table 2, Table 3, variance components
+#'   10_temporal_analysis.R - Recovery trajectories, phase portraits, cascade consistency
+#'   11_figures.R           - All main text (Figs 1-4) and most SI figures
+#'   13_additional_analyses.R - Moderator comparisons (SMR vs SMCA, Islands vs Mainland)
+#'   12_results_summary.R   - Summary CSVs, RESULTS_SUMMARY.md, data flow audit
+#'
+#' KEY OUTPUTS:
+#'   plots/          - All figures as PDF + PNG
+#'   tables/         - All manuscript tables as CSV
+#'   data/sumstats_final.csv - The 146 effect sizes used in meta-analysis
+#'   docs/RESULTS_SUMMARY.md - Auto-generated plain-English results summary
 
 ####################################################################################################
 ## Setup ###########################################################################################

@@ -3,41 +3,48 @@
 # =============================================================================
 #
 # PURPOSE:
-#   Additional supplemental analyses and figures examining how MPA
-#   characteristics (protection level, location) relate to effect sizes.
+#   Exploratory supplemental analyses asking whether MPA characteristics
+#   predict the strength of MPA effects on kelp forest species.
 #
-# ANALYSES:
-#   A1. Combined moderator comparison: SMR vs SMCA + mainland vs Ch. Islands (Fig S9)
-#   C1. Formal moderator meta-regression table
+#   Specifically, this script tests two moderators:
+#     1. Protection level: Do fully-protected reserves (SMR = State Marine
+#        Reserve, no-take) show larger effects than partially-protected
+#        conservation areas (SMCA)?
+#     2. Geographic location: Do Channel Islands MPAs differ from mainland
+#        MPAs in effect size?
 #
-# INPUTS:
-#   - SumStats.Final: Effect sizes (ES at t=11) from 08_effect_sizes.R
-#   - Site: MPA metadata from 03_load_harmonized_data.R
-#   - Color palette objects from 00b_color_palette.R
+#   IMPORTANT: These analyses are EXPLORATORY. Small, unbalanced sample sizes
+#   per subgroup limit statistical power. Results are reported for
+#   transparency but should not support strong conclusions.
 #
 # OUTPUTS:
-#   Figures: fig_s09_moderator_comparisons
-#   Tables:  table_s_moderator_meta_regression.csv   (coefficient table)
-#            table_s_moderator_diagnostics.csv        (QM, heterogeneity, sample sizes)
-#            table_s_moderator_subgroup_effects.csv   (per-subgroup effect sizes & n)
+#   Figure:
+#     fig_s09_moderator_comparisons  (SI Figure S6): 2-row panel showing
+#       individual MPA effect sizes + model-predicted means for each subgroup
 #
-# NOTE: Previous versions generated additional supplemental figures (MPA size,
-#       regional, rate-of-change, cascade completeness) which were removed to
-#       eliminate redundancy.
+#   Tables:
+#     table_s_moderator_meta_regression.csv  (Table S6): model coefficients
+#     table_s_moderator_diagnostics.csv      (Table S6): QM tests, heterogeneity
+#     table_s_moderator_subgroup_effects.csv : per-subgroup weighted means
+#
+# INPUTS:
+#   - SumStats.Final: MPA-level effect sizes (lnRR at t=11) from 08_effect_sizes.R
+#   - Site: MPA metadata from 03_load_harmonized_data.R
+#   - Color palette objects from 00b_color_palette.R
 #
 # AUTHORS: Emily Donham & Adrian Stier
 # =============================================================================
 
 
 # =============================================================================
-# Section A: Setup
+# Section A: Setup. Load metadata, validate inputs, define species ordering
 # =============================================================================
 
 dir.create(here::here("plots"), showWarnings = FALSE)
 
 cat("\n=== 13_additional_analyses.R ===\n")
 
-# --- Figure dimension constants ---
+# --- Figure dimension constants (cm) ---
 FIG_S09_DIMS <- c(w = 17.8, h = 18)   # Combined moderator comparisons (2-row)
 
 # --- Input validation ---
@@ -51,6 +58,9 @@ if (length(missing_objects) > 0) {
 }
 
 # --- Species name mappings ---
+# The five focal species in trophic cascade order (predators -> producer).
+# SumStats.Final may use either full or abbreviated names depending on the
+# data source, so we need a lookup table for both directions.
 full_to_abbrev <- c(
   "Macrocystis pyrifera"          = "M. pyrifera",
   "Mesocentrotus franciscanus"    = "M. franciscanus",
@@ -59,6 +69,7 @@ full_to_abbrev <- c(
   "Semicossyphus pulcher"         = "S. pulcher"
 )
 
+# Canonical trophic order: lobster -> sheephead -> purple urchin -> red urchin -> kelp
 species_order_full <- c(
   "Panulirus interruptus", "Semicossyphus pulcher",
   "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus",
@@ -66,14 +77,16 @@ species_order_full <- c(
 )
 species_order_abbrev <- full_to_abbrev[species_order_full]
 
-# Species colors keyed by abbreviated name
+# Species colors keyed by abbreviated name (from 00b_color_palette.R)
 sp_color_abbrev <- setNames(
   unname(col_taxa[species_order_abbrev]),
   species_order_abbrev
 )
 
 # --- Merge SumStats.Final with Site metadata ---
-# Detect the MPA column name in SumStats.Final
+# SumStats.Final has one row per MPA x taxa x response. We need to add
+# MPA characteristics (type, location, size) from the Site metadata table
+# so we can test them as moderators. The MPA column name varies, so detect it.
 mpa_col <- if ("CA_MPA_Name_Short" %in% names(SumStats.Final)) {
   "CA_MPA_Name_Short"
 } else if ("MPA" %in% names(SumStats.Final)) {
@@ -82,7 +95,7 @@ mpa_col <- if ("CA_MPA_Name_Short" %in% names(SumStats.Final)) {
   stop("Cannot find MPA column in SumStats.Final")
 }
 
-# Check which Site columns SumStats.Final already has (from prior joins)
+# Only join columns that aren't already present (prior scripts may have joined them)
 needed_cols <- c("type", "Hectares", "Location", "MPA_Start")
 already_has <- intersect(needed_cols, names(SumStats.Final))
 still_need  <- setdiff(needed_cols, names(SumStats.Final))
@@ -94,11 +107,11 @@ if (length(still_need) > 0) {
   ss_merged <- SumStats.Final %>%
     dplyr::left_join(site_meta, by = setNames("CA_MPA_Name_Short", mpa_col))
 } else {
-  # All columns already present — just use SumStats.Final directly
+  # All columns already present. Just use SumStats.Final directly
   ss_merged <- SumStats.Final
 }
 
-# Standardize Taxa to abbreviated names
+# Ensure a Taxa_abbrev column exists with abbreviated species names
 if (!"Taxa_abbrev" %in% names(ss_merged)) {
   taxa_col_ss <- if ("Taxa" %in% names(ss_merged)) "Taxa"
                  else stop("Required column 'Taxa' not found in ss_merged")
@@ -120,14 +133,16 @@ cat("=== Setup complete ===\n")
 
 
 # =============================================================================
-# Section A2: Data for Moderator Analysis (consistent with 09_meta_analysis.R)
+# Section A2: Prepare data for moderator analysis
 # =============================================================================
-# The primary meta-analysis in script 09 uses the full dataset (no outlier removal).
-# Moderator analysis uses the same full data for consistency.
+# IMPORTANT DESIGN DECISION: The moderator analysis uses the FULL dataset
+# (no outlier removal), matching the primary meta-analysis in script 09.
+# This ensures the moderator results are directly comparable to the main
+# meta-analytic estimates reported in Table 2.
 #
-# Strategy: if per-taxa full data objects from script 09 exist in the global
-# environment, use those directly. Otherwise, use SumStats.Final (which IS the
-# full data before any outlier filtering).
+# Data source priority:
+#   1. Use per-taxa full_data objects from script 09 (if available in memory)
+#   2. Fall back to SumStats.Final (which IS the full data before outlier filtering)
 
 if (exists("pertaxa_biomass") && exists("pertaxa_density") &&
     is.list(pertaxa_biomass) && "full_data" %in% names(pertaxa_biomass) &&
@@ -148,7 +163,7 @@ if (exists("pertaxa_biomass") && exists("pertaxa_density") &&
   outlier_source <- "sumstats_final_no_filtering"
 }
 
-# Re-merge with Site metadata (ss_clean may lack Site columns)
+# Re-merge with Site metadata (ss_clean may not have type/Location columns yet)
 needed_cols_clean <- c("type", "Hectares", "Location", "MPA_Start")
 already_has_clean <- intersect(needed_cols_clean, names(ss_clean))
 still_need_clean  <- setdiff(needed_cols_clean, names(ss_clean))
@@ -169,7 +184,7 @@ if (length(still_need_clean) > 0) {
     dplyr::left_join(site_meta_clean, by = setNames("CA_MPA_Name_Short", mpa_col_clean))
 }
 
-# Standardize Taxa_abbrev
+# Ensure abbreviated taxa names exist for consistent output
 if (!"Taxa_abbrev" %in% names(ss_clean)) {
   taxa_col_clean <- if ("Taxa" %in% names(ss_clean)) "Taxa" else mpa_col
   ss_clean$Taxa_abbrev <- dplyr::case_when(
@@ -192,29 +207,38 @@ if (!"V" %in% names(ss_clean)) {
 cat(sprintf("  Outlier-filtered data ready: %d rows, outlier source: %s\n",
             nrow(ss_clean), outlier_source))
 
-# Replace ss_merged with the outlier-filtered version for all downstream analyses
+# From here on, ss_merged is the full (no outlier removal) dataset used for
+# all moderator analyses and figures in this script.
 ss_merged <- ss_clean
 
 
 # =============================================================================
-# Section B: Combined Moderator Comparison (Fig S9)
+# Section B: Combined Moderator Comparison Figure (SI Figure S6 / Fig S9)
 # =============================================================================
-# Two-row figure: (top) SMR vs SMCA protection level, (bottom) Ch. Islands vs Mainland
+# Creates a two-row figure comparing MPA effect sizes across subgroups:
+#   Panel A (top row): SMR (no-take reserves) vs SMCA (limited-take areas)
+#   Panel B (bottom row): Channel Islands vs Mainland
+#
+# Each panel shows individual MPA effect sizes as jittered points, faceted
+# by species and response type, with model-predicted marginal means shown
+# as black point-ranges (estimate + 95% CI) offset to the right.
+#
+# Output: plots/fig_s09_moderator_comparisons.{pdf|png}
+# =============================================================================
 
 if (should_render("fig_s09")) {
 cat("\n--- Figure S9: Combined Moderator Comparisons ---\n")
 cat("  Using precision-weighted marginal means from rma/rma.mv models\n")
 
-# RR-scaled y-axis uses shared helper (scale_y_rr) from 01_utils.R
-
 # --- Helper: compute model-predicted marginal means per subgroup ---
-# For each Taxa x Resp combination within a moderator, fit a small meta-analytic
-# model with mods = ~ moderator_level - 1 (no intercept, cell-means). This gives
-# the precision-weighted mean for each level with proper SEs from the model
-# (accounting for inverse-variance weighting and between-MPA heterogeneity).
-#
-# Falls back to simple weighted mean if model fitting fails.
+# For each species x response type, fit a small cell-means meta-analytic
+# model: mods = ~ moderator_level - 1 (no intercept). Each coefficient IS
+# the precision-weighted mean effect size for that subgroup level, with
+# proper SEs accounting for inverse-variance weighting and between-MPA
+# heterogeneity. Falls back to simple weighted mean if model fitting fails.
 compute_marginal_means <- function(data, moderator_col, mpa_col_name) {
+  # Loop over every species x response combination
+
   combos <- unique(data[, c("Taxa_abbrev", "Resp"), drop = FALSE])
   results <- list()
   for (i in seq_len(nrow(combos))) {
@@ -222,7 +246,7 @@ compute_marginal_means <- function(data, moderator_col, mpa_col_name) {
     resp  <- combos$Resp[i]
     sub <- data[data$Taxa_abbrev == taxon & data$Resp == resp, ]
     if (nrow(sub) < 2 || length(unique(sub[[moderator_col]])) < 2) {
-      # Not enough data for a model — use simple per-level means as fallback
+      # Too few observations or only one level. Use arithmetic mean as fallback
       for (lev in unique(sub[[moderator_col]])) {
         lev_sub <- sub[sub[[moderator_col]] == lev, ]
         results[[length(results) + 1]] <- data.frame(
@@ -237,11 +261,13 @@ compute_marginal_means <- function(data, moderator_col, mpa_col_name) {
       }
       next
     }
-    # Ensure moderator is a factor for the formula
+    # Fit a meta-analytic model for this species x response subset.
+    # Uses cell-means parameterization (no intercept) so each coefficient
+    # directly estimates the mean effect size for that moderator level.
     sub[[moderator_col]] <- factor(sub[[moderator_col]])
     mod_formula <- as.formula(paste0("~ ", moderator_col, " - 1"))
     re_formula <- as.formula(paste0("~ 1 | ", mpa_col_name))
-    # Try rma.mv with MPA random effect; fall back to rma if needed
+    # Prefer rma.mv with MPA random effect; fall back to rma if too few MPAs
     mod <- tryCatch({
       if (nrow(sub) >= 5 && length(unique(sub[[mpa_col_name]])) >= 3) {
         metafor::rma.mv(yi = Mean, V = V, mods = mod_formula,
@@ -259,8 +285,7 @@ compute_marginal_means <- function(data, moderator_col, mpa_col_name) {
       )
     })
     if (!is.null(mod)) {
-      # With mods = ~ moderator - 1, each coefficient IS the marginal mean
-      # for that moderator level. Extract them.
+      # Extract per-level marginal means from the cell-means model
       ctbl <- coef(summary(mod))
       level_names <- gsub(paste0("^", moderator_col), "", rownames(ctbl))
       for (j in seq_len(nrow(ctbl))) {
@@ -297,7 +322,8 @@ compute_marginal_means <- function(data, moderator_col, mpa_col_name) {
   dplyr::bind_rows(results)
 }
 
-# --- Panel A: SMR vs SMCA ---
+# --- Panel A: SMR (no-take) vs SMCA (limited-take) ---
+# Filter to MPAs with known protection type and valid effect sizes
 ss_type <- ss_merged %>%
   dplyr::filter(!is.na(type), type %in% c("SMR", "SMCA"),
                 !is.na(Mean), !is.na(SE), SE > 0) %>%
@@ -309,12 +335,13 @@ if (nrow(ss_type) > 0) {
                                  levels = species_order_abbrev)
   ss_type <- ss_type %>% dplyr::filter(!is.na(Taxa_abbrev))
 
-  # Compute model-predicted marginal means per Taxa x Resp x type
+  # Compute precision-weighted marginal means per species x response x type
   type_summary <- compute_marginal_means(ss_type, "type", mpa_col)
   names(type_summary)[names(type_summary) == "level"] <- "type"
   type_summary$Taxa_abbrev <- factor(type_summary$Taxa_abbrev,
                                       levels = species_order_abbrev)
 
+  # Build Panel A: jittered individual MPA effects + black point-ranges for means
   panel_a <- ggplot(ss_type, aes(x = type, y = Mean)) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey50",
                linewidth = 0.4) +
@@ -354,6 +381,7 @@ if (nrow(ss_type) > 0) {
 }
 
 # --- Panel B: Channel Islands vs Mainland ---
+# Filter to MPAs with known location and valid effect sizes
 ss_region <- ss_merged %>%
   dplyr::filter(!is.na(Location),
                 !is.na(Mean), !is.na(SE), SE > 0) %>%
@@ -361,6 +389,7 @@ ss_region <- ss_merged %>%
 
 panel_b <- NULL
 if (nrow(ss_region) > 0 && length(unique(ss_region$Location)) >= 2) {
+  # Recode short location codes to human-readable labels
   ss_region$Region <- dplyr::case_when(
     ss_region$Location == "C"  ~ "Ch. Islands",
     ss_region$Location == "ML" ~ "Mainland",
@@ -371,12 +400,13 @@ if (nrow(ss_region) > 0 && length(unique(ss_region$Location)) >= 2) {
                                    levels = species_order_abbrev)
   ss_region <- ss_region %>% dplyr::filter(!is.na(Taxa_abbrev))
 
-  # Compute model-predicted marginal means per Taxa x Resp x Region
+  # Compute precision-weighted marginal means per species x response x region
   region_summary <- compute_marginal_means(ss_region, "Region", mpa_col)
   names(region_summary)[names(region_summary) == "level"] <- "Region"
   region_summary$Taxa_abbrev <- factor(region_summary$Taxa_abbrev,
                                         levels = species_order_abbrev)
 
+  # Build Panel B: same layout as Panel A but for geographic region
   panel_b <- ggplot(ss_region, aes(x = Region, y = Mean)) +
     geom_hline(yintercept = 0, linetype = "dashed", color = "grey50",
                linewidth = 0.4) +
@@ -415,7 +445,8 @@ if (nrow(ss_region) > 0 && length(unique(ss_region$Location)) >= 2) {
       paste(unique(region_summary$method), collapse = ", "), "\n")
 }
 
-# --- Combine panels with patchwork ---
+# --- Combine panels A and B into a single 2-row figure ---
+# Output: SI Figure S6 --> plots/fig_s09_moderator_comparisons.{pdf|png}
 if (!is.null(panel_a) && !is.null(panel_b)) {
   fig_s09 <- panel_a / panel_b +
     patchwork::plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") +
@@ -436,42 +467,55 @@ if (!is.null(panel_a) && !is.null(panel_b)) {
 
 
 # =============================================================================
-# Section C: Moderator Meta-Regression
+# Section C: Formal Moderator Meta-Regression (Table S6)
 # =============================================================================
-# Tests whether MPA type or location significantly predict effect size.
+# This section fits multilevel meta-regression models (metafor::rma.mv) to
+# formally test whether MPA protection level (SMR vs SMCA) or geographic
+# location (Channel Islands vs Mainland) significantly predicts MPA effect
+# size, after adjusting for species as a fixed-effect covariate.
 #
-# LIMITATION: Moderator analysis power
-# The moderator comparisons (MPA type, geographic region) have limited power
-# due to small and unbalanced subgroup sizes. SMR vs SMCA and Islands vs
-# Mainland comparisons should be interpreted as exploratory. The Q_M test
-# for moderator significance may be underpowered with k < 20 per subgroup.
-# Results are presented for transparency but strong conclusions about
-# moderator effects are not warranted.
+# Two models are fit:
+#   Model 1: lnRR ~ Taxa_abbrev + type      (SMR vs SMCA)
+#   Model 2: lnRR ~ Taxa_abbrev + Location  (Ch. Islands vs Mainland)
 #
-# NOTE: Moderator meta-regression pools Bio and Den effect sizes from the same MPA.
-# These are not fully independent (shared MPA environment), but the rma.mv model
-# includes (1|MPA) random effects which partially accounts for this clustering.
-# A fully multivariate approach (e.g., rma.mv with V matrix specifying within-MPA
-# covariance) would be more rigorous but requires assumptions about Bio-Den correlation.
+# Both include random effects: (1|MPA) + (1|Source)
+#
+# LIMITATION (POWER):
+# Subgroup sizes are small and unbalanced (many more SMR than SMCA sites,
+# many more Channel Islands than Mainland sites). The QM omnibus test may
+# be underpowered with k < 20 per subgroup. Interpret as exploratory.
+#
+# LIMITATION (NON-INDEPENDENCE):
+# Biomass and density effect sizes from the same MPA are pooled here (unlike
+# the primary meta-analysis which fits separate per-response models). The
+# (1|MPA) random effect partially accounts for this clustering, but SEs for
+# moderator coefficients may be somewhat underestimated. Splitting by
+# response type would further reduce already-small sample sizes.
+#
+# Outputs:
+#   tables/table_s_moderator_meta_regression.csv  (Table S6 coefficients)
+#   tables/table_s_moderator_diagnostics.csv      (Table S6 QM, heterogeneity)
+#   tables/table_s_moderator_subgroup_effects.csv (per-subgroup weighted means)
 
 cat("\n--- Moderator Meta-Regression ---\n")
 
 if (requireNamespace("metafor", quietly = TRUE)) {
 
-  # Prepare data with variance column
+  # Prepare data: require valid effect size and SE, compute sampling variance
   ss_mod <- ss_merged %>%
     dplyr::filter(!is.na(Mean), !is.na(SE), SE > 0) %>%
     dplyr::mutate(V = SE^2)
 
-  # Standardize Taxa to abbreviated names for consistent output
+  # Ensure abbreviated taxa names for consistent output column names
   if (!"Taxa_abbrev" %in% names(ss_mod) || all(is.na(ss_mod$Taxa_abbrev))) {
     ss_mod$Taxa_abbrev <- ss_mod[[taxa_col_ss]]
   }
 
-  mod_results <- list()
-  mod_diagnostics <- list()  # Model-level test statistics & heterogeneity
+  mod_results <- list()       # Will hold coefficient tables per model
+  mod_diagnostics <- list()   # Will hold QM tests and heterogeneity stats
 
-  # Helper: extract model-level diagnostics from rma / rma.mv object
+  # Helper: extract model-level diagnostics (QM omnibus test, heterogeneity)
+  # from an rma or rma.mv object for the diagnostics output table
   extract_mod_diagnostics <- function(mod, model_label, data_used, mpa_col_name) {
     diag <- data.frame(
       Model         = model_label,
@@ -485,7 +529,7 @@ if (requireNamespace("metafor", quietly = TRUE)) {
       QE_pval       = if (!is.null(mod$QEp)) mod$QEp else NA_real_,
       stringsAsFactors = FALSE
     )
-    # Heterogeneity: rma.mv stores sigma2 vector; rma stores tau2, I2, H2
+    # Heterogeneity extraction differs between rma.mv and rma objects
     if (inherits(mod, "rma.mv")) {
       # sigma2 components correspond to random effects in order specified
       diag$sigma2_MPA    <- if (length(mod$sigma2) >= 1) mod$sigma2[1] else NA_real_
@@ -510,26 +554,23 @@ if (requireNamespace("metafor", quietly = TRUE)) {
     diag
   }
 
-  # NOTE: Biomass and density effect sizes are pooled in the moderator analysis,
-  # unlike the base meta-analysis (script 09) which fits separate per-response models.
-  # This pooling increases statistical power but assumes the moderator effect
-  # (e.g., SMR vs SMCA) is consistent across response types. The model includes
-  # ~1|MPA and ~1|Source as random effects but does NOT include (1|Resp) — meaning
-  # different baselines by response type are not modeled here. Taxa_abbrev is included
-  # as a fixed-effect covariate to adjust for species-level differences, but the
-  # moderator coefficient represents an average across both biomass and density.
-  # This is a deliberate trade-off: splitting by Resp would further reduce an
-  # already-small sample size per moderator level.
+  # -----------------------------------------------------------------------
+  # Model 1: Protection level moderator (SMR vs SMCA)
+  # -----------------------------------------------------------------------
+  # Tests: after adjusting for species, do fully-protected reserves (SMR)
+  # show larger MPA effects than partially-protected conservation areas (SMCA)?
   #
-  # CAUTION: Pooling Bio/Den inflates effective sample size. Standard errors for
-  # moderator coefficients may be underestimated. See BUG_BASH_REPORT.md B11.
-  # A more rigorous approach would use ~1|MPA:Resp or separate Bio/Den models.
+  # Model: lnRR ~ Taxa_abbrev + type, random = (1|MPA) + (1|Source)
+  # The "type" coefficient is the SMR-SMCA contrast (SMR is the reference
+  # level by default in R's alphabetical factor ordering, so SMCA vs SMR).
+  # -----------------------------------------------------------------------
 
-  # --- Model 1: Type moderator (SMR vs SMCA) ---
+  # Keep only observations from MPAs with known SMR or SMCA designation
   ss_type_mod <- ss_mod %>%
     dplyr::filter(!is.na(type), type %in% c("SMR", "SMCA"))
 
   if (nrow(ss_type_mod) >= 10) {
+    # Fit multilevel meta-regression; fall back to simpler rma if rma.mv fails
     re_mpa <- as.formula(paste0("~1 | ", mpa_col))
     mod_type <- tryCatch({
       metafor::rma.mv(
@@ -551,6 +592,7 @@ if (requireNamespace("metafor", quietly = TRUE)) {
     })
 
     if (!is.null(mod_type)) {
+      # Extract coefficient table for the moderator regression output
       type_coefs <- data.frame(
         Model = "Type (SMR vs SMCA)",
         Term = rownames(coef(summary(mod_type))),
@@ -561,10 +603,9 @@ if (requireNamespace("metafor", quietly = TRUE)) {
       mod_diagnostics[["type"]] <- extract_mod_diagnostics(
         mod_type, "Type (SMR vs SMCA)", ss_type_mod, mpa_col
       )
-      # QM tests the omnibus null that all moderator coefficients = 0.
-      # For a single binary moderator (with taxa covariates), QM tests all
-      # fixed effects jointly. The specific type coefficient p-value (below)
-      # isolates the SMR vs SMCA contrast, adjusting for taxa.
+      # QM = omnibus test that all fixed-effect coefficients = 0 (jointly).
+      # The individual "type" coefficient p-value (below) isolates the
+      # SMR-vs-SMCA contrast after adjusting for species differences.
       cat("  Type moderator (omnibus): QM = ",
           round(mod_type$QM, 2), ", p = ",
           round(mod_type$QMp, 4), "\n")
@@ -583,11 +624,22 @@ if (requireNamespace("metafor", quietly = TRUE)) {
         nrow(ss_type_mod), ")\n")
   }
 
-  # --- Model 2: Location moderator (mainland vs CI) ---
+  # -----------------------------------------------------------------------
+  # Model 2: Geographic location moderator (Channel Islands vs Mainland)
+  # -----------------------------------------------------------------------
+  # Tests: after adjusting for species, do Channel Islands MPAs show
+  # different effect sizes than mainland MPAs?
+  #
+  # Model: lnRR ~ Taxa_abbrev + Location, random = (1|MPA) + (1|Source)
+  # Location is coded as "C" (Channel Islands) and "ML" (Mainland).
+  # -----------------------------------------------------------------------
+
+  # Keep only observations with known geographic location
   ss_loc_mod <- ss_mod %>%
     dplyr::filter(!is.na(Location))
 
   if (nrow(ss_loc_mod) >= 10 && length(unique(ss_loc_mod$Location)) >= 2) {
+    # Fit multilevel meta-regression; fall back to simpler rma if rma.mv fails
     re_mpa <- as.formula(paste0("~1 | ", mpa_col))
     mod_loc <- tryCatch({
       metafor::rma.mv(
@@ -609,6 +661,7 @@ if (requireNamespace("metafor", quietly = TRUE)) {
     })
 
     if (!is.null(mod_loc)) {
+      # Extract coefficient table for the moderator regression output
       loc_coefs <- data.frame(
         Model = "Location (ML vs CI)",
         Term = rownames(coef(summary(mod_loc))),
@@ -619,10 +672,9 @@ if (requireNamespace("metafor", quietly = TRUE)) {
       mod_diagnostics[["location"]] <- extract_mod_diagnostics(
         mod_loc, "Location (ML vs CI)", ss_loc_mod, mpa_col
       )
-      # QM tests the omnibus null that all moderator coefficients = 0.
-      # For a single binary moderator (with taxa covariates), QM tests all
-      # fixed effects jointly. The specific Location coefficient p-value
-      # (below) isolates the mainland vs Ch. Islands contrast, adjusting for taxa.
+      # QM = omnibus test. The individual "Location" coefficient p-value
+      # (below) isolates the Islands-vs-Mainland contrast after adjusting
+      # for species differences.
       cat("  Location moderator (omnibus): QM = ",
           round(mod_loc$QM, 2), ", p = ",
           round(mod_loc$QMp, 4), "\n")
@@ -641,10 +693,11 @@ if (requireNamespace("metafor", quietly = TRUE)) {
         nrow(ss_loc_mod), ")\n")
   }
 
-  # --- Save combined moderator coefficient table ---
+  # --- Save combined moderator coefficient table (Table S6 coefficients) ---
   if (length(mod_results) > 0) {
     mod_table <- dplyr::bind_rows(mod_results)
     rownames(mod_table) <- NULL
+    # Output: Table S6 --> tables/table_s_moderator_meta_regression.csv
     write.csv(mod_table,
               here::here("tables", "table_s_moderator_meta_regression.csv"),
               row.names = FALSE)
@@ -653,7 +706,7 @@ if (requireNamespace("metafor", quietly = TRUE)) {
     cat("  WARNING: No moderator models converged.\n")
   }
 
-  # --- Save model-level diagnostics (QM, heterogeneity, sample sizes) ---
+  # --- Save model-level diagnostics (Table S6 QM tests, heterogeneity) ---
   if (length(mod_diagnostics) > 0) {
     diag_table <- dplyr::bind_rows(mod_diagnostics)
     rownames(diag_table) <- NULL
@@ -663,8 +716,10 @@ if (requireNamespace("metafor", quietly = TRUE)) {
     cat("  Saved: tables/table_s_moderator_diagnostics.csv\n")
   }
 
-  # --- Save subgroup sample sizes and effect sizes ---
-  # These correspond to the summary statistics plotted in Fig S9
+  # --- Save per-subgroup weighted means and sample sizes ---
+  # These are the summary statistics underlying Fig S9: for each species x
+  # response x subgroup, compute the inverse-variance weighted mean lnRR,
+  # its SE, 95% CI, and back-transformed RR.
   subgroup_rows <- list()
 
   # Type subgroups (SMR vs SMCA)
@@ -674,15 +729,18 @@ if (requireNamespace("metafor", quietly = TRUE)) {
       dplyr::summarise(
         n_obs      = dplyr::n(),
         n_MPAs     = length(unique(.data[[mpa_col]])),
+        # Inverse-variance weighted mean effect size
         mean_lnRR  = {
           w <- 1 / (as.numeric(SE)^2)
           weighted.mean(as.numeric(Mean), w, na.rm = TRUE)
         },
         sd_lnRR    = sd(as.numeric(Mean), na.rm = TRUE),
+        # SE of the weighted mean
         se_lnRR    = {
           w <- 1 / (as.numeric(SE)^2)
           sqrt(1 / sum(w, na.rm = TRUE))
         },
+        # 95% CI using t-distribution (small samples)
         ci_lo_lnRR = {
           w <- 1 / (as.numeric(SE)^2)
           wm <- weighted.mean(as.numeric(Mean), w, na.rm = TRUE)
@@ -695,6 +753,7 @@ if (requireNamespace("metafor", quietly = TRUE)) {
           wse <- sqrt(1 / sum(w, na.rm = TRUE))
           wm + qt(0.975, dplyr::n() - 1) * wse
         },
+        # Back-transformed response ratio
         mean_RR    = {
           w <- 1 / (as.numeric(SE)^2)
           exp(weighted.mean(as.numeric(Mean), w, na.rm = TRUE))
@@ -710,6 +769,7 @@ if (requireNamespace("metafor", quietly = TRUE)) {
   # Location subgroups (Channel Islands vs Mainland)
   if (exists("ss_loc_mod") && nrow(ss_loc_mod) >= 10) {
     loc_subgroup <- ss_loc_mod %>%
+      # Recode short location codes to readable labels
       dplyr::mutate(Region = dplyr::case_when(
         Location == "C"  ~ "Ch. Islands",
         Location == "ML" ~ "Mainland",
@@ -719,15 +779,18 @@ if (requireNamespace("metafor", quietly = TRUE)) {
       dplyr::summarise(
         n_obs      = dplyr::n(),
         n_MPAs     = length(unique(.data[[mpa_col]])),
+        # Inverse-variance weighted mean effect size
         mean_lnRR  = {
           w <- 1 / (as.numeric(SE)^2)
           weighted.mean(as.numeric(Mean), w, na.rm = TRUE)
         },
         sd_lnRR    = sd(as.numeric(Mean), na.rm = TRUE),
+        # SE of the weighted mean
         se_lnRR    = {
           w <- 1 / (as.numeric(SE)^2)
           sqrt(1 / sum(w, na.rm = TRUE))
         },
+        # 95% CI using t-distribution (small samples)
         ci_lo_lnRR = {
           w <- 1 / (as.numeric(SE)^2)
           wm <- weighted.mean(as.numeric(Mean), w, na.rm = TRUE)
@@ -740,6 +803,7 @@ if (requireNamespace("metafor", quietly = TRUE)) {
           wse <- sqrt(1 / sum(w, na.rm = TRUE))
           wm + qt(0.975, dplyr::n() - 1) * wse
         },
+        # Back-transformed response ratio
         mean_RR    = {
           w <- 1 / (as.numeric(SE)^2)
           exp(weighted.mean(as.numeric(Mean), w, na.rm = TRUE))
@@ -754,6 +818,7 @@ if (requireNamespace("metafor", quietly = TRUE)) {
 
   if (length(subgroup_rows) > 0) {
     subgroup_table <- dplyr::bind_rows(subgroup_rows)
+    # Output: tables/table_s_moderator_subgroup_effects.csv
     write.csv(subgroup_table,
               here::here("tables", "table_s_moderator_subgroup_effects.csv"),
               row.names = FALSE)

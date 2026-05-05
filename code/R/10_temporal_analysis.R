@@ -1,18 +1,37 @@
 # =============================================================================
 # 10_temporal_analysis.R
 # =============================================================================
-# PURPOSE:
-#   Supplemental temporal dynamics analysis for the Conservation Letters manuscript.
-#   Explores how MPA effects develop over time, complementing the main analysis
-#   which standardizes effect sizes at t=11 years.
 #
-# ANALYSES:
-#   1. Species-level GAM recovery curves with MPA-level spaghetti
-#   2. Temporal meta-regression (lmer with random slopes)
-#   2b. AR1 temporal autocorrelation sensitivity analysis (nlme::lme)
-#   3. Trophic cascade phase portrait
-#   4. [DROPPED] Triptych space-time heatmap (disabled; redundant with S3+S6)
-#   5. Rate-of-change comparison and cascade consistency scores
+# PURPOSE:
+#   The main meta-analysis (09_meta_analysis.R) estimates a single effect size
+#   per species per MPA, evaluated at a fixed time point (t = 11 years).
+#   This script asks the follow-up question: HOW do MPA effects develop over
+#   time? Do predators recover first and urchins decline later, as a trophic
+#   cascade would predict? Or do all species respond simultaneously?
+#
+#   These analyses are supplemental to the main manuscript results. They
+#   produce SI figures and tables that characterize recovery trajectories,
+#   test for temporal autocorrelation, and evaluate whether the cascade
+#   sequence is consistent across individual MPAs.
+#
+# ECOLOGICAL CONTEXT:
+#   If MPAs restore trophic cascades, we expect a temporal sequence:
+#     1. Predators (lobster, sheephead) increase first after fishing stops
+#     2. Urchins (purple, red) decline as predation pressure builds
+#     3. Kelp (giant kelp) recovers as grazing pressure eases
+#   This script tests whether that sequence is visible in the data.
+#
+# ANALYSES (in order):
+#   Section B:  GAM recovery curves. Smooth trajectories per species (SI Fig S3)
+#   Section C:  Temporal meta-regression. lmer models testing whether species
+#               differ in their rate of change over time (SI Table S4)
+#   Section C1b: Response-specific lmer. Separate models for biomass and density
+#   Section C2: AR1 autocorrelation sensitivity. Checks whether temporal
+#               correlation inflates significance of the lmer results (SI Table S7)
+#   Section D:  Phase portraits. 2D trajectories showing how pairs of species
+#               co-evolve over time (SI Fig S4)
+#   Analysis 4: [DROPPED] Triptych space-time heatmap (redundant with S3+S6)
+#   Analysis 5: Per-MPA slope comparison and cascade consistency (SI Fig S5)
 #
 # INPUTS:
 #   - All.RR.sub.trans: Annual log response ratios (from 03_load_harmonized_data.R)
@@ -22,28 +41,44 @@
 #   - Color palette objects from 00b_color_palette.R
 #
 # OUTPUTS:
-#   Figures: fig_s04_recovery_curves, fig_s05_cascade_phase,
-#            fig_s06_slope_comparison (heatmap dropped)
-#   Tables:  table_s_temporal_meta_regression.csv      — pooled lmer fixed effects
-#            table_s_temporal_meta_regression_bio.csv   — biomass lmer fixed effects
-#            table_s_temporal_meta_regression_den.csv   — density lmer fixed effects
-#            table_s_lmer_model_fit.csv                 — model-level stats (AIC, BIC, R2, var components)
-#            table_s_species_slopes.csv                 — per-species derived slopes with SE & 95% CI
-#            table_s_gam_linearity_diagnostics.csv      — GAM EDF and non-linearity classification
-#            table_s_ar1_sensitivity.csv                — AR1 vs lmer slope/SE comparison (or DW only)
-#            table_s_temporal_meta_regression_ar1.csv   — AR1 fixed effects (when AR1 converges)
-#            table_s_cascade_consistency.csv            — per-MPA cascade direction consistency
-#            table_s_per_mpa_slopes.csv                 — per-MPA OLS slopes by species
-#            table_s_slope_summary_by_species.csv       — species-level mean slopes across MPAs
-#            table_s_phase_portrait_yearly_means.csv    — yearly mean lnRR by species (for phase plots)
-#            table_s_phase_portrait_correlations.csv    — pairwise species correlations from phase portraits
+#   Figures:
+#     fig_s04_recovery_curves.pdf    : SI Fig S3, GAM smooth + lmer overlay per species
+#     fig_s05_cascade_phase.pdf      : SI Fig S4, species-pair phase portraits
+#     fig_s06_slope_comparison.pdf   : SI Fig S5, per-MPA slopes + cascade consistency
+#
+#   Tables (all written to tables/):
+#     table_s_temporal_meta_regression.csv      : SI Table S4, pooled lmer fixed effects
+#     table_s_temporal_meta_regression_bio.csv   : biomass-only lmer fixed effects
+#     table_s_temporal_meta_regression_den.csv   : density-only lmer fixed effects
+#     table_s_lmer_model_fit.csv                 : model fit stats (AIC, BIC, R2, variance)
+#     table_s_species_slopes.csv                 : per-species slopes with SE & 95% CI
+#     table_s_lmer_prediction_params.csv         : prediction parameters for Fig 4/S10 CI ribbons
+#     table_s_gam_linearity_diagnostics.csv      : SI Table S7, GAM EDF & linearity test
+#     table_s_ar1_sensitivity.csv                : SI Table S7, AR1 vs lmer SE comparison
+#     table_s_temporal_meta_regression_ar1.csv   : AR1 fixed effects (when AR1 converges)
+#     table_s_cascade_consistency.csv            : SI Table S5, per-MPA cascade direction scores
+#     table_s_per_mpa_slopes.csv                 : per-MPA OLS slopes by species
+#     table_s_slope_summary_by_species.csv       : species-level mean slopes across MPAs
+#     table_s_phase_portrait_yearly_means.csv    : yearly mean lnRR for phase plots
+#     table_s_phase_portrait_correlations.csv    : pairwise species correlations
+#
+#   Diagnostics (written to outputs/):
+#     lmer_residual_diagnostics.csv  : residuals for downstream SI diagnostic plots
+#     lmer_ranef_diagnostics.csv     : random effect BLUPs for downstream plots
 #
 # AUTHORS: Emily Donham & Adrian Stier
 # =============================================================================
 
 
 # =============================================================================
-# Section A: Setup
+# Section A: Setup. Load data, define species ordering, build working dataset
+# =============================================================================
+# This section does three things:
+#   1. Checks that prerequisite scripts (00-09) have already been run
+#   2. Defines the canonical trophic order for all five focal species
+#   3. Builds the "temporal_after" working dataset: all annual log response
+#      ratios (lnRR) from the After period (time >= 0, where time = years
+#      since each MPA was established)
 # =============================================================================
 
 dir.create(here::here("plots"), showWarnings = FALSE)
@@ -54,13 +89,14 @@ dir.create(here::here("plots"), showWarnings = FALSE)
 if (!exists("RENDER_FIGURES", envir = .GlobalEnv)) {
   RENDER_FIGURES <- "all"
 }
-# --- Figure dimension constants (Conservation Letters supplemental) ---
-FIG_S04_DIMS <- c(w = 17.8, h = 25)    # Recovery curves: 5 species × 2 response types
-FIG_S05_DIMS <- c(w = 17, h = 16)      # Phase portrait: 4-panel (2x2)
-# FIG_S06_DIMS <- c(w = 17.8, h = 28)    # Triptych heatmap: 5 species panels  [DROPPED]
-FIG_S06_DIMS <- c(w = 17, h = 12)      # Slope comparison
 
-# --- Validate required data objects ---
+# --- Figure dimension constants (Conservation Letters supplemental, in cm) ---
+FIG_S04_DIMS <- c(w = 17.8, h = 25)    # Recovery curves: 5 species x 2 response types
+FIG_S05_DIMS <- c(w = 17, h = 16)      # Phase portrait: 4-panel (2x2)
+# FIG_S06_DIMS <- c(w = 17.8, h = 28)  # Triptych heatmap: 5 species panels [DROPPED]
+FIG_S06_DIMS <- c(w = 17, h = 12)      # Slope comparison + cascade consistency
+
+# --- Validate that prerequisite scripts have been run ---
 required_objects <- c("All.RR.sub.trans", "SumStats.Final", "Site",
                       "trophic_assignment", "col_taxa", "theme_mpa")
 missing_objects <- required_objects[
@@ -71,7 +107,8 @@ if (length(missing_objects) > 0) {
        "\nPlease run scripts 00-09 first.")
 }
 
-# --- Detect taxa column name in All.RR.sub.trans ---
+# --- Detect the column name that holds species/taxa identity ---
+# Historical data used "y"; current harmonized data uses "Taxa"
 if ("y" %in% names(All.RR.sub.trans)) {
   taxa_col <- "y"
 } else if ("Taxa" %in% names(All.RR.sub.trans)) {
@@ -84,7 +121,10 @@ if ("y" %in% names(All.RR.sub.trans)) {
 
 cat("  taxa_col detected as: '", taxa_col, "'\n", sep = "")
 
-# --- Full-name to abbreviated-name mapping (used across all analyses) ---
+
+# ---- Species name mappings and trophic ordering ----
+
+# Full scientific name -> abbreviated name (for axis labels and legends)
 full_to_abbrev <- c(
   "Macrocystis pyrifera"          = "M. pyrifera",
   "Mesocentrotus franciscanus"    = "M. franciscanus",
@@ -93,21 +133,25 @@ full_to_abbrev <- c(
   "Semicossyphus pulcher"         = "S. pulcher"
 )
 
-# Species-level colors keyed by full name
+# Species-level colors keyed by full name (from centralized palette)
 species_colors_full <- setNames(
   col_taxa[full_to_abbrev],
   names(full_to_abbrev)
 )
 
-# Ordered species list: predators → urchins → kelp
+# Canonical trophic order: top predators first, primary producer last.
+# This ordering is used for all facets, factor levels, and figure panels
+# throughout the script so that species always appear in the same sequence.
 species_order_full <- c(
-  "Panulirus interruptus", "Semicossyphus pulcher",
-  "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus",
-  "Macrocystis pyrifera"
+  "Panulirus interruptus", "Semicossyphus pulcher",       # predators
+  "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus",  # urchins
+  "Macrocystis pyrifera"                                          # kelp
 )
 species_order_abbrev <- full_to_abbrev[species_order_full]
 
-# Expected direction for cascade consistency (per species)
+# Expected direction of MPA effect under the trophic cascade hypothesis:
+#   Predators and kelp should INCREASE inside MPAs (positive lnRR slope)
+#   Urchins should DECREASE inside MPAs (negative lnRR slope)
 expected_direction <- c(
   "Panulirus interruptus"         = "positive",
   "Semicossyphus pulcher"         = "positive",
@@ -116,24 +160,30 @@ expected_direction <- c(
   "Macrocystis pyrifera"          = "positive"
 )
 
-# --- Build temporal working dataset (After period only) ---
-# NOTE: This dataset includes both biomass (Bio) and density (Den) response
-# types. The main meta-analysis (09_meta_analysis.R) runs separate models for
-# Bio and Den because they are non-independent measures of the same populations.
-# NOTE: The pooled model does not include resp as either a fixed or random
-# effect (k=2 levels is too few for a random effect, and the separate
-# response-type models in Section C1b provide properly stratified analysis).
-# Bio/Den non-independence is a known limitation documented in 09_meta_analysis.R.
-# For descriptive figures (GAMs, phase portraits), we note that both response
-# types are pooled.
+
+# ---- Build the temporal working dataset ----
+
+# Start with All.RR.sub.trans (annual log response ratios for all MPA-species
+# combinations). Filter to the After period only (time >= 0 = post-MPA
+# establishment). Add species metadata columns for downstream analyses.
+#
+# IMPORTANT NOTE ON POOLING: This dataset includes both biomass (Bio) and
+# density (Den) response types pooled together. Bio and Den are measured on
+# the same individuals, so they are not independent. The pooled lmer model
+# (Section C) does not include resp as a random effect because k=2 levels
+# is too few. Instead, Section C1b fits separate biomass-only and density-only
+# models to handle this non-independence properly.
 temporal_after <- All.RR.sub.trans %>%
+  # Keep only post-MPA observations
   dplyr::filter(BA == "After", time >= 0) %>%
+  # Add trophic level assignment and standardized species columns
   dplyr::mutate(
     Trophic_Level = trophic_assignment[.data[[taxa_col]]],
     Species = .data[[taxa_col]],
     Species_abbrev = full_to_abbrev[.data[[taxa_col]]],
     time = as.numeric(time)
   ) %>%
+  # Drop any species without a trophic assignment (safety filter)
   dplyr::filter(!is.na(Trophic_Level))
 
 cat(sprintf("  Temporal dataset: %d observations, %d MPAs, %d species\n",
@@ -144,30 +194,64 @@ cat(sprintf("  Temporal dataset: %d observations, %d MPAs, %d species\n",
 cat("=== Temporal analysis setup complete ===\n")
 
 
+# ---------------------------------------------------------------------------
+# Helper: lmerTest-aware summary with graceful fallback.
+# Some lme4 fits (especially singular fits or those with custom optCtrl)
+# break lmerTest::as_lmerModLmerTest("Unable to extract deviance function
+# from model fit"). When that happens we fall back to plain lme4 summary,
+# which loses Satterthwaite df/p-values but keeps the fixed-effect
+# estimates and standard errors. The downstream code already guards on
+# `if ("p_value" %in% names(...))` for the missing columns.
+# ---------------------------------------------------------------------------
+safe_lmer_summary <- function(lmer_obj) {
+  if (requireNamespace("lmerTest", quietly = TRUE)) {
+    tryCatch(
+      summary(lmerTest::as_lmerModLmerTest(lmer_obj)),
+      error = function(e) {
+        cat("  NOTE: lmerTest::as_lmerModLmerTest() failed (",
+            conditionMessage(e), "); using plain lme4 summary (no df/p).\n",
+            sep = "")
+        summary(lmer_obj)
+      }
+    )
+  } else {
+    summary(lmer_obj)
+  }
+}
+
+
 # =============================================================================
-# Section B: Analysis 1 -- Species-Level GAM Recovery Curves
+# Section B: GAM Recovery Curves. How does each species recover over time?
 # =============================================================================
-# Figure S4: Individual species recovery trajectories over time since MPA
-# implementation. Faint spaghetti lines show MPA-level lnRR trajectories;
-# bold GAM smooth reveals the population-level trend.
+# WHAT: For each species, fit a smooth GAM curve to the annual lnRR values
+#   across all MPAs. This reveals whether recovery is linear, accelerating,
+#   or plateauing. Faint "spaghetti" lines show individual MPA trajectories.
+#   The bold GAM curve shows the population-level average trend.
+#
+# WHY: The main meta-analysis gives a single effect size per species. This
+#   figure shows the SHAPE of recovery. Is the MPA effect still growing at
+#   year 15, or has it leveled off? Separate panels for biomass and density
+#   let you see whether both metrics tell the same story.
+#
+# OUTPUT: SI Fig S3 (disk file: fig_s04_recovery_curves.pdf)
+#   9-panel figure: 5 species x 2 response types (minus kelp density = no data)
+# =============================================================================
 
 if (should_render("fig_s04")) {
 cat("\n--- Figure S4: Recovery Curves ---\n")
 
-# Require mgcv for GAM fitting
 if (!requireNamespace("mgcv", quietly = TRUE)) {
   stop("Package 'mgcv' is required for GAM recovery curves. ",
        "Install with: install.packages('mgcv')")
 }
 
-# Species present in the temporal data
+# Which species are present in the temporal data?
 species_in_data <- unique(temporal_after[[taxa_col]])
 cat(sprintf("  Species in temporal data: %s\n",
             paste(species_in_data, collapse = ", ")))
 
 # Build color mapping from full species names
 species_colors <- species_colors_full[species_in_data]
-# Fill in any unmatched species with a neutral grey
 missing_color <- is.na(species_colors)
 if (any(missing_color)) {
   species_colors[missing_color] <- "grey40"
@@ -175,15 +259,16 @@ if (any(missing_color)) {
           paste(species_in_data[missing_color], collapse = ", "))
 }
 
-# Factor taxa column in canonical trophic order for consistent facet ordering
+# Set factor levels in canonical trophic order for consistent facet ordering
 temporal_after[[taxa_col]] <- factor(
   temporal_after[[taxa_col]],
   levels = species_order_full
 )
 
-# Create labelled copy for SI Fig S3 (disk: fig_s04) facet strips
-# Cap at t<=15 to match Figure 4 (main text) time range
-# Keep resp column for Bio/Den faceting
+# Prepare the plotting dataset:
+# - Cap at t <= 15 years to match Figure 4 (main text) time range
+# - Split into Biomass and Density panels
+# - Drop M. pyrifera density (kelp has no density metric. only stipe/frond counts)
 s03_data <- temporal_after %>%
   dplyr::filter(time <= 15, !is.na(resp), resp %in% c("Bio", "Den")) %>%
   dplyr::mutate(
@@ -207,7 +292,13 @@ s03_data$resp_label <- factor(s03_data$resp_label, levels = c("Biomass", "Densit
 cat(sprintf("  SI Fig S3 (fig_s04) data: %d obs, species x resp combinations:\n", nrow(s03_data)))
 cat("  ", paste(unique(paste(s03_data$Species, s03_data$resp_label)), collapse = ", "), "\n")
 
-# --- Load response-specific lmer slopes for linear overlay ---
+# ---- Load lmer slopes to overlay as dashed lines on the GAM curves ----
+# The GAM shows the flexible (potentially nonlinear) trend. The lmer model
+# (fit in Section C1b below) assumes a linear trend. Overlaying both on the
+# same plot lets the reader judge whether the linear assumption is reasonable.
+# On the first pipeline run, these CSVs do not yet exist; the overlay is
+# skipped gracefully and appears on subsequent runs.
+
 # Helper: extract per-species intercepts and slopes from a response-specific CSV
 build_lmer_preds <- function(csv_path, sp_order, resp_val) {
   if (!file.exists(csv_path)) {
@@ -247,9 +338,7 @@ build_lmer_preds <- function(csv_path, sp_order, resp_val) {
   pred_df
 }
 
-# Build predictions from response-specific CSVs
-# NOTE: On first pipeline run, these CSVs don't exist yet (written in Section C1b below).
-# build_lmer_preds() returns NULL gracefully; lmer overlay will appear on subsequent runs.
+# Build prediction lines from response-specific lmer coefficient CSVs
 bio_csv <- here::here("tables", "table_s_temporal_meta_regression_bio.csv")
 den_csv <- here::here("tables", "table_s_temporal_meta_regression_den.csv")
 density_species <- species_order_full[species_order_full != "Macrocystis pyrifera"]
@@ -270,7 +359,7 @@ if (!is.null(lmer_pred_df) && nrow(lmer_pred_df) > 0) {
   cat("  NOTE: No response-specific lmer CSVs found; skipping linear overlay\n")
 }
 
-# Create combined facet label: "Species — Response" for facet_wrap
+# Create combined facet label: "Species - Response" for facet_wrap
 s03_data <- s03_data %>%
   dplyr::mutate(
     facet_label = paste0(.data[[taxa_col]], " \u2014 ", resp_label)
@@ -296,13 +385,18 @@ if (!is.null(lmer_pred_df)) {
     )
 }
 
-# Construct the faceted figure: 2-column facet_wrap (no empty panel)
+# ---- Construct the faceted recovery curves figure ----
+# Each panel = one species x one response type (biomass or density).
+# Three visual layers per panel:
+#   1. Faint colored lines = individual MPA trajectories ("spaghetti")
+#   2. Bold colored curve + ribbon = GAM smooth with 95% CI (flexible fit)
+#   3. Dashed black line = lmer linear prediction (parametric fit)
 fig_s03 <- ggplot(s03_data,
                   aes(x = time, y = lnDiff)) +
   # Reference line at RR = 1 (no MPA effect)
   geom_hline(yintercept = 0, linetype = "dashed", color = "grey30",
              linewidth = 0.4) +
-  # Individual MPA trajectories (spaghetti) — species-colored
+  # Individual MPA trajectories (spaghetti). Species-colored
   geom_line(aes(group = interaction(CA_MPA_Name_Short, resp),
                 color = .data[[taxa_col]]),
             alpha = 0.28, linewidth = 0.5) +
@@ -343,7 +437,8 @@ fig_s03 <- ggplot(s03_data,
     legend.margin = margin(t = 0)
   )
 
-# Manual legend via cowplot
+# ---- Manual legend and annotation ----
+# Build a custom legend strip showing all three line types
 legend_grob <- cowplot::ggdraw() +
   cowplot::draw_line(x = c(0.06, 0.14), y = c(0.5, 0.5),
                      color = "grey30", linewidth = 1.2) +
@@ -358,13 +453,13 @@ legend_grob <- cowplot::ggdraw() +
   cowplot::draw_label("lmer prediction", x = 0.78, y = 0.5,
                       size = 8, fontfamily = "Helvetica", hjust = 0)
 
-# Placeholder for empty bottom-right cell (M. pyrifera has no density data)
+# Note for the empty bottom-right cell (M. pyrifera has no density data)
 note_grob <- cowplot::ggdraw() +
   cowplot::draw_label("No density metric\nfor M. pyrifera",
                       x = 0.5, y = 0.5, size = 8, color = "grey50",
                       fontface = "italic", fontfamily = "Helvetica")
 
-# Combine main plot with note in bottom-right via inset
+# Overlay the "no density" note onto the empty bottom-right panel
 fig_s03_annotated <- cowplot::ggdraw(fig_s03) +
   cowplot::draw_plot(note_grob, x = 0.55, y = 0.035, width = 0.4, height = 0.1)
 
@@ -372,15 +467,24 @@ fig_s03_final <- cowplot::plot_grid(
   fig_s03_annotated, legend_grob, ncol = 1, rel_heights = c(1, 0.03)
 )
 
+# Save SI Fig S3 (disk: fig_s04_recovery_curves)
 save_fig(fig_s03_final, "fig_s04_recovery_curves",
          w = FIG_S04_DIMS["w"], h = FIG_S04_DIMS["h"])
 
 } # end fig_s04
 
-# --- GAM non-linearity diagnostics (per species per response type) ---
-# NOTE: This table (Table S7) is generated unconditionally — it should always
-# be written regardless of whether fig_s04 is rendered, since it is a
-# standalone supplemental table used in the manuscript.
+
+# ---- GAM Non-Linearity Diagnostics (SI Table S7, partial) ----
+# WHAT: For each species x response type, fit a standalone GAM and report
+#   the effective degrees of freedom (EDF). EDF near 1 means the relationship
+#   is essentially linear; EDF > 1.5 means there is meaningful curvature.
+#
+# WHY: This table justifies the use of linear lmer models in Section C.
+#   If EDF is close to 1 for most species, the linear assumption is reasonable
+#   and the lmer slopes are trustworthy summaries of the temporal trend.
+#
+# NOTE: This table is generated unconditionally (not gated by should_render)
+#   because it is a standalone supplemental table cited in the manuscript.
 cat("\n  GAM EDF diagnostics (non-linearity test, per species x response):\n")
 
 if (!requireNamespace("mgcv", quietly = TRUE)) {
@@ -406,6 +510,7 @@ for (sp in gam_diag_species) {
     result_key <- paste(sp, rt, sep = "_")
 
     if (nrow(sp_rt_data) >= 10) {
+      # Fit GAM: lnRR as a smooth function of time (k=5 allows moderate flexibility)
       gam_fit <- tryCatch(
         mgcv::gam(lnDiff ~ s(time, k = 5), data = sp_rt_data),
         error = function(e) NULL
@@ -435,7 +540,7 @@ for (sp in gam_diag_species) {
   }
 }
 
-# Save EDF diagnostics to CSV
+# Save EDF diagnostics to CSV -> contributes to SI Table S7
 if (length(edf_results) > 0) {
   edf_table <- do.call(rbind, edf_results)
   edf_csv_path <- here::here("tables", "table_s_gam_linearity_diagnostics.csv")
@@ -447,12 +552,27 @@ if (length(edf_results) > 0) {
 
 
 # =============================================================================
-# Section C: Analysis 2 -- Temporal Meta-Regression (Species-Level)
+# Section C: Temporal Meta-Regression. Do species recover at different rates?
 # =============================================================================
-# Fits a multilevel model to test whether individual species differ in their
-# rate of change (slope) over time since MPA implementation.
-# Uses species (5 levels) rather than trophic level to preserve the distinct
-# recovery trajectories of each predator and urchin species.
+# WHAT: Fit a multilevel linear model (lmer) with Species x time interaction
+#   to test whether the five focal species have different rates of change in
+#   lnRR over time since MPA establishment.
+#
+# WHY: The main meta-analysis gives an average effect size at a single time
+#   point. Here we ask whether the MPA effect is GROWING (positive slope) or
+#   SHRINKING (negative slope) over time, and whether those rates differ
+#   among species, as the trophic cascade hypothesis predicts.
+#
+# MODEL STRUCTURE:
+#   lnRR ~ Species * time + (1 + time | MPA) + (1 | source)
+#   - Fixed effects: Species-specific intercepts and slopes
+#   - Random slopes: each MPA can have its own rate of change
+#   - Random intercept for data source (PISCO, KFM, LTER)
+#   If the random-slopes model fails to converge, it falls back to
+#   random-intercepts only.
+#
+# OUTPUT: SI Table S4 (table_s_temporal_meta_regression.csv)
+# =============================================================================
 
 cat("\n--- Temporal Meta-Regression (Species-Level) ---\n")
 
@@ -461,10 +581,14 @@ if (!requireNamespace("lme4", quietly = TRUE)) {
 }
 
 # ---------------------------------------------------------------------------
-# Helper: extract model-level fit statistics and per-species derived slopes
-# from a fitted lmer model. Returns a list with two data.frames:
-#   $fit_stats  — one-row summary (AIC, BIC, logLik, R2, variance, N, etc.)
-#   $species_slopes — per-species total slopes with proper SEs and 95% CIs
+# Helper function: extract model diagnostics from a fitted lmer model.
+# Returns a list with two data.frames:
+#   $fit_stats      : one-row summary (AIC, BIC, R2, variance components, etc.)
+#   $species_slopes : per-species total slopes with proper SEs and 95% CIs
+#
+# "Total slope" for a non-reference species = reference slope + interaction.
+# The SE of this sum requires the variance-covariance matrix (not just adding
+# SEs), because Var(a + b) = Var(a) + Var(b) + 2*Cov(a,b).
 # ---------------------------------------------------------------------------
 extract_lmer_diagnostics <- function(lmer_obj, species_levels, full_to_abbrev,
                                       model_label = "pooled",
@@ -517,12 +641,13 @@ extract_lmer_diagnostics <- function(lmer_obj, species_levels, full_to_abbrev,
   )
 
   # --- Per-species derived slopes with proper SEs ---
-  # Get fixed effects with Satterthwaite p-values if available
-  if (requireNamespace("lmerTest", quietly = TRUE)) {
-    sm <- summary(lmerTest::as_lmerModLmerTest(lmer_obj))
-  } else {
-    sm <- summary(lmer_obj)
-  }
+  # The lmer model parameterizes slopes as: reference species slope + interaction.
+  # For non-reference species, the total slope = beta_time + beta_Species:time.
+  # The SE of this sum comes from the vcov matrix (not just sqrt of summed variances).
+  # Get fixed effects with Satterthwaite p-values if available (degrades to
+  # plain lme4 summary if lmerTest cannot reconstruct the deviance. See
+  # safe_lmer_summary helper near the top of this file).
+  sm <- safe_lmer_summary(lmer_obj)
   fe <- as.data.frame(coef(sm))
   fe$Term <- rownames(fe)
   if ("Pr(>|t|)" %in% names(fe)) names(fe)[names(fe) == "Pr(>|t|)"] <- "p_value"
@@ -580,18 +705,25 @@ extract_lmer_diagnostics <- function(lmer_obj, species_levels, full_to_abbrev,
   list(fit_stats = fit_stats, species_slopes = species_slopes)
 }
 
-# Factor species for interpretable contrasts (reference = first predator)
+# ---- Fit the pooled temporal meta-regression model ----
+
+# Set P. interruptus (spiny lobster) as reference level. All other species'
+# slopes are estimated as differences from lobster's slope.
 temporal_after$Species <- factor(
   temporal_after$Species,
   levels = species_order_full
 )
 
-# Attempt full random-slopes model first
+# Attempt the full random-slopes model first:
+#   lnRR ~ Species * time + (1 + time | MPA) + (1 | source)
+# This allows each MPA to have its own baseline (intercept) and its own
+# rate of change (slope). If this model has convergence problems (common
+# with 10-20 MPAs), we fall back to random-intercepts only.
 cat("  Fitting random-slopes model (Species * time)...\n")
 temporal_lmer <- tryCatch({
   withCallingHandlers(
     lme4::lmer(
-      # Note: (1|resp) removed — with only k=2 levels (Bio/Den), this RE is unidentifiable
+      # Note: (1|resp) removed. With only k=2 levels (Bio/Den), this RE is unidentifiable
       lnDiff ~ Species * time +
         (1 + time | CA_MPA_Name_Short) + (1 | source),
       data = temporal_after,
@@ -623,7 +755,7 @@ if (use_fallback) {
   cat("  Fitting random-intercepts fallback model...\n")
   temporal_lmer <- tryCatch(
     lme4::lmer(
-      # Note: (1|resp) removed — with only k=2 levels (Bio/Den), this RE is unidentifiable
+      # Note: (1|resp) removed. With only k=2 levels (Bio/Den), this RE is unidentifiable
       lnDiff ~ Species * time +
         (1 | CA_MPA_Name_Short) + (1 | source),
       data = temporal_after
@@ -643,12 +775,10 @@ if (!is.null(temporal_lmer) && lme4::isSingular(temporal_lmer)) {
 
 if (!is.null(temporal_lmer)) {
 
-  # Extract fixed effects using lmerTest for p-values (Satterthwaite)
-  if (requireNamespace("lmerTest", quietly = TRUE)) {
-    lmer_summary <- summary(lmerTest::as_lmerModLmerTest(temporal_lmer))
-  } else {
-    lmer_summary <- summary(temporal_lmer)
-  }
+  # Extract fixed effects using lmerTest for p-values (Satterthwaite).
+  # See safe_lmer_summary helper near top of file for fallback behavior
+  # when lmerTest cannot reconstruct the deviance.
+  lmer_summary <- safe_lmer_summary(temporal_lmer)
 
   fixed_ef <- as.data.frame(coef(lmer_summary))
   fixed_ef$Term <- rownames(fixed_ef)
@@ -677,7 +807,7 @@ if (!is.null(temporal_lmer)) {
     }
   }
 
-  # Save fixed effects table
+  # Save fixed effects table -> SI Table S4 (pooled model)
   write.csv(fixed_ef,
             here::here("tables", "table_s_temporal_meta_regression.csv"),
             row.names = FALSE)
@@ -724,7 +854,8 @@ if (!is.null(temporal_lmer)) {
   }
   if (nchar(r2_text) > 0) cat(r2_text)
 
-  # --- Export model-level diagnostics and per-species derived slopes ---
+  # --- Extract and accumulate model diagnostics for combined export ---
+  # This helper pulls AIC/BIC/R2/variance plus per-species slopes with proper SEs
   pooled_diag <- extract_lmer_diagnostics(
     temporal_lmer, species_order_full, full_to_abbrev,
     model_label = "pooled", is_fallback = use_fallback
@@ -743,11 +874,17 @@ if (!is.null(temporal_lmer)) {
 # =============================================================================
 # Section C1b: Response-Specific Temporal Meta-Regression (Biomass & Density)
 # =============================================================================
-# Fits separate lmer models for biomass-only and density-only data.
-# These complement the pooled model above by allowing response-type-specific
-# slopes to be overlaid on Figure S4's biomass/density facets.
+# WHAT: Re-fit the same lmer model from Section C, but separately for biomass
+#   and density data. This avoids pooling non-independent response types.
+#
+# WHY: Biomass and density are measured on the same individuals, so pooling
+#   them inflates sample size. Running separate models provides honest SEs.
+#   The biomass-only and density-only slopes are also used as the dashed
+#   linear overlays on Figure S4 (recovery curves).
+#
 # NOTE: M. pyrifera has no density data, so the density model includes only
-# 4 species (P. interruptus, S. pulcher, S. purpuratus, M. franciscanus).
+#   4 species (P. interruptus, S. pulcher, S. purpuratus, M. franciscanus).
+# =============================================================================
 
 cat("\n--- Response-Specific Temporal Meta-Regression (Bio & Den) ---\n")
 
@@ -826,12 +963,9 @@ fit_resp_lmer <- function(resp_type, resp_label, species_levels) {
     return(NULL)
   }
 
-  # Extract fixed effects (same pattern as pooled model)
-  if (requireNamespace("lmerTest", quietly = TRUE)) {
-    resp_summary <- summary(lmerTest::as_lmerModLmerTest(resp_lmer))
-  } else {
-    resp_summary <- summary(resp_lmer)
-  }
+  # Extract fixed effects (same pattern as pooled model). See
+  # safe_lmer_summary helper near top of file for fallback behavior.
+  resp_summary <- safe_lmer_summary(resp_lmer)
 
   resp_fixed <- as.data.frame(coef(resp_summary))
   resp_fixed$Term <- rownames(resp_fixed)
@@ -904,7 +1038,7 @@ fit_resp_lmer <- function(resp_type, resp_label, species_levels) {
 bio_result <- fit_resp_lmer("Bio", "Biomass", species_order_full)
 temporal_lmer_bio <- if (!is.null(bio_result)) bio_result$model else NULL
 
-# Fit density-only model (4 species — M. pyrifera has no density data)
+# Fit density-only model (4 species. M. pyrifera has no density data)
 # species_order_full without M. pyrifera
 density_species <- species_order_full[species_order_full != "Macrocystis pyrifera"]
 den_result <- fit_resp_lmer("Den", "Density", density_species)
@@ -920,20 +1054,25 @@ if (!is.null(den_result)) {
   all_species_slopes[[length(all_species_slopes) + 1]] <- den_result$diagnostics$species_slopes
 }
 
-# --- Export vcov-derived prediction parameters for Figure 4/S10 CI ribbons ---
+# ---- Export prediction parameters for Figure 4 confidence ribbons ----
 # For each response-specific lmer model, extract per-species intercept, slope,
-# their SEs, and the covariance between intercept and slope. These are needed
-# to compute prediction intervals: Var(y_hat) = Var(int) + t^2*Var(slope) + 2*t*Cov(int,slope).
+# their SEs, and the covariance between intercept and slope. 11_figures.R uses
+# these to draw confidence interval ribbons on the main text recovery curves
+# (Figure 4) without re-fitting the lmer models.
+#
+# The CI formula at time t:
+#   Var(y_hat) = Var(intercept) + t^2 * Var(slope) + 2*t * Cov(intercept, slope)
 
+# Helper: extract per-species intercept, slope, SEs, and their covariance
+# from a fitted lmer model. For the reference species, these come directly
+# from the model. For other species, they are sums of reference + species-
+# specific terms, with SEs derived from the full variance-covariance matrix.
 extract_prediction_params <- function(lmer_obj, species_levels, resp_label) {
   if (is.null(lmer_obj)) return(NULL)
 
-  # Get fixed effects with Satterthwaite df
-  if (requireNamespace("lmerTest", quietly = TRUE)) {
-    sm <- summary(lmerTest::as_lmerModLmerTest(lmer_obj))
-  } else {
-    sm <- summary(lmer_obj)
-  }
+  # Get fixed effects with Satterthwaite df (or plain lme4 summary if
+  # lmerTest cannot reconstruct deviance. See safe_lmer_summary).
+  sm <- safe_lmer_summary(lmer_obj)
   fe <- as.data.frame(coef(sm))
   fe$Term <- rownames(fe)
   if ("Pr(>|t|)" %in% names(fe)) names(fe)[names(fe) == "Pr(>|t|)"] <- "p_value"
@@ -1034,7 +1173,10 @@ if (length(pred_params_list) > 0) {
   cat("  Saved: tables/table_s_lmer_prediction_params.csv\n")
 }
 
-# --- Export combined model diagnostics across pooled/bio/den ---
+# ---- Export combined model diagnostics across all three lmer models ----
+# Stacks pooled + biomass + density model fits into a single summary table,
+# and likewise for per-species slopes. These are informational tables for
+# review, not directly numbered in the SI.
 if (length(all_fit_stats) > 0) {
   combined_fit <- dplyr::bind_rows(all_fit_stats)
   write.csv(combined_fit,
@@ -1054,11 +1196,15 @@ cat("\n=== Response-specific meta-regression complete ===\n")
 
 
 # ---------------------------------------------------------------------------
-# Export lmer residual diagnostics for downstream plotting (fig_s13)
+# Export lmer residual diagnostics for SI Fig S10 (disk: fig_s13)
 # ---------------------------------------------------------------------------
-# Save residuals, fitted values, and random effects from all three lmer models
-# (pooled, bio, den) so that 11_figures.R can render diagnostics without
-# re-fitting models.
+# WHAT: Save residuals, fitted values, and random effects (BLUPs) from all
+#   three lmer models (pooled, biomass, density) to CSV files.
+#
+# WHY: 11_figures.R uses these CSVs to render four-panel residual diagnostic
+#   plots (residuals vs fitted, Q-Q, residuals vs time, random effects)
+#   without needing to re-fit the lmer models. This keeps figure generation
+#   fast and decoupled from model fitting.
 
 extract_resid_diag <- function(lmer_obj, model_label) {
   if (is.null(lmer_obj)) return(NULL)
@@ -1067,7 +1213,7 @@ extract_resid_diag <- function(lmer_obj, model_label) {
   missing_cols <- setdiff(required_cols, names(md))
   if (length(missing_cols) > 0) {
     warning("lmer model frame missing columns: ", paste(missing_cols, collapse = ", "),
-            " — skipping ", model_label)
+            ", skipping ", model_label)
     return(NULL)
   }
   n <- nrow(md)
@@ -1096,15 +1242,16 @@ resid_diag_list <- list(
 )
 resid_diag_all <- dplyr::bind_rows(resid_diag_list)
 if (nrow(resid_diag_all) == 0) {
-  warning("All lmer models are NULL — lmer_residual_diagnostics.csv will be empty. ",
+  warning("All lmer models are NULL. lmer_residual_diagnostics.csv will be empty. ",
           "Check model fitting above.")
 }
+# -> Used by 11_figures.R for SI Fig S10 (disk: fig_s13_lmer_residuals)
 write.csv(resid_diag_all,
           here::here("outputs", "lmer_residual_diagnostics.csv"),
           row.names = FALSE)
 cat("  Saved: outputs/lmer_residual_diagnostics.csv\n")
 
-# Random effects (BLUPs) for all lmer models (pooled, bio, den)
+# Random effects (BLUPs) for all lmer models. Shows MPA-level deviations
 extract_ranef_diag <- function(lmer_obj, model_label) {
   if (is.null(lmer_obj)) return(NULL)
   re_list <- lme4::ranef(lmer_obj)
@@ -1127,8 +1274,9 @@ ranef_diag_list <- list(
 )
 ranef_diag_all <- dplyr::bind_rows(ranef_diag_list)
 if (nrow(ranef_diag_all) == 0) {
-  warning("All lmer models are NULL — lmer_ranef_diagnostics.csv will be empty.")
+  warning("All lmer models are NULL. lmer_ranef_diagnostics.csv will be empty.")
 }
+# -> Used by 11_figures.R for SI Fig S10 random effect panels
 write.csv(ranef_diag_all,
           here::here("outputs", "lmer_ranef_diagnostics.csv"),
           row.names = FALSE)
@@ -1136,23 +1284,32 @@ cat("  Saved: outputs/lmer_ranef_diagnostics.csv\n")
 
 
 # =============================================================================
-# Section C2: Temporal Autocorrelation Sensitivity Analysis (AR1 correction)
+# Section C2: AR1 Autocorrelation Sensitivity. Are the lmer SEs trustworthy?
 # =============================================================================
-# MOTIVATION: The lmer model above assumes independent residuals within each
-# MPA time series. However, annual ecological observations spanning 10-20 years
-# likely exhibit positive temporal autocorrelation (from environmental regime
-# shifts, multi-year recruitment pulses, persistent demographic structure).
-# Positive autocorrelation inflates effective sample size, deflating standard
-# errors and potentially overstating statistical significance.
+# WHAT: Re-fit the temporal model using nlme::lme() with an AR1 correlation
+#   structure, then compare the resulting slopes and standard errors to the
+#   lmer model from Section C.
 #
-# APPROACH: We fit a parallel model using nlme::lme() with an AR1 correlation
-# structure (corAR1) that estimates and accounts for first-order autocorrelation
-# within each MPA's time series. We compare the AR1-corrected SEs and slopes
-# against the original lmer to assess sensitivity of conclusions.
+# WHY (ecological motivation): Kelp forest populations measured annually
+#   over 10-20 years are likely autocorrelated. A big recruitment year
+#   tends to be followed by another good year (environmental persistence,
+#   demographic inertia). If this positive autocorrelation is ignored (as
+#   lmer does), the effective sample size is inflated and standard errors
+#   are too small, which could make non-significant trends look significant.
 #
-# NOTE: nlme is a base R recommended package (always available). The lme()
-# formula syntax differs from lmer(): random effects use a list specification
-# and nested random effects require explicit nesting.
+# HOW: The AR1 model estimates a correlation parameter (rho) between
+#   consecutive years within each MPA. If rho is near zero, autocorrelation
+#   is negligible and the lmer results are trustworthy. If rho is large
+#   (> 0.3), the lmer SEs are likely underestimated.
+#
+# DIAGNOSTIC: A Durbin-Watson (DW) test provides a quick initial check.
+#   DW near 2 = no autocorrelation; DW << 2 = positive autocorrelation.
+#
+# OUTPUT: SI Table S7 (table_s_ar1_sensitivity.csv)
+#
+# NOTE: nlme is a base R recommended package (always available). Its lme()
+#   formula syntax differs from lmer(). Random effects use a list
+#   specification and only support nested (not fully crossed) structures.
 # =============================================================================
 
 cat("\n--- AR1 Temporal Autocorrelation Sensitivity Analysis ---\n")
@@ -1207,9 +1364,12 @@ if (!is.null(temporal_lmer)) {
   })
 
   # --- Step 2: Fit nlme::lme with AR1 correlation structure ---
+  # Strategy: try progressively simpler random effects structures until one
+  # converges. The key addition vs lmer is corAR1(form = ~ time | MPA),
+  # which estimates temporal autocorrelation within each MPA's time series.
   cat("\n  Fitting nlme::lme model with AR1 correction...\n")
 
-  # Ensure required columns are not missing
+  # Create factor versions of grouping variables (nlme requires factors)
   temporal_after$source_f <- factor(temporal_after$source)
   temporal_after$resp_f   <- factor(temporal_after$resp)
   temporal_after$MPA_f    <- factor(temporal_after$CA_MPA_Name_Short)
@@ -1219,21 +1379,22 @@ if (!is.null(temporal_lmer)) {
     dplyr::filter(!is.na(lnDiff), !is.na(Species), !is.na(time),
                   !is.na(MPA_f), !is.na(source_f), !is.na(resp_f))
 
-  # Try progressively simpler random effects structures until convergence
   temporal_lme_ar1 <- NULL
   ar1_model_description <- ""
 
-  # Attempt 1: Full model matching lmer — random slopes for MPA + random intercepts
-  # for source and resp. nlme requires nested or crossed random effects specified
+  # Attempt 1 (most complex): random slopes for MPA + random intercepts for
+  # source and response type. This matches the lmer structure as closely as
+  # possible, but nlme only supports nested (not crossed) random effects,
+  # so this attempt often fails.
 
-  # via pdBlocked or groupedData; for crossed designs we nest source and resp
-  # within a dummy grouping variable. However, nlme only supports nested (not
+  # via pdBlocked or groupedData. For crossed designs we nest source and resp
+  # within a dummy grouping variable. nlme only supports nested (not
   # fully crossed) random effects. We use the most important grouping (MPA with
   # random slopes) plus source as a nested or additional intercept.
   #
   # Strategy: Use MPA as the primary grouping with random slopes, and add
   # source and resp as fixed covariates rather than random effects if the full
-  # random structure won't converge. This is a pragmatic compromise — the key
+  # random structure won't converge. This is a pragmatic compromise. The key
   # goal is estimating the AR1 coefficient (rho).
 
   # NOTE: Attempt 1's random list is interpreted by nlme as nested (source > MPA > resp),
@@ -1270,7 +1431,8 @@ if (!is.null(temporal_lmer)) {
     ar1_model_description <- "random slopes (MPA) + random intercepts (source, resp)"
   }
 
-  # Attempt 2: Random slopes for MPA only (drop source and resp random effects)
+  # Attempt 2 (intermediate): random slopes for MPA only, dropping source and
+  # response type as random effects. This is the most common successful fit.
   if (is.null(temporal_lme_ar1)) {
     temporal_lme_ar1 <- tryCatch({
       cat("    Attempt 2: Random slopes (MPA) only, AR1 within MPA...\n")
@@ -1300,7 +1462,8 @@ if (!is.null(temporal_lmer)) {
     }
   }
 
-  # Attempt 3: Random intercepts only for MPA (simplest structure that allows AR1)
+  # Attempt 3 (simplest): random intercepts only for MPA. This drops the
+  # per-MPA slope variation but still estimates the AR1 autocorrelation.
   if (is.null(temporal_lme_ar1)) {
     temporal_lme_ar1 <- tryCatch({
       cat("    Attempt 3: Random intercepts (MPA) only, AR1 within MPA...\n")
@@ -1363,7 +1526,11 @@ if (!is.null(temporal_lmer)) {
     names(ar1_fixed)[names(ar1_fixed) == "t-value"] <- "t_value"
     names(ar1_fixed)[names(ar1_fixed) == "p-value"] <- "p_value"
 
-    # --- Compare slopes side-by-side ---
+    # --- Compare slopes side-by-side: lmer vs AR1 ---
+    # For each species, show the slope and SE from both models. The key column
+    # is SE_ratio = AR1_SE / lmer_SE. If SE_ratio > 1, the AR1 model gives
+    # larger (more conservative) SEs, meaning autocorrelation was inflating
+    # the lmer's apparent precision.
     cat("\n  Comparison of species slopes: lmer vs AR1-corrected lme\n")
     cat("  ---------------------------------------------------------------\n")
     cat(sprintf("  %-20s %10s %8s | %10s %8s | %s\n",
@@ -1457,7 +1624,7 @@ if (!is.null(temporal_lmer)) {
       cat("  Temporal autocorrelation does not materially affect conclusions.\n")
     }
 
-    # --- Save AR1 comparison table ---
+    # --- Save AR1 comparison table -> SI Table S7 ---
     ar1_comparison_out <- comparison_df
     ar1_comparison_out$AR1_rho <- ar1_rho
     ar1_comparison_out$DW_statistic <- ifelse(!is.na(dw_result), dw_result, NA_real_)
@@ -1481,7 +1648,7 @@ if (!is.null(temporal_lmer)) {
     cat("    WARNING: All AR1 model attempts failed to converge.\n")
     cat("    Reporting Durbin-Watson diagnostic only.\n")
     if (!is.na(dw_result)) {
-      cat(sprintf("    DW = %.4f — %s\n", dw_result,
+      cat(sprintf("    DW = %.4f. %s\n", dw_result,
                   ifelse(dw_result < 1.5,
                          "suggests positive autocorrelation (lmer SEs may be underestimated)",
                          "suggests autocorrelation is not severe")))
@@ -1503,47 +1670,51 @@ if (!is.null(temporal_lmer)) {
   }
 
 } else {
-  cat("  Skipping AR1 analysis — lmer model did not fit.\n")
+  cat("  Skipping AR1 analysis. lmer model did not fit.\n")
 }
 
 cat("=== AR1 sensitivity analysis complete ===\n")
 
-# RECOMMENDED SENSITIVITY: Extract effect sizes at t = 8, 10, 14 in addition
-# to the default t = 11 (EFFECT_SIZE_TIME_YEARS in 00c_analysis_constants.R).
-# This would test whether meta-analytic conclusions are robust to the choice
-# of extraction time. The current pipeline extracts at t = 11 because it
-# corresponds to the age of the youngest MPA in the dataset (MLPA South Coast,
-# est. 2012). Extracting at alternative time points would require re-running
-# 08_effect_sizes.R with modified EFFECT_SIZE_TIME_YEARS values, then
-# re-running 09_meta_analysis.R for each. Not implemented in the current
-# pipeline but should be documented as a limitation in the manuscript discussion.
+# ---- NOTE FOR FUTURE WORK ----
+# The main meta-analysis extracts effect sizes at a single time point (t = 11
+# years, the age of the youngest MPA). A useful sensitivity analysis would
+# extract at t = 8, 10, and 14 as well, to test whether conclusions depend
+# on this choice. This would require re-running 08_effect_sizes.R and
+# 09_meta_analysis.R with modified EFFECT_SIZE_TIME_YEARS. Not yet implemented;
+# should be noted as a limitation in the Discussion.
 
 
 # =============================================================================
-# Section D: Analysis 3 -- Trophic Cascade Phase Portrait (Species-Level)
+# Section D: Trophic Cascade Phase Portraits. Do species co-evolve as
+#            expected under a trophic cascade?
 # =============================================================================
-# CAVEAT: The set of contributing MPAs changes over time (unbalanced panel).
-# Late time points (t > 10) are dominated by the oldest reserves (Channel Islands).
-# Phase trajectories at late time points may reflect WHICH MPAs contribute
-# rather than within-MPA temporal dynamics. The n >= 2 filter is minimal
-# protection. Correlations should be interpreted as exploratory, not confirmatory.
-# See figure caption for documentation of this limitation.
+# WHAT: Four-panel figure showing how pairs of species change together over
+#   time inside MPAs. Each panel plots one species' mean lnRR against another's,
+#   with time flowing along the trajectory (arrows). If the trophic cascade is
+#   operating, we expect trajectories to move toward the "cascade quadrant":
+#     - Predators up + urchins down (top-right in inverted plots)
+#     - Urchins down + kelp up (top-right in inverted plots)
 #
-# Figure S5: Four-panel species-level phase portrait showing how individual
-# species effects co-evolve over time. Each panel pairs one species against
-# M. pyrifera (kelp) or against an urchin species, revealing whether
-# cascade sequencing operates at the species level.
+# WHY: The lmer models test each species independently. Phase portraits show
+#   whether species are changing IN CONCERT (e.g., do years with big lobster
+#   increases correspond to years with big urchin declines?).
 #
-# DATA NOTE: Each point is the network-wide average lnRR for a species at a
-# given year-since-MPA, averaged across all MPAs with data at that time step
-# (two-stage: MPA means first, then cross-MPA average, ≥2 MPAs required).
-# Because MPAs were established in different years, the set of contributing
-# MPAs changes over time — early time points include most MPAs, late time
-# points are dominated by the oldest reserves (Channel Islands, est. ~2003).
-# This unbalanced panel means the trajectory may partly reflect compositional
-# shifts in which MPAs contribute rather than pure within-MPA dynamics.
-# The formal lmer models (Fig 3, S4) handle this via MPA random effects;
-# this figure is a complementary descriptive visualization.
+# HOW: Each point = network-wide average lnRR at a given year-since-MPA.
+#   Two-stage averaging: first compute MPA-level means, then average across
+#   MPAs (requires >= 2 MPAs per time point). Urchin axes are inverted (x -1)
+#   so that urchin DECLINE plots as a positive value, aligning with the
+#   cascade prediction direction.
+#
+# CAVEAT (IMPORTANT): The set of contributing MPAs changes over time because
+#   MPAs were established in different years (unbalanced panel). Late time
+#   points (t > 10) are dominated by the oldest reserves (Channel Islands).
+#   Trajectories at late time points may reflect WHICH MPAs contribute rather
+#   than within-MPA dynamics. The formal lmer models handle this via MPA
+#   random effects; this figure is a complementary descriptive visualization.
+#   Correlations should be interpreted as exploratory, not confirmatory.
+#
+# OUTPUT: SI Fig S4 (disk file: fig_s05_cascade_phase.pdf)
+# =============================================================================
 
 if (should_render("fig_s05")) {
 cat("\n--- Figure S5: Cascade Phase Portrait (Species-Level) ---\n")
@@ -1551,40 +1722,45 @@ cat("\n--- Figure S5: Cascade Phase Portrait (Species-Level) ---\n")
 library(patchwork)
 
 # NOTE: Bio and Den response types are pooled here (averaged within MPA-year).
-# This means each data point may mix biomass and density lnRR values.
-# The formal lmer fits separate Bio/Den models; this descriptive
-# aggregation does not account for non-independence between response types.
+# The formal lmer fits separate Bio/Den models; this descriptive figure
+# does not account for non-independence between response types.
 
-# Aggregate yearly means by species using two-stage approach:
-# Stage 1: compute MPA-level means (avoids data-rich programs dominating)
-# Stage 2: average across MPAs
+# ---- Aggregate yearly means by species (two-stage approach) ----
+# Stage 1: compute each MPA's mean lnRR per species per year
+#   (prevents data-rich programs like PISCO from dominating the average)
+# Stage 2: average across MPAs (require >= 2 MPAs per time point)
 phase_yearly <- temporal_after %>%
+  # Stage 1: MPA-level means
   dplyr::group_by(Species, time, CA_MPA_Name_Short) %>%
   dplyr::summarise(mpa_mean = mean(lnDiff, na.rm = TRUE), .groups = "drop") %>%
+  # Stage 2: cross-MPA average
   dplyr::group_by(Species, time) %>%
   dplyr::summarise(
     mean_lnRR = mean(mpa_mean, na.rm = TRUE),
-    n = dplyr::n(),
+    n = dplyr::n(),  # number of MPAs contributing
     .groups = "drop"
   ) %>%
+  # Drop time points with only 1 MPA (unreliable average)
   dplyr::filter(n >= 2) %>%
   dplyr::arrange(time)
 
-# Pivot wide: one column per species
+# Pivot to wide format: one column per species (needed for x-y phase plots)
 phase_wide <- phase_yearly %>%
   dplyr::mutate(Species_abbrev = full_to_abbrev[Species]) %>%
   dplyr::select(Species_abbrev, time, mean_lnRR) %>%
   tidyr::pivot_wider(names_from = Species_abbrev, values_from = mean_lnRR)
 
-# --- Export phase portrait data ---
+# Export the yearly means underlying the phase portraits
 write.csv(phase_yearly,
           here::here("tables", "table_s_phase_portrait_yearly_means.csv"),
           row.names = FALSE)
 cat("  Saved: tables/table_s_phase_portrait_yearly_means.csv\n")
 
-# Helper: build one phase portrait panel
-# q_ arguments label each quadrant: TR = top-right, BL = bottom-left,
-# TL = top-left, BR = bottom-right
+# ---- Helper: build one phase portrait panel ----
+# Each panel plots species X on the horizontal axis vs species Y on the
+# vertical axis, with points connected by arrows showing the direction of
+# time. Quadrant labels (q_tr, q_bl, q_tl, q_br) describe the ecological
+# meaning of each corner (e.g., "Lobster up, Urchins down").
 build_phase_panel <- function(data, x_col, y_col, x_lab, y_lab,
                               q_tr, q_bl, q_tl, q_br) {
   d <- data %>%
@@ -1613,7 +1789,7 @@ build_phase_panel <- function(data, x_col, y_col, x_lab, y_lab,
                linewidth = 0.35) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "grey75",
                linewidth = 0.35) +
-    # Quadrant labels — all four corners (offset from tags & edges)
+    # Quadrant labels. All four corners (offset from tags & edges)
     annotate("text", x = Inf, y = Inf, label = q_tr,
              hjust = 1.05, vjust = 1.5, size = 2.2, color = "grey50",
              fontface = "italic") +
@@ -1677,14 +1853,18 @@ build_phase_panel <- function(data, x_col, y_col, x_lab, y_lab,
     )
 }
 
-# Invert urchin columns (positive = urchin decline = cascade direction)
+# ---- Build the four phase portrait panels ----
+
+# Invert urchin columns so that urchin DECLINE (the cascade-predicted
+# direction) plots as positive values. This makes the "cascade quadrant"
+# consistently top-right across all panels.
 phase_wide_inv <- phase_wide %>%
   dplyr::mutate(
     `S. purpuratus_inv`  = -1 * `S. purpuratus`,
     `M. franciscanus_inv` = -1 * `M. franciscanus`
   )
 
-# Panel (a): S. purpuratus decline vs M. pyrifera increase
+# Panel (a): Do purple urchin declines track kelp recovery?
 pa <- build_phase_panel(
   phase_wide_inv, "S. purpuratus_inv", "M. pyrifera",
   x_lab = expression(italic("S. purpuratus") ~ "lnRR \u00d7 (-1)"),
@@ -1695,7 +1875,7 @@ pa <- build_phase_panel(
   q_br = "Purples \u2193  Kelp \u2193"
 )
 
-# Panel (b): M. franciscanus decline vs M. pyrifera increase
+# Panel (b): Do red urchin declines track kelp recovery?
 pb <- build_phase_panel(
   phase_wide_inv, "M. franciscanus_inv", "M. pyrifera",
   x_lab = expression(italic("M. franciscanus") ~ "lnRR \u00d7 (-1)"),
@@ -1706,7 +1886,7 @@ pb <- build_phase_panel(
   q_br = "Reds \u2193  Kelp \u2193"
 )
 
-# Panel (c): P. interruptus increase vs S. purpuratus decline
+# Panel (c): Do lobster increases correspond to purple urchin declines?
 pc <- build_phase_panel(
   phase_wide_inv, "P. interruptus", "S. purpuratus_inv",
   x_lab = expression(italic("P. interruptus") ~ "lnRR"),
@@ -1717,7 +1897,7 @@ pc <- build_phase_panel(
   q_br = "Lobster \u2191  Purples \u2191"
 )
 
-# Panel (d): S. pulcher increase vs M. franciscanus decline
+# Panel (d): Do sheephead increases correspond to red urchin declines?
 pd <- build_phase_panel(
   phase_wide_inv, "S. pulcher", "M. franciscanus_inv",
   x_lab = expression(italic("S. pulcher") ~ "lnRR"),
@@ -1745,18 +1925,19 @@ if (length(panels) >= 2) {
       axis.line.y.left = element_line(colour = "black", linewidth = 0.5)
     )
 
+  # Save SI Fig S4 (disk: fig_s05_cascade_phase)
   save_fig(fig_s05, "fig_s05_cascade_phase",
            w = FIG_S05_DIMS["w"], h = FIG_S05_DIMS["h"])
 } else {
   cat("  WARNING: Too few species-level pairings for phase portrait.\n")
 }
 
-# --- Phase portrait pairwise correlation statistics ---
-# Quantify the co-movement shown in the phase portrait figure (S4).
-# Each row tests whether two species' yearly mean lnRR values are correlated
-# over time (Pearson and Spearman), which provides statistical support for
-# the visual trajectories. Urchin columns are inverted (×-1) to match the
-# cascade expectation (decline = positive signal).
+# ---- Phase portrait pairwise correlation statistics ----
+# For each species pair shown in the phase portrait, compute Pearson and
+# Spearman correlations on the yearly mean lnRR values. A significant
+# positive correlation means the two species are changing together in the
+# cascade-predicted direction (e.g., urchin decline + kelp increase).
+# Urchin columns are inverted (x -1) so positive correlation = cascade.
 cat("  Computing phase portrait pairwise correlations...\n")
 phase_pairs <- list(
   list(x = "S. purpuratus_inv",  y = "M. pyrifera",         x_lab = "S. purpuratus (inv)", y_lab = "M. pyrifera"),
@@ -1804,11 +1985,13 @@ cat("  Saved: tables/table_s_phase_portrait_correlations.csv\n")
 
 
 # =============================================================================
-# Analysis 4: Species-Level Space-Time Heatmap (Figure S6)
+# [DROPPED] Analysis 4: Species-Level Space-Time Heatmap
 # =============================================================================
-# Shows all five species as stacked heatmap panels (replaces old urchin-only version)
-# stacked vertically, preserving distinct recovery patterns for each
-# predator and urchin species.
+# This heatmap showed lnRR as colored tiles (MPA x time) for each species.
+# It was dropped because it was redundant with the recovery curves (Fig S3)
+# and the slope comparison (Fig S5). The code is retained but disabled (if FALSE)
+# in case it is useful for future revisions.
+# =============================================================================
 
 if (FALSE) {  # DROPPED: S5 triptych heatmap (redundant with S3+S6)
 cat("\n--- Figure S6: Species-Level Heatmap ---\n")
@@ -1958,30 +2141,46 @@ cat("  Figure S6 saved.\n")
 
 
 # =============================================================================
-# Analysis 5: Rate-of-Change Comparison & Cascade Consistency (Figure S06)
+# Analysis 5: Per-MPA Slope Comparison & Cascade Consistency
 # =============================================================================
-# Two complementary views at the species level:
-#   (a) Per-MPA slopes of lnRR ~ time, grouped by species (5 rows).
-#   (b) Cascade consistency: does each MPA show the expected direction
-#       (predators +, urchins -, kelp +) for each of the 5 species?
+# WHAT: Two-panel figure showing:
+#   (a) Per-MPA slopes: For each species, how fast is lnRR changing over time
+#       at each individual MPA? Jitter plot with species-level means.
+#   (b) Cascade consistency: For each MPA, does each species change in the
+#       expected direction? (predators +, urchins -, kelp +). A tile chart
+#       showing which MPAs have full vs partial cascade signatures.
+#
+# WHY: The lmer model gives network-wide average slopes. This figure shows
+#   the MPA-level variation. Are all MPAs showing the same pattern, or is
+#   the cascade driven by a few strong sites? The consistency panel directly
+#   addresses the question: "At how many MPAs do we see the full cascade?"
+#
+# OUTPUT: SI Fig S5 (disk file: fig_s06_slope_comparison.pdf)
+#         SI Table S5 (table_s_cascade_consistency.csv)
+# =============================================================================
 
 if (should_render("fig_s06")) {
 cat("\n--- Figure S06: Slope Comparison & Cascade Consistency (Species-Level) ---\n")
 
 FIG_S06_DIMS <- c(w = 17, h = 16)
 
-# ---------------------------------------------------------------------------
-# 5a. Calculate per-MPA slopes by species
-# ---------------------------------------------------------------------------
 
-# NOTE: Per-MPA slopes use OLS (lm). Standard errors may be underestimated
-# if positive temporal autocorrelation is present. These are descriptive
-# summaries; the formal test is the lmer temporal meta-regression above.
-# Slopes computed separately for Bio/Den, then averaged per MPA-Species
-# to avoid pooling different response types in a single regression.
+# ---------------------------------------------------------------------------
+# 5a. Calculate per-MPA slopes by species using simple OLS
+# ---------------------------------------------------------------------------
+# For each MPA x species x response type, fit lnRR ~ time using lm() and
+# extract the slope (rate of change per year). Then average Bio/Den slopes
+# per MPA-Species to get one slope per MPA-Species combination.
+#
+# NOTE: These OLS slopes may have underestimated SEs if temporal
+# autocorrelation is present. They are descriptive summaries only; the
+# formal inference comes from the lmer models in Section C.
 slopes_by_resp <- temporal_after %>%
+  # Cap at 15 years to match other figures
   dplyr::filter(time <= 15) %>%
+  # Group by MPA, species, and response type
   dplyr::group_by(CA_MPA_Name_Short, Species, Species_abbrev, resp) %>%
+  # Require at least 5 unique time points for a meaningful slope estimate
   dplyr::filter(dplyr::n_distinct(time) >= 5) %>%
   dplyr::summarise(
     slope = tryCatch(
@@ -1997,7 +2196,7 @@ slopes_by_resp <- temporal_after %>%
   ) %>%
   dplyr::filter(!is.na(slope))
 
-# Average Bio/Den slopes per MPA-Species for cascade consistency analysis
+# Average Bio and Den slopes per MPA-Species (avoids double-counting)
 slope_data <- slopes_by_resp %>%
   dplyr::group_by(CA_MPA_Name_Short, Species, Species_abbrev) %>%
   dplyr::summarise(
@@ -2011,7 +2210,7 @@ slope_data <- slopes_by_resp %>%
 cat("  Slopes calculated for ", nrow(slope_data), " MPA x species combos\n",
     sep = "")
 
-# Species-level summaries
+# Compute species-level mean slopes (average across MPAs)
 slope_summary <- slope_data %>%
   dplyr::group_by(Species, Species_abbrev) %>%
   dplyr::summarise(
@@ -2030,23 +2229,26 @@ for (i in seq_len(nrow(slope_summary))) {
               slope_summary$n_mpas[i]))
 }
 
-# --- Export per-MPA slopes to CSV ---
+# Export per-MPA slopes (informational, not a numbered SI table)
 write.csv(slope_data,
           here::here("tables", "table_s_per_mpa_slopes.csv"),
           row.names = FALSE)
 cat("  Saved: tables/table_s_per_mpa_slopes.csv\n")
 
-# --- Export species-level slope summaries to CSV ---
+# Export species-level slope summaries (informational, not a numbered SI table)
 write.csv(slope_summary,
           here::here("tables", "table_s_slope_summary_by_species.csv"),
           row.names = FALSE)
 cat("  Saved: tables/table_s_slope_summary_by_species.csv\n")
 
 # ---------------------------------------------------------------------------
-# 5b. Panel (a): Slopes by species — jitter + species summary
+# 5b. Panel (a): Jitter plot of per-MPA slopes grouped by species
 # ---------------------------------------------------------------------------
+# Each dot = one MPA's slope for that species. The black diamond + error bar
+# shows the species-level mean +/- SE. Species ordered top-to-bottom in
+# trophic cascade order (predators at top, kelp at bottom).
 
-# Factor species in cascade order
+# Factor species in cascade order (reversed for coord_flip: top = first level)
 slope_data$Species_abbrev    <- factor(slope_data$Species_abbrev,
                                        levels = rev(species_order_abbrev))
 slope_summary$Species_abbrev <- factor(slope_summary$Species_abbrev,
@@ -2086,8 +2288,15 @@ p_slopes <- ggplot2::ggplot(slope_data,
   )
 
 # ---------------------------------------------------------------------------
-# 5c. Panel (b): Cascade consistency tile chart (species-level)
+# 5c. Panel (b): Cascade consistency tile chart
 # ---------------------------------------------------------------------------
+# For each MPA x species combination, check whether the slope has the
+# "expected" sign under the trophic cascade hypothesis:
+#   - Predators (lobster, sheephead): positive slope = increasing in MPA
+#   - Urchins (purple, red): negative slope = declining in MPA
+#   - Kelp (giant kelp): positive slope = recovering in MPA
+# Green tile = expected direction; red = opposite; grey = no data.
+# MPAs are ordered by cascade consistency score (most consistent at top).
 
 # Pivot to wide: one column per species
 cascade_wide <- slope_data %>%
@@ -2111,6 +2320,7 @@ available_species <- intersect(species_order_abbrev, names(cascade_wide))
 # (1/8) chance of all three signs matching the cascade prediction.
 # A formal binomial test could assess whether observed consistency exceeds
 # this null rate.
+# For each species, check whether each MPA's slope matches the expected sign
 cascade_long_list <- list()
 for (sp_full in species_order_full) {
   sp_abbrev <- full_to_abbrev[sp_full]
@@ -2121,6 +2331,7 @@ for (sp_full in species_order_full) {
     dplyr::filter(!is.na(.data[[sp_abbrev]])) %>%
     dplyr::mutate(
       Species_label = sp_abbrev,
+      # TRUE if the slope sign matches the cascade prediction
       consistent = if (direction == "positive") {
         .data[[sp_abbrev]] > 0
       } else {
@@ -2197,9 +2408,10 @@ p_cascade <- ggplot2::ggplot(
   )
 
 # ---------------------------------------------------------------------------
-# 5d. Assemble 2-panel figure
+# 5d. Assemble the 2-panel figure and save
 # ---------------------------------------------------------------------------
 
+# SI Fig S5 (disk: fig_s06_slope_comparison)
 fig_s05 <- p_slopes + p_cascade +
   patchwork::plot_layout(widths = c(1, 1.3)) +
   patchwork::plot_annotation(tag_levels = "a", tag_prefix = "(", tag_suffix = ")") &
@@ -2211,8 +2423,11 @@ save_fig(fig_s05, "fig_s06_slope_comparison", FIG_S06_DIMS["w"], FIG_S06_DIMS["h
 cat("  Figure S06 saved.\n")
 
 # ---------------------------------------------------------------------------
-# 5e. Save cascade consistency table (species-level)
+# 5e. Save cascade consistency table -> SI Table S5
 # ---------------------------------------------------------------------------
+# Each row = one MPA. Columns show TRUE/FALSE for each species (does the
+# slope match the expected cascade direction?). cascade_score = count of
+# species with the expected sign. Higher scores = stronger cascade signature.
 
 cascade_out <- cascade_long %>%
   tidyr::pivot_wider(
@@ -2225,6 +2440,7 @@ cascade_out <- cascade_long %>%
                    by = "CA_MPA_Name_Short") %>%
   dplyr::arrange(dplyr::desc(cascade_score), CA_MPA_Name_Short)
 
+# -> SI Table S5
 write.csv(cascade_out,
           here::here("tables", "table_s_cascade_consistency.csv"),
           row.names = FALSE)
@@ -2234,6 +2450,11 @@ cat("  Table saved: tables/table_s_cascade_consistency.csv\n")
 
 
 # =============================================================================
-# Completion
+# Script complete
 # =============================================================================
+# At this point, all temporal analyses and associated figures/tables have been
+# generated. The key outputs are:
+#   - SI Figs S3-S5 (recovery curves, phase portraits, slope comparison)
+#   - SI Tables S4, S5, S7 (temporal regression, cascade consistency, AR1)
+#   - Residual diagnostics for downstream plotting in 11_figures.R
 cat("\n=== 10_temporal_analysis.R complete ===\n")

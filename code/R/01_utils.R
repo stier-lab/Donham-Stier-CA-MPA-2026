@@ -3,16 +3,28 @@
 # =============================================================================
 #
 # PURPOSE:
-#   Define utility functions used by the analysis scripts (08-13) in the
-#   MPA kelp forest pBACIPS analysis pipeline.
+#   Shared utility functions and constants used across all analysis scripts
+#   (08-13) in the MPA kelp forest pipeline.
 #
-# WHAT THIS SCRIPT DOES:
-#   1. Defines effect size calculation using emmeans contrasts
-#   2. Defines constants for site/MPA exclusions
-#   3. Defines figure rendering and display utilities
+# CONTENTS:
+#   Section 4: EXCLUDED_MPAS, EXCLUDED_KFM_SITES, SHEEPHEAD_ONLY_MPAS
+#              -> Which MPAs are dropped from analysis and why
+#   Section 8: calculate_effect_size_from_contrast()
+#              -> Calculates effect sizes using emmeans (covariance-aware)
+#   Section 9: should_render(), save_fig(), scale_y_rr(), scale_x_rr()
+#              -> Figure rendering, RR axis scales, and display helpers
+#   Section 10: MPA name abbreviations for figure labels
+#
+# HOW EFFECT SIZES WORK:
+#   For a linear model (lnRR ~ time), the effect size is:
+#     predicted(t=11) - predicted(t=0)
+#   This is the estimated change in log response ratio over 11 years of
+#   MPA protection. emmeans::pairs() computes this with proper covariance
+#   handling (predictions at t=0 and t=11 share model parameters).
 #
 # NOTE: Data-processing functions (biomass conversion, bootstrap, response
-#   ratios, species standardization) are in the data-processing repo.
+#   ratios, species standardization) are in the sibling data-processing repo
+#   (Donham-Stier-CA-MPA-Data-2026).
 #
 # USAGE:
 #   source(here::here("code", "R", "01_utils.R"))
@@ -48,7 +60,7 @@ EXCLUDED_REFERENCE_SITES <- c(
 )
 
 EXCLUDED_MPAS <- c(
-  "Carrington Point SMR",
+  "Carrington Pt SMR",
   "N/A",
   "Arrow Point to Lion Head Point SMCA",
   "Crystal Cove SMCA",
@@ -185,7 +197,7 @@ save_fig <- function(plot, name, w, h, dpi = 600) {
     })
   }
 
-  # Strategy 2: Try cairo_pdf via ggsave (catch warnings too — cairo can
+  # Strategy 2: Try cairo_pdf via ggsave (catch warnings too. cairo can
   # fail with a warning rather than an error, leaving the file unwritten)
   if (!pdf_success && capabilities("cairo")) {
     pdf_success <- tryCatch(
@@ -254,7 +266,7 @@ save_fig <- function(plot, name, w, h, dpi = 600) {
     png_size <- format(file.size(png_path) / 1024, digits = 1, nsmall = 1)
     cat(sprintf("  Saved: %s (PNG: %s KB @ %d DPI) - PDF generation failed\n",
                 name, png_size, dpi))
-    warning("PDF generation failed for ", name, " but PNG was created successfully. ",
+    warning("PDF generation failed for ", name, " but PNG was created. ",
             "This is a known issue with some complex ggplot2 figures. ",
             "PNG can be converted to PDF externally if needed.")
   }
