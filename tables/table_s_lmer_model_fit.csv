@@ -1,4 +1,4 @@
 "model","model_type","n_obs","n_mpa","AIC","BIC","logLik","R2_marginal","R2_conditional","variance_components","singular_fit"
-"pooled","random-intercepts",2399,15,9984.97,10060.15,-4979.49,0.1188,0.2247,"CA_MPA_Name_Short|(Intercept): 0.4913; source|(Intercept): 0.0015; Residual|NA: 3.6069",FALSE
-"bio","random-intercepts",944,15,4341.65,4404.7,-2157.82,0.0963,0.1749,"CA_MPA_Name_Short|(Intercept): 0.5056; source|(Intercept): 0.0094; Residual|NA: 5.4060",FALSE
+"pooled","random-slopes",2433,15,10044.92,10131.88,-5007.46,0.1207,0.2499,"CA_MPA_Name_Short|(Intercept): 0.1381; CA_MPA_Name_Short|time: 0.0043; CA_MPA_Name_Short|(Intercept): -0.0002; source|(Intercept): 0.0023; Residual|NA: 3.4706",FALSE
+"bio","random-intercepts",978,15,4450.59,4514.1,-2212.29,0.103,0.1879,"CA_MPA_Name_Short|(Intercept): 0.5288; source|(Intercept): 0.0095; Residual|NA: 5.1507",FALSE
 "den","random-slopes",1091,15,3781.35,3846.28,-1877.67,0.206,0.4071,"CA_MPA_Name_Short|(Intercept): 0.4072; CA_MPA_Name_Short|time: 0.0011; CA_MPA_Name_Short|(Intercept): 0.0020; source|(Intercept): 0.0091; Residual|NA: 1.7068",FALSE

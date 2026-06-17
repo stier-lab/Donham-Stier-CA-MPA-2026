@@ -1,8 +1,8 @@
 "CA_MPA_Name_Short","MPA_short","P. interruptus","S. pulcher","S. purpuratus","M. franciscanus","M. pyrifera","cascade_score","n_species"
 "Abalone Cove SMCA","Abalone Cove",TRUE,TRUE,TRUE,TRUE,TRUE,5,5
+"Gull Island SMR","Gull Is.",TRUE,TRUE,TRUE,TRUE,TRUE,5,5
 "Anacapa Island SMR 2003","Anacapa Is.",FALSE,TRUE,TRUE,TRUE,TRUE,4,5
 "Campus Point SMCA","Campus Pt.",TRUE,FALSE,TRUE,TRUE,TRUE,4,5
-"Gull Island SMR","Gull Is.",TRUE,TRUE,FALSE,TRUE,TRUE,4,5
 "Matlahuayl SMR","Matlahuayl",TRUE,FALSE,TRUE,TRUE,TRUE,4,5
 "Santa Barbara Island SMR","Santa Barbara Is.",TRUE,TRUE,FALSE,TRUE,TRUE,4,5
 "Scorpion SMR","Scorpion",TRUE,FALSE,TRUE,TRUE,TRUE,4,5
