@@ -1,6 +1,6 @@
 "Species","Species_abbrev","mean_slope","se_slope","n_mpas"
-"Panulirus interruptus","P. interruptus",0.110764458440892,0.0326476097290472,11
-"Semicossyphus pulcher","S. pulcher",-0.060100120037982,0.0494771198723142,14
-"Strongylocentrotus purpuratus","S. purpuratus",-0.0809453158413883,0.0422169265141681,11
-"Mesocentrotus franciscanus","M. franciscanus",-0.0910449412462649,0.0361242496809278,11
-"Macrocystis pyrifera","M. pyrifera",0.185266051391453,0.0641737397635283,11
+"Panulirus interruptus","P. interruptus",0.110837156937732,0.0325640963811609,11
+"Semicossyphus pulcher","S. pulcher",-0.0601573823455113,0.0494748416623447,14
+"Strongylocentrotus purpuratus","S. purpuratus",-0.085706874915078,0.042278466212907,11
+"Mesocentrotus franciscanus","M. franciscanus",-0.0944965763324449,0.0361461897550275,11
+"Macrocystis pyrifera","M. pyrifera",0.184242741425586,0.063657656402267,11

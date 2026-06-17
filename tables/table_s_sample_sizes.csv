@@ -1,10 +1,10 @@
 "Taxa","Resp","k_total","n_MPAs","Sources","k_LTER","k_PISCO","k_KFM","k_Landsat","k_final_meta"
-"P. interruptus","Bio",5,5,"LTER, PISCO",2,3,0,0,2
+"P. interruptus","Bio",5,5,"LTER, PISCO",2,3,0,0,1
 "P. interruptus","Den",17,11,"KFM, LTER, PISCO",2,10,5,0,2
-"S. pulcher","Bio",18,17,"LTER, PISCO",1,17,0,0,10
-"S. pulcher","Den",22,17,"KFM, LTER, PISCO",1,17,4,0,9
-"S. purpuratus","Bio",10,9,"KFM, PISCO",0,8,2,0,3
+"S. pulcher","Bio",16,15,"LTER, PISCO",1,15,0,0,6
+"S. pulcher","Den",20,15,"KFM, LTER, PISCO",1,15,4,0,7
+"S. purpuratus","Bio",10,9,"KFM, PISCO",0,8,2,0,4
 "S. purpuratus","Den",13,11,"KFM, PISCO",0,10,3,0,4
-"M. franciscanus","Bio",14,9,"KFM, LTER, PISCO",1,8,5,0,4
+"M. franciscanus","Bio",14,9,"KFM, LTER, PISCO",1,8,5,0,5
 "M. franciscanus","Den",16,10,"KFM, LTER, PISCO",1,10,5,0,3
 "M. pyrifera","Bio",31,17,"KFM, LTER, PISCO, Landsat",2,10,5,14,17

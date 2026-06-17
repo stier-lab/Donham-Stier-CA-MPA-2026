@@ -392,7 +392,7 @@ if (file.exists(slopes_path)) {
     )
     for (i in seq_len(nrow(pooled))) {
       row <- pooled[i, ]
-      p_str <- if (row$p_value < 0.001) "< 0.001" else formatC(row$p_value, format = "f", digits = 3)
+      p_str <- if (is.na(row$p_value)) "—" else if (row$p_value < 0.001) "< 0.001" else formatC(row$p_value, format = "f", digits = 3)
       md_lines <- c(md_lines, paste0(
         "| ", row$Species_abbrev, " | ", round(row$slope, 4), " | ",
         round(row$SE, 4), " | ", p_str, " |"

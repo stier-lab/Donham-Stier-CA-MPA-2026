@@ -1,21 +1,19 @@
 "MPA","Data_Sources","Taxa_Biomass","Taxa_Density","n_taxa_bio","n_taxa_den","n_effects_bio","n_effects_den","n_effects_total","type","Location","MPA_Start","Lat","Lon","year_min","year_max","n_years_total","n_years_before","n_years_after","n_obs_rr","n_reference_site_years"
 "Anacapa Island SMR 2003","KFM, PISCO","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,5,8,13,"SMR","C",2003,34.008,-119.3983,2004,2023,20,0,20,270,254
 "Blue Cavern Onshore SMCA","PISCO","S. pulcher","S. pulcher",1,1,1,1,2,"SMCA","C",2012,33.4466,-118.4764,2011,2023,8,2,6,16,16
-"Cat Harbor SMCA","PISCO","S. pulcher","S. pulcher",1,1,1,1,2,"SMCA","C",2012,33.42609,-118.5118,2011,2023,8,2,6,16,16
 "Farnsworth Onshore SMCA","PISCO, Landsat","S. pulcher; M. pyrifera","S. pulcher",2,1,2,1,3,"SMCA","C",2012,33.3339,-118.473,2011,2023,6,2,4,12,12
 "Gull Island SMR","KFM, PISCO, Landsat","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,7,6,13,"SMR","C",2003,33.9562,-119.8234,1986,2023,38,18,20,450,414
-"Harris Point SMR","KFM, PISCO, Landsat","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,6,6,12,"SMR","C",2003,34.053,-120.3424,1982,2023,42,22,20,469,427
+"Harris Point SMR","KFM, PISCO, Landsat","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,6,6,12,"SMR","C",2003,34.053,-120.3424,1982,2023,42,22,20,470,427
 "Long Point SMR","PISCO","S. pulcher","S. pulcher",1,1,1,1,2,"SMR","C",2012,33.24,-118.21,2011,2023,8,2,6,16,16
-"Santa Barbara Island SMR","KFM, PISCO, Landsat","S. pulcher; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus",2,3,3,3,6,"SMR","C",2003,33.4658,-119.0306,1982,2023,41,22,19,273,226
+"Santa Barbara Island SMR","KFM, PISCO, Landsat","S. pulcher; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus",2,3,3,3,6,"SMR","C",2003,33.4658,-119.0306,1982,2023,41,22,19,307,260
 "Scorpion SMR","KFM, PISCO","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,6,7,13,"SMR","C",2003,34.05428,-119.5669,1982,2023,42,22,20,498,455
 "Skunk Pt SMR","Landsat","M. pyrifera","",1,0,1,0,1,"SMR","C",2003,33.9588,-119.9733,NA,NA,NA,NA,NA,NA,NA
 "South Point SMR","KFM, PISCO, Landsat","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,8,8,16,"SMR","C",2003,33.9022,-120.1391,2004,2023,20,0,20,300,284
 "Abalone Cove SMCA","PISCO, Landsat","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",5,4,6,4,10,"SMCA","ML",2012,33.7392,-118.3857,2010,2023,14,3,11,131,131
 "Cabrillo SMR","Landsat","M. pyrifera","",1,0,1,0,1,"SMR","ML",2012,32.6628,-117.2464,NA,NA,NA,NA,NA,NA,NA
-"Campus Point SMCA","LTER, PISCO, Landsat","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",5,4,8,6,14,"SMCA","ML",2012,34.4049,-119.8651,2001,2023,23,12,11,312,312
-"Dana Point SMCA","PISCO","S. pulcher","S. pulcher",1,1,1,1,2,"SMCA","ML",2012,33.4687,-117.7251,2011,2023,7,2,5,14,14
+"Campus Point SMCA","LTER, PISCO, Landsat","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",5,4,8,6,14,"SMCA","ML",2012,34.4049,-119.8651,2001,2023,23,12,11,317,317
 "Matlahuayl SMR","PISCO","P. interruptus; S. pulcher; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",3,4,3,4,7,"SMR","ML",2012,32.85167,-117.2783,2011,2023,7,2,5,66,66
-"Naples SMCA","LTER, PISCO, Landsat","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",5,4,8,6,14,"SMCA","ML",2012,34.4321,-119.9514,2001,2023,23,12,11,314,314
+"Naples SMCA","LTER, PISCO, Landsat","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",5,4,8,6,14,"SMCA","ML",2012,34.4321,-119.9514,2001,2023,23,12,11,323,323
 "Point Dume SMCA","Landsat","M. pyrifera","",1,0,1,0,1,"SMCA","ML",2012,34.0344,-118.872,NA,NA,NA,NA,NA,NA,NA
 "Point Dume SMR","Landsat","M. pyrifera","",1,0,1,0,1,"SMR","ML",2012,34.0079,-118.7917,NA,NA,NA,NA,NA,NA,NA
 "Point Vicente SMCA","PISCO, Landsat","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",5,4,6,4,10,"SMCA","ML",2012,33.7403,-118.4087,2004,2023,18,7,11,151,151

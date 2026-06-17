@@ -1,14 +1,14 @@
 "model","Species","Species_abbrev","slope","SE","t_value","df","p_value","CI_lower","CI_upper"
-"pooled","Panulirus interruptus","P. interruptus",0.10541,0.021348,4.9378,NA,NA,0.063569,0.14725
-"pooled","Semicossyphus pulcher","S. pulcher",-0.028999,0.014809,-1.9582,NA,NA,-0.058024,2.7e-05
-"pooled","Strongylocentrotus purpuratus","S. purpuratus",-0.079876,0.017013,-4.6949,NA,NA,-0.113222,-0.046531
-"pooled","Mesocentrotus franciscanus","M. franciscanus",-0.063397,0.017013,-3.7264,NA,NA,-0.096742,-0.030052
-"pooled","Macrocystis pyrifera","M. pyrifera",0.159279,0.015906,10.014,NA,NA,0.128105,0.190454
-"bio","Panulirus interruptus","P. interruptus",0.151174,0.107748,1.403,NA,NA,-0.060008,0.362356
-"bio","Semicossyphus pulcher","S. pulcher",-0.024418,0.032216,-0.7579,NA,NA,-0.087561,0.038724
-"bio","Strongylocentrotus purpuratus","S. purpuratus",-0.063531,0.032057,-1.9818,NA,NA,-0.126361,-0.000701
-"bio","Mesocentrotus franciscanus","M. franciscanus",-0.048781,0.032056,-1.5218,NA,NA,-0.111609,0.014047
-"bio","Macrocystis pyrifera","M. pyrifera",0.179049,0.027599,6.4875,NA,NA,0.124956,0.233143
+"pooled","Panulirus interruptus","P. interruptus",0.111496,0.028564,3.9034,NA,NA,0.055513,0.167479
+"pooled","Semicossyphus pulcher","S. pulcher",-0.023787,0.024416,-0.9742,NA,NA,-0.071642,0.024068
+"pooled","Strongylocentrotus purpuratus","S. purpuratus",-0.078118,0.02558,-3.0539,NA,NA,-0.128254,-0.027982
+"pooled","Mesocentrotus franciscanus","M. franciscanus",-0.059603,0.02558,-2.3301,NA,NA,-0.109739,-0.009468
+"pooled","Macrocystis pyrifera","M. pyrifera",0.164189,0.025111,6.5386,NA,NA,0.114973,0.213405
+"bio","Panulirus interruptus","P. interruptus",0.151272,0.10519,1.4381,NA,NA,-0.054896,0.35744
+"bio","Semicossyphus pulcher","S. pulcher",-0.02461,0.031452,-0.7825,NA,NA,-0.086254,0.037035
+"bio","Strongylocentrotus purpuratus","S. purpuratus",-0.071164,0.029987,-2.3731,NA,NA,-0.129937,-0.01239
+"bio","Mesocentrotus franciscanus","M. franciscanus",-0.051002,0.029986,-1.7009,NA,NA,-0.109773,0.00777
+"bio","Macrocystis pyrifera","M. pyrifera",0.177374,0.026937,6.5848,NA,NA,0.124578,0.230169
 "den","Panulirus interruptus","P. interruptus",0.093243,0.019253,4.843,NA,NA,0.055507,0.130978
 "den","Semicossyphus pulcher","S. pulcher",-0.02662,0.018221,-1.4609,NA,NA,-0.062332,0.009093
 "den","Strongylocentrotus purpuratus","S. purpuratus",-0.092095,0.019253,-4.7834,NA,NA,-0.129831,-0.05436
