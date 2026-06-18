@@ -60,6 +60,10 @@ EXCLUDED_REFERENCE_SITES <- c(
 )
 
 EXCLUDED_MPAS <- c(
+  # NOTE: names match the spelling in THIS repo's inputs, including the Landsat
+  # product (e.g. "Carrington Pt SMR", "San Miguel Island SC", "Judith Rk SMR").
+  # The data-processing repo excludes the in-water spelling ("Carrington Point
+  # SMR"); both refer to the same excluded MPAs (verified excluded from final results).
   "Carrington Pt SMR",
   "N/A",
   "Arrow Point to Lion Head Point SMCA",
