@@ -116,7 +116,7 @@ Raw data processing (scripts 03-07) lives in a separate repo:
 | Figure 5 (candidate, new) | Heatwave × MPA cascade: per-taxon lnRR (emmeans ± 95% CI) across before/during/after the 2014-16 MHW, RR-scaled axis, Southern California. Companion to Kumagai et al. 2024. | `fig_heatwave_cascade.pdf` | 14_heatwave_analysis.R |
 | Figure S (candidate, new) | Cascade regressions across MPA-years (kelp~urchin, urchin~lobster), density lnRR; cf. Kumagai 2024 Fig 7 | `fig_heatwave_cascade_regression.pdf` | 14_heatwave_analysis.R |
 
-Heatwave tables (14_heatwave_analysis.R): `tables/table_heatwave_period_effects.csv` (RR by period), `tables/table_heatwave_contrasts.csv` (during/after vs before), `tables/table_heatwave_cascade_regression.csv` (cascade slopes). Draft text: `docs/heatwave_section_draft.md`.
+Heatwave tables (14_heatwave_analysis.R): `table_heatwave_period_effects.csv` (RR by period), `table_heatwave_contrasts.csv` (during/after vs before), `table_heatwave_cascade_regression.csv` (cascade slopes, cf. Kumagai Fig 7), `table_heatwave_per_mpa_exposure.csv` (continuous local-exposure model), `table_heatwave_sensitivity.csv` (robustness to MPA set/panel), `table_heatwave_pbacips_integrated.csv` (KEY: recovery vs heatwave-specific effect — only kelp shows a heatwave effect beyond MPA recovery), `table_heatwave_crosscheck_kumagai.csv` (their density ratios vs our lnRR). Draft text: `docs/heatwave_section_draft.md`; legends: `docs/heatwave_figure_legends.md`.
 
 **Figure 1 Details:**
 - Base map: Southern California coastline with Channel Islands

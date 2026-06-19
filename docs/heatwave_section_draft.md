@@ -34,6 +34,13 @@ heatwave intensity (not only with calendar period), we extracted per-MPA annual
 MHW cumulative intensity (centroid + 3-km buffer) from the 1-km marine-heatwave
 raster of Kumagai et al. (2024) — the same product, ensuring spatial
 comparability — and fit `lnRR ~ exposure(standardized) + (1|MPA)` per taxon.
+Finally, and most importantly, because MPAs in our network were established over
+2003–2012 while the heatwave is fixed in calendar time, we can separate the
+ongoing pBACIPS *recovery* trajectory from any *heatwave-specific* effect. For
+post-establishment data we fit `lnRR ~ time-since-establishment + exposure + (1|MPA)`
+and used a likelihood-ratio test against a recovery-only model to ask whether the
+heatwave shifted the cascade beyond the recovery trend — a separation Kumagai
+et al. (2024) could not make without a pre-establishment baseline.
 
 ## Results — The MPA cascade strengthens with the heatwave
 
@@ -68,7 +75,20 @@ The same pattern emerges spatially: where local heatwave exposure was more inten
 the inside-MPA advantage was larger for kelp (+0.41 lnRR per SD of exposure,
 p = 2×10⁻⁶) and lobster (+0.23, p = 0.002) and the disadvantage stronger for purple
 urchins (−0.19, p = 0.001), while sheephead and red urchins did not respond to local
-exposure (p ≥ 0.20). The MPA cascade thus tracks the heatwave in both time and space.
+exposure (p ≥ 0.20).
+
+Separating recovery from heatwave, however, shows these signals have different
+origins. Controlling for time since MPA establishment (the pBACIPS recovery
+trajectory), the inside-MPA shifts in lobster, sheephead, and red urchins are
+explained by recovery and add no detectable heatwave-specific effect (heatwave
+term p ≥ 0.34; recovery term p < 10⁻³ for all). For purple urchins the heatwave
+adds a marginal further suppression beyond recovery (−0.11 per SD exposure,
+p = 0.08). Only giant kelp shows a clear heatwave-specific effect: beyond a strong
+recovery trend (+0.12 lnRR yr⁻¹, p < 10⁻⁷), kelp's inside-MPA advantage rose
+further with contemporaneous heatwave exposure (+0.31 per SD, p = 0.003;
+likelihood-ratio p = 0.003). In other words, the predator and urchin components of
+the cascade strengthened steadily as reserves matured, whereas MPAs delivered an
+additional, acute buffering of giant kelp specifically during the heatwave.
 
 ## Discussion — Convergence with, and extension of, Kumagai et al. (2024)
 
@@ -82,6 +102,18 @@ NPS Kelp Forest Monitoring program (Channel Islands), and SBC LTER. The agreemen
 across data sources and analytical framings strengthens the inference that the
 cascade — not a confound of MPA placement — drives the resilience signal.
 
+Our before/after-establishment design also lets us go a step further than studies
+that compare protected and unprotected sites only during a heatwave. Because our
+reserves were established over a decade (2003–2012), we can separate the steady
+recovery of the cascade as reserves mature from any acute, heatwave-specific
+effect. Doing so reveals that most of the apparent heatwave "strengthening" — in
+lobster, sheephead, and red urchins — reflects ongoing recovery rather than a
+distinct response to the 2014–2016 event. The clear exception is giant kelp, for
+which MPAs delivered an acute resilience benefit during the heatwave over and above
+the recovery trend. This refines the prevailing narrative: predator recovery and
+urchin control build slowly with protection, but their payoff for the foundation
+species becomes most visible precisely when a climate shock arrives.
+
 Two finer-grained results also converge. The cascade is carried by spiny lobster,
 not sheephead: lobster's inside-MPA advantage tripled across the heatwave and
 predicted both urchin suppression and kelp gain, whereas sheephead's advantage was
@@ -92,11 +124,12 @@ red urchins were suppressed less than purple urchins, consistent with the partia
 release of red urchins from fishing inside reserves (Malakhoff & Miller 2021)
 acting against the cascade — a complication we document elsewhere in this study.
 
-**Caveats.** This is a period-level test on the response ratio and does not yet
-apply the full pBACIPS baseline correction; the pre-heatwave kelp deficit inside
-reserves (RR = 0.47) is exactly the kind of pre-existing difference that the main
-pBACIPS analysis is designed to absorb, so a period × pBACIPS treatment is the
-natural next step. Per-MPA heatwave exposure is derived by sampling Kumagai et al.'s
+**Caveats.** The recovery-vs-heatwave decomposition controls for time since
+establishment but uses *contemporaneous* heatwave exposure, so it isolates the
+acute effect and attributes the sustained post-2016 kelp elevation to recovery;
+the kelp heatwave benefit is therefore a conservative (lower-bound) estimate, and
+the full NLS-pBACIPS extraction-time machinery is not yet integrated. Per-MPA
+heatwave exposure is derived by sampling Kumagai et al.'s
 1-km raster at MPA centroids (centroid + buffer); polygon-area-weighted exposure
 would be a modest refinement. Cross-MPA tests of the cascade are underpowered (≈11 MPAs with paired data), so we
 rest the mechanistic inference on the well-replicated MPA-year regressions rather

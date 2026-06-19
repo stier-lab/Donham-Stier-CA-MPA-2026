@@ -204,6 +204,30 @@ if (file.exists(expo_path)) {
   }
   expo_tab <- do.call(rbind, ex_rows)[taxa, ]
   write.csv(expo_tab, here::here("tables", "table_heatwave_per_mpa_exposure.csv"), row.names = FALSE)
+
+  # -------------------------------------------------------------------------
+  # 6b. Integrated pBACIPS-recovery + heatwave model. Does the heatwave effect
+  #     survive controlling for the ongoing recovery trajectory (time since MPA
+  #     establishment)? Staggered establishment (2003-2012) separates the two.
+  #     Post-establishment only; LRT vs a time-only model.
+  # -------------------------------------------------------------------------
+  ai <- subset(je, BA == "After" & !is.na(time))
+  int_rows <- list()
+  for (tx in taxa) {
+    s <- subset(ai, y == tx)
+    s$z <- as.numeric(scale(s$mhw_icum_mpa))
+    m0 <- lmer(lnDiff ~ time + (1 | CA_MPA_Name_Short), data = s, REML = FALSE)
+    m1 <- lmer(lnDiff ~ time + z + (1 | CA_MPA_Name_Short), data = s, REML = FALSE)
+    co <- summary(m1)$coefficients
+    lrt <- anova(m0, m1)
+    int_rows[[tx]] <- data.frame(
+      Taxon = tx, Role = role[tx], n = nrow(s),
+      recovery_slope = round(co["time", 1], 3), recovery_p = signif(co["time", 5], 3),
+      heatwave_slope_perSD = round(co["z", 1], 3), heatwave_p = signif(co["z", 5], 3),
+      LRT_p = signif(lrt$`Pr(>Chisq)`[2], 3))
+  }
+  write.csv(do.call(rbind, int_rows)[taxa, ],
+            here::here("tables", "table_heatwave_pbacips_integrated.csv"), row.names = FALSE)
 } else {
   message("  [14] per-MPA exposure input missing; skipping continuous-exposure model.")
 }
