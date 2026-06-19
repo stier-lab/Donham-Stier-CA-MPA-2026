@@ -208,7 +208,44 @@ if (file.exists(expo_path)) {
   message("  [14] per-MPA exposure input missing; skipping continuous-exposure model.")
 }
 
+# ---------------------------------------------------------------------------
+# 7. Sensitivity of the headline after-vs-before contrast (lobster, purple
+#    urchin, kelp) to the MPA set and panel balance.
+# ---------------------------------------------------------------------------
+sheephead_only <- c("Blue Cavern Onshore SMCA", "Farnsworth Onshore SMCA", "Swamis SMCA",
+                    "Long Point SMR", "Point Dume SMR", "Point Dume SMCA", "Painted Cave SMCA",
+                    "Cat Harbor SMCA", "Dana Point SMCA", "Anacapa Island SMCA",
+                    "Santa Barbara Island SMR")
+ab_contrast <- function(sub) {
+  m <- tryCatch(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub), error = function(e) NULL)
+  if (is.null(m)) return(c(NA, NA))
+  cc <- as.data.frame(contrast(emmeans(m, ~ period), method = list("after-before" = c(-1, 0, 1))))
+  c(cc$estimate, cc$p.value)
+}
+scen <- list(
+  "all_MPAs" = function(x) x,
+  "balanced_3periods" = function(x) {
+    keep <- names(which(tapply(x$period, x$CA_MPA_Name_Short, function(z) length(unique(z))) == 3))
+    x[x$CA_MPA_Name_Short %in% keep, ] },
+  "SMR_only" = function(x) x[grepl("SMR", x$CA_MPA_Name_Short), ],
+  "drop_sheephead_only" = function(x) x[!x$CA_MPA_Name_Short %in% sheephead_only, ]
+)
+sens_rows <- list()
+for (tx in c("Panulirus interruptus", "Strongylocentrotus purpuratus", "Macrocystis pyrifera")) {
+  for (nm in names(scen)) {
+    sub <- scen[[nm]](subset(rr, y == tx))
+    r <- ab_contrast(sub)
+    sens_rows[[paste(tx, nm)]] <- data.frame(
+      Taxon = tx, scenario = nm, n = nrow(sub),
+      n_mpa = length(unique(sub$CA_MPA_Name_Short)),
+      after_before_dlnRR = round(r[1], 3), p = signif(r[2], 3))
+  }
+}
+write.csv(do.call(rbind, sens_rows),
+          here::here("tables", "table_heatwave_sensitivity.csv"), row.names = FALSE)
+
 cat("  Heatwave analysis complete:\n",
     "   tables/table_heatwave_period_effects.csv, table_heatwave_contrasts.csv,",
-    "table_heatwave_cascade_regression.csv, table_heatwave_per_mpa_exposure.csv\n",
+    "table_heatwave_cascade_regression.csv, table_heatwave_per_mpa_exposure.csv,",
+    "table_heatwave_sensitivity.csv\n",
     "   plots/fig_heatwave_cascade.{pdf,png}, fig_heatwave_cascade_regression.{pdf,png}\n")

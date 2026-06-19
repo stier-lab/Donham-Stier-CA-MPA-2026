@@ -52,7 +52,11 @@ the heatwave (RR = 2.59, 3.51; ΔlnRR = +2.01, p < 10⁻²⁶) — the signature
 conferring resistance and recovery. California sheephead were the exception:
 consistently more abundant inside reserves (RR ≈ 1.8–2.0) but unchanged by the
 heatwave (ΔlnRR, p ≥ 0.23). Every shift held when biomass and density were modelled
-separately (after-vs-before p < 0.01 in both for lobster, both urchins, and kelp).
+separately (after-vs-before p < 0.01 in both for lobster, both urchins, and kelp),
+and were robust to restricting the panel to MPAs sampled in all three periods, to
+no-take SMRs only, and to dropping the sheephead-only MPAs
+(`table_heatwave_sensitivity.csv`; lobster after-vs-before ΔlnRR +0.97 to +1.28,
+purple urchin −1.02 to −1.25, kelp +1.93 to +2.36, all p < 10⁻⁶).
 
 The cascade regressions corroborate the mechanism. Across MPA-years, kelp lnRR
 declined with urchin lnRR (purple: slope −0.51, p = 2×10⁻⁹; red: −0.52, p = 9×10⁻⁶)
