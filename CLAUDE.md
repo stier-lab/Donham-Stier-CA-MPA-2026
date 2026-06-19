@@ -113,7 +113,10 @@ Raw data processing (scripts 03-07) lives in a separate repo:
 | Figure 2 | Trophic cascade case studies: 3×3 grid (predators/urchins/kelp rows × 3 Channel Islands sites), before/after MPA with linear trends | `fig_02_cascade_case_studies.pdf` | 11_figures.R |
 | Figure 3 | Meta-analytic mean effect sizes by taxa (RR-scaled axis) | `fig_03_mean_effects.pdf` | 11_figures.R |
 | Figure 4 | Recovery trajectories: 3×2 trophic grid (predators/herbivores/producer rows, 2 species per row), biomass lmer predictions with 95% CI | `fig_04_recovery_curves.pdf` | 11_figures.R |
-| Figure 5 (candidate, new) | Heatwave × MPA cascade: per-taxon lnRR (emmeans ± 95% CI) across before/during/after the 2014-16 MHW, RR-scaled axis, Southern California. Companion to Kumagai et al. 2024. Tables: `table_heatwave_period_effects.csv`, `table_heatwave_contrasts.csv` | `fig_heatwave_cascade.pdf` | 14_heatwave_analysis.R |
+| Figure 5 (candidate, new) | Heatwave × MPA cascade: per-taxon lnRR (emmeans ± 95% CI) across before/during/after the 2014-16 MHW, RR-scaled axis, Southern California. Companion to Kumagai et al. 2024. | `fig_heatwave_cascade.pdf` | 14_heatwave_analysis.R |
+| Figure S (candidate, new) | Cascade regressions across MPA-years (kelp~urchin, urchin~lobster), density lnRR; cf. Kumagai 2024 Fig 7 | `fig_heatwave_cascade_regression.pdf` | 14_heatwave_analysis.R |
+
+Heatwave tables (14_heatwave_analysis.R): `tables/table_heatwave_period_effects.csv` (RR by period), `tables/table_heatwave_contrasts.csv` (during/after vs before), `tables/table_heatwave_cascade_regression.csv` (cascade slopes). Draft text: `docs/heatwave_section_draft.md`.
 
 **Figure 1 Details:**
 - Base map: Southern California coastline with Channel Islands

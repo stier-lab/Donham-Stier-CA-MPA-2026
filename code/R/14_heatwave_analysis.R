@@ -136,5 +136,51 @@ ggsave(here::here("plots", "fig_heatwave_cascade.pdf"), p,
 ggsave(here::here("plots", "fig_heatwave_cascade.png"), p,
        width = 180, height = 80, units = "mm", dpi = 600)
 
-cat("  Heatwave analysis complete: tables/table_heatwave_period_effects.csv,",
-    "tables/table_heatwave_contrasts.csv, plots/fig_heatwave_cascade.{pdf,png}\n")
+# ---------------------------------------------------------------------------
+# 5. Trophic cascade regressions across MPA-years (density lnRR; cf. Kumagai
+#    et al. 2024 Fig. 7). Tests whether MPAs/years with stronger predator or
+#    weaker urchin response ratios also show stronger kelp response ratios.
+# ---------------------------------------------------------------------------
+den <- subset(rr, resp == "Den")
+agg <- aggregate(lnDiff ~ CA_MPA_Name_Short + year + y, data = den, FUN = mean)
+wide <- reshape(agg, idvar = c("CA_MPA_Name_Short", "year"), timevar = "y", direction = "wide")
+names(wide) <- gsub("lnDiff\\.", "", names(wide))
+casc_fit <- function(yv, xv, ylab, xlab) {
+  s <- wide[!is.na(wide[[yv]]) & !is.na(wide[[xv]]), ]
+  m <- lmer(s[[yv]] ~ s[[xv]] + (1 | CA_MPA_Name_Short), data = s)
+  co <- summary(m)$coefficients[2, ]
+  data.frame(response = ylab, predictor = xlab, n = nrow(s),
+             slope = round(co[1], 3), SE = round(co[2], 3), p = signif(co[5], 3))
+}
+casc <- rbind(
+  casc_fit("Macrocystis pyrifera", "Strongylocentrotus purpuratus", "kelp", "purple urchin"),
+  casc_fit("Macrocystis pyrifera", "Mesocentrotus franciscanus", "kelp", "red urchin"),
+  casc_fit("Strongylocentrotus purpuratus", "Panulirus interruptus", "purple urchin", "lobster"),
+  casc_fit("Strongylocentrotus purpuratus", "Semicossyphus pulcher", "purple urchin", "sheephead"),
+  casc_fit("Macrocystis pyrifera", "Panulirus interruptus", "kelp", "lobster"),
+  casc_fit("Macrocystis pyrifera", "Semicossyphus pulcher", "kelp", "sheephead"))
+write.csv(casc, here::here("tables", "table_heatwave_cascade_regression.csv"), row.names = FALSE)
+
+# Cascade scatter figure: kelp~purple urchin and purple urchin~lobster
+cs <- data.frame(
+  x = c(wide[["Strongylocentrotus purpuratus"]], wide[["Panulirus interruptus"]]),
+  y = c(wide[["Macrocystis pyrifera"]], wide[["Strongylocentrotus purpuratus"]]),
+  panel = rep(c("kelp ~ purple urchin", "purple urchin ~ lobster"), each = nrow(wide)))
+cs <- cs[is.finite(cs$x) & is.finite(cs$y), ]
+pc <- ggplot(cs, aes(x, y)) +
+  geom_hline(yintercept = 0, linetype = "dotted", colour = "grey60") +
+  geom_vline(xintercept = 0, linetype = "dotted", colour = "grey60") +
+  geom_point(alpha = 0.35, size = 0.9, colour = "#0072B2") +
+  geom_smooth(method = "lm", se = TRUE, colour = "#D55E00", linewidth = 0.7) +
+  facet_wrap(~ panel, scales = "free") +
+  labs(x = "Predictor lnRR (MPA / Reference)", y = "Response lnRR (MPA / Reference)") +
+  theme_mpa(base_size = 9)
+ggsave(here::here("plots", "fig_heatwave_cascade_regression.pdf"), pc,
+       width = 140, height = 75, units = "mm", device = cairo_pdf)
+ggsave(here::here("plots", "fig_heatwave_cascade_regression.png"), pc,
+       width = 140, height = 75, units = "mm", dpi = 600)
+
+cat("  Heatwave analysis complete:\n",
+    "   tables/table_heatwave_period_effects.csv, table_heatwave_contrasts.csv,",
+    "table_heatwave_cascade_regression.csv\n",
+    "   plots/fig_heatwave_cascade.{pdf,png}, fig_heatwave_cascade_regression.{pdf,png}\n")
