@@ -1,13 +1,13 @@
 "Taxon","scenario","n","n_mpa","after_before_dlnRR","p"
-"Panulirus interruptus","all_MPAs",415,11,1.178,9.8e-14
-"Panulirus interruptus","balanced_3periods",401,10,1.279,1.82e-15
-"Panulirus interruptus","SMR_only",287,7,0.974,2.1e-07
-"Panulirus interruptus","drop_sheephead_only",375,10,1.077,3.74e-11
-"Strongylocentrotus purpuratus","all_MPAs",703,11,-1.067,6.01e-17
-"Strongylocentrotus purpuratus","balanced_3periods",691,10,-1.046,6.53e-16
-"Strongylocentrotus purpuratus","SMR_only",510,7,-1.253,9.61e-16
-"Strongylocentrotus purpuratus","drop_sheephead_only",645,10,-1.023,2.39e-14
-"Macrocystis pyrifera","all_MPAs",742,11,2.015,5.24e-27
-"Macrocystis pyrifera","balanced_3periods",728,10,2.007,5.79e-26
-"Macrocystis pyrifera","SMR_only",538,7,2.357,8.23e-21
-"Macrocystis pyrifera","drop_sheephead_only",668,10,1.926,3.74e-23
+"Panulirus interruptus","all_MPAs",415,11,0.85,0.0045
+"Panulirus interruptus","balanced_3periods",401,10,1.015,0.000588
+"Panulirus interruptus","SMR_only",287,7,0.419,0.202
+"Panulirus interruptus","drop_sheephead_only",375,10,0.843,0.00464
+"Strongylocentrotus purpuratus","all_MPAs",703,11,-0.491,0.189
+"Strongylocentrotus purpuratus","balanced_3periods",691,10,-0.398,0.308
+"Strongylocentrotus purpuratus","SMR_only",510,7,-0.953,0.0211
+"Strongylocentrotus purpuratus","drop_sheephead_only",645,10,-0.369,0.368
+"Macrocystis pyrifera","all_MPAs",742,11,2.068,4.63e-06
+"Macrocystis pyrifera","balanced_3periods",728,10,2.057,1.09e-05
+"Macrocystis pyrifera","SMR_only",538,7,2.561,1.54e-05
+"Macrocystis pyrifera","drop_sheephead_only",668,10,1.927,5.85e-05

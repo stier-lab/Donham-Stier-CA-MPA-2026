@@ -1,7 +1,7 @@
 "response","predictor","n","slope","SE","p"
-"kelp","purple urchin",267,-0.506,0.082,2.43e-09
-"kelp","red urchin",267,-0.515,0.112,8.6e-06
-"purple urchin","lobster",260,-0.327,0.067,1.75e-06
-"purple urchin","sheephead",271,-0.122,0.094,0.195
-"kelp","lobster",249,0.712,0.1,1.43e-11
-"kelp","sheephead",263,0.153,0.14,0.277
+"kelp","purple urchin",267,-0.211,0.105,0.0449
+"kelp","red urchin",267,-0.256,0.128,0.0462
+"purple urchin","lobster",260,-0.007,0.061,0.91
+"purple urchin","sheephead",271,-0.017,0.077,0.826
+"kelp","lobster",249,0.314,0.106,0.00304
+"kelp","sheephead",263,-0.099,0.131,0.45

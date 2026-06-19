@@ -1,11 +1,11 @@
-"Taxon","Role","contrast","dlnRR","SE","t","p"
-"Panulirus interruptus","Predator","after-before",1.178,0.153,7.71,9.8e-14
-"Panulirus interruptus","Predator","during-before",0.786,0.197,3.98,8.04e-05
-"Semicossyphus pulcher","Predator","after-before",-0.119,0.1,-1.2,0.231
-"Semicossyphus pulcher","Predator","during-before",-0.024,0.136,-0.18,0.859
-"Strongylocentrotus purpuratus","Herbivore","after-before",-1.067,0.124,-8.58,6.01e-17
-"Strongylocentrotus purpuratus","Herbivore","during-before",-0.877,0.161,-5.45,7.18e-08
-"Mesocentrotus franciscanus","Herbivore","after-before",-0.654,0.104,-6.29,5.52e-10
-"Mesocentrotus franciscanus","Herbivore","during-before",-0.275,0.134,-2.06,0.04
-"Macrocystis pyrifera","Producer","after-before",2.015,0.18,11.2,5.24e-27
-"Macrocystis pyrifera","Producer","during-before",1.711,0.238,7.18,1.77e-12
+"taxon","contrast","dlnRR","p_AR1","p_naive"
+"Panulirus interruptus","during-before",0.424,0.0974,8.04e-05
+"Panulirus interruptus","after-before",0.85,0.0045,9.8e-14
+"Semicossyphus pulcher","during-before",0.071,0.727,0.859
+"Semicossyphus pulcher","after-before",0.02,0.923,0.231
+"Strongylocentrotus purpuratus","during-before",-0.558,0.0549,7.18e-08
+"Strongylocentrotus purpuratus","after-before",-0.491,0.189,6.01e-17
+"Mesocentrotus franciscanus","during-before",-0.138,0.554,0.04
+"Mesocentrotus franciscanus","after-before",-0.421,0.148,5.52e-10
+"Macrocystis pyrifera","during-before",1.777,9.66e-05,1.77e-12
+"Macrocystis pyrifera","after-before",2.068,4.63e-06,5.24e-27
