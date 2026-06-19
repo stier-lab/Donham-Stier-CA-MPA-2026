@@ -113,6 +113,7 @@ Raw data processing (scripts 03-07) lives in a separate repo:
 | Figure 2 | Trophic cascade case studies: 3×3 grid (predators/urchins/kelp rows × 3 Channel Islands sites), before/after MPA with linear trends | `fig_02_cascade_case_studies.pdf` | 11_figures.R |
 | Figure 3 | Meta-analytic mean effect sizes by taxa (RR-scaled axis) | `fig_03_mean_effects.pdf` | 11_figures.R |
 | Figure 4 | Recovery trajectories: 3×2 trophic grid (predators/herbivores/producer rows, 2 species per row), biomass lmer predictions with 95% CI | `fig_04_recovery_curves.pdf` | 11_figures.R |
+| Figure 5 (candidate, new) | Heatwave × MPA cascade: per-taxon lnRR (emmeans ± 95% CI) across before/during/after the 2014-16 MHW, RR-scaled axis, Southern California. Companion to Kumagai et al. 2024. Tables: `table_heatwave_period_effects.csv`, `table_heatwave_contrasts.csv` | `fig_heatwave_cascade.pdf` | 14_heatwave_analysis.R |
 
 **Figure 1 Details:**
 - Base map: Southern California coastline with Channel Islands
@@ -265,6 +266,7 @@ Pipeline order:
 10_temporal_analysis.R   - Temporal dynamics (SI Figs S3-S5, temporal tables)
 11_figures.R             - Publication figures (Figs 1-4, S1-S2, S7a-e, S8-S12 diagnostics)
 13_additional_analyses.R - Moderator analyses (SI Fig S6, moderator tables)
+14_heatwave_analysis.R   - MPA cascade x 2014-16 marine heatwave (Southern CA; Kumagai 2024 comparison)
 12_results_summary.R     - Generate results CSVs and markdown summary
 run_all.R                - Pipeline orchestration
 run_figures_only.R       - Fast figure regeneration (~17s all, ~4s single)

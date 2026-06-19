@@ -206,6 +206,9 @@ source_module("11_figures.R", "11")
 # --- 13: Additional analyses (moderator comparisons, supplemental fig S9) ---
 source_module("13_additional_analyses.R", "13")
 
+# --- 14: Heatwave analysis (MPA cascade x 2014-16 MHW; Kumagai 2024 comparison) ---
+source_module("14_heatwave_analysis.R", "14")
+
 # --- 12: Results Summary --------------------------------------------------------------------------
 source_module("12_results_summary.R", "12")
 
