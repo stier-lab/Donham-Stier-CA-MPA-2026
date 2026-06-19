@@ -1,0 +1,16 @@
+taxon,period,RR_theirs,Role,RR_ours
+P. interruptus,before,3.12,Predator,0.93
+P. interruptus,during,4.35,Predator,2.05
+P. interruptus,after,3.03,Predator,3.03
+S. pulcher,before,1.52,Predator,1.98
+S. pulcher,during,1.44,Predator,1.94
+S. pulcher,after,1.5,Predator,1.76
+S. purpuratus,before,1.15,Herbivore,1.08
+S. purpuratus,during,0.45,Herbivore,0.45
+S. purpuratus,after,0.41,Herbivore,0.37
+M. franciscanus,before,1.18,Herbivore,1.22
+M. franciscanus,during,0.83,Herbivore,0.92
+M. franciscanus,after,0.81,Herbivore,0.63
+M. pyrifera,before,1.19,Producer,0.47
+M. pyrifera,during,1.81,Producer,2.59
+M. pyrifera,after,3.12,Producer,3.51

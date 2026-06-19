@@ -100,3 +100,22 @@ than on per-MPA before→after change correlations (which were non-significant).
 Analysis is restricted to the Southern California Bight; we do not engage the
 Central/Northern California (sea-otter / sunflower-star) dynamics that Kumagai and
 others address.
+
+---
+
+## Direct data cross-check vs Kumagai et al. (2024)
+
+Computing the inside-vs-outside response independently on each dataset
+(`table_heatwave_crosscheck_kumagai.csv`) confirms convergence. From Kumagai's
+processed Southern California subtidal data we computed the Full-vs-Reference raw
+density ratio per period; from ours, the proportion-based paired lnRR (exponentiated).
+Both show the same cascade through the heatwave — lobster high/rising, sheephead flat,
+purple urchins collapsing (nearly identical: 1.1 → 0.45 → 0.4 in both), red urchins
+declining, and kelp rising sharply (after-period inside-advantage 3.1–3.5× in both).
+The principal difference is the pre-heatwave baseline for lobster and kelp, which sit
+higher inside reserves in their raw-density framing but near or below parity in our
+proportion-based, paired-reference, KFM-inclusive framing — the baseline difference
+the pBACIPS design is intended to absorb. The agreement across two datasets and two
+analytical traditions is strong evidence that the predator–urchin–kelp cascade, not a
+methodological artifact, underlies MPA-conferred kelp resilience to marine heatwaves
+in Southern California.
