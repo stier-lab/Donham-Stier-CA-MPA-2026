@@ -180,7 +180,35 @@ ggsave(here::here("plots", "fig_heatwave_cascade_regression.pdf"), pc,
 ggsave(here::here("plots", "fig_heatwave_cascade_regression.png"), pc,
        width = 140, height = 75, units = "mm", dpi = 600)
 
+# ---------------------------------------------------------------------------
+# 6. Per-MPA continuous heatwave exposure. Does the MPA effect scale with LOCAL
+#    heatwave intensity (not just temporal period)? Exposure = per-MPA annual MHW
+#    cumulative intensity extracted (centroid + buffer) from the 1 km raster of
+#    Kumagai et al. (2024) -- same product, so spatially comparable. Provided as a
+#    tracked input data/per_mpa_mhw_exposure.csv (derivation in PROVENANCE).
+# ---------------------------------------------------------------------------
+expo_path <- here::here("data", "per_mpa_mhw_exposure.csv")
+if (file.exists(expo_path)) {
+  expo <- read.csv(expo_path, stringsAsFactors = FALSE)
+  je <- merge(rr, expo, by = c("CA_MPA_Name_Short", "year"))
+  je <- subset(je, !is.na(mhw_icum_mpa) & !is.na(lnDiff))
+  ex_rows <- list()
+  for (tx in taxa) {
+    s <- subset(je, y == tx)
+    s$z <- as.numeric(scale(s$mhw_icum_mpa))   # standardized local exposure
+    m <- lmer(lnDiff ~ z + (1 | CA_MPA_Name_Short), data = s)
+    co <- summary(m)$coefficients[2, ]
+    ex_rows[[tx]] <- data.frame(Taxon = tx, Role = role[tx], n = nrow(s),
+                                slope_per_SD = round(co[1], 3), SE = round(co[2], 3),
+                                p = signif(co[5], 3))
+  }
+  expo_tab <- do.call(rbind, ex_rows)[taxa, ]
+  write.csv(expo_tab, here::here("tables", "table_heatwave_per_mpa_exposure.csv"), row.names = FALSE)
+} else {
+  message("  [14] per-MPA exposure input missing; skipping continuous-exposure model.")
+}
+
 cat("  Heatwave analysis complete:\n",
     "   tables/table_heatwave_period_effects.csv, table_heatwave_contrasts.csv,",
-    "table_heatwave_cascade_regression.csv\n",
+    "table_heatwave_cascade_regression.csv, table_heatwave_per_mpa_exposure.csv\n",
     "   plots/fig_heatwave_cascade.{pdf,png}, fig_heatwave_cascade_regression.{pdf,png}\n")

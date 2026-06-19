@@ -29,7 +29,11 @@ contrasts with `emmeans`. We confirmed results held when biomass and density
 response ratios were modelled separately. To test the cascade mechanism (cf.
 Kumagai et al. 2024, their Fig. 7), we regressed density lnRR on density lnRR across
 all MPA-years with a site random intercept (kelp~urchin, urchin~predator,
-kelp~predator).
+kelp~predator). Finally, to ask whether the MPA effect scales with *local*
+heatwave intensity (not only with calendar period), we extracted per-MPA annual
+MHW cumulative intensity (centroid + 3-km buffer) from the 1-km marine-heatwave
+raster of Kumagai et al. (2024) — the same product, ensuring spatial
+comparability — and fit `lnRR ~ exposure(standardized) + (1|MPA)` per taxon.
 
 ## Results — The MPA cascade strengthens with the heatwave
 
@@ -55,6 +59,12 @@ declined with urchin lnRR (purple: slope −0.51, p = 2×10⁻⁹; red: −0.52,
 and urchin lnRR declined with lobster lnRR (−0.33, p = 2×10⁻⁶), while kelp lnRR rose
 with lobster lnRR (+0.71, p = 1×10⁻¹¹). Sheephead lnRR predicted neither urchins
 (p = 0.20) nor kelp (p = 0.28), indicating a lobster-led cascade.
+
+The same pattern emerges spatially: where local heatwave exposure was more intense,
+the inside-MPA advantage was larger for kelp (+0.41 lnRR per SD of exposure,
+p = 2×10⁻⁶) and lobster (+0.23, p = 0.002) and the disadvantage stronger for purple
+urchins (−0.19, p = 0.001), while sheephead and red urchins did not respond to local
+exposure (p ≥ 0.20). The MPA cascade thus tracks the heatwave in both time and space.
 
 ## Discussion — Convergence with, and extension of, Kumagai et al. (2024)
 
@@ -82,9 +92,9 @@ acting against the cascade — a complication we document elsewhere in this stud
 apply the full pBACIPS baseline correction; the pre-heatwave kelp deficit inside
 reserves (RR = 0.47) is exactly the kind of pre-existing difference that the main
 pBACIPS analysis is designed to absorb, so a period × pBACIPS treatment is the
-natural next step. Heatwave exposure is regional (one series for the Bight); a
-per-MPA exposure layer would let intensity enter as a continuous moderator.
-Cross-MPA tests of the cascade are underpowered (≈11 MPAs with paired data), so we
+natural next step. Per-MPA heatwave exposure is derived by sampling Kumagai et al.'s
+1-km raster at MPA centroids (centroid + buffer); polygon-area-weighted exposure
+would be a modest refinement. Cross-MPA tests of the cascade are underpowered (≈11 MPAs with paired data), so we
 rest the mechanistic inference on the well-replicated MPA-year regressions rather
 than on per-MPA before→after change correlations (which were non-significant).
 Analysis is restricted to the Southern California Bight; we do not engage the

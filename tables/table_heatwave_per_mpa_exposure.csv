@@ -1,0 +1,6 @@
+"Taxon","Role","n","slope_per_SD","SE","p"
+"Panulirus interruptus","Predator",376,0.229,0.072,0.00165
+"Semicossyphus pulcher","Predator",704,0.029,0.048,0.538
+"Strongylocentrotus purpuratus","Herbivore",650,-0.185,0.057,0.00123
+"Mesocentrotus franciscanus","Herbivore",640,-0.059,0.046,0.202
+"Macrocystis pyrifera","Producer",684,0.413,0.087,2.4e-06
