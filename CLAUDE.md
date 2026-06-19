@@ -482,6 +482,16 @@ When adding new figures or outputs:
 - `docs/revisions_script.html` - Analysis revisions HTML JavaScript (scroll spy, progress bar)
 - This file (`CLAUDE.md`) - Project conventions for AI assistants
 
+## Related Work / External Comparison (in progress)
+
+We are running a **compare-and-contrast** against **Kumagai et al. 2024, *Global Change Biology*** — "Marine Protected Areas That Preserve Trophic Cascades Promote Resilience of Kelp Forests to Marine Heatwaves." It is a parallel study on an overlapping system and dataset (same PISCO/MLPA subtidal surveys + the same T. Bell SBC LTER Landsat product) that reaches a convergent conclusion: Southern California no-take MPAs preserve the lobster/sheephead → urchin → kelp cascade, conferring resilience to the 2014–2016 marine heatwave (MHW), with no effect in Central California (sea otters protected statewide; sunflower stars lost to SSWD).
+
+Goals of the comparison: (1) confirm our PISCO numbers match theirs at shared sites; (2) contrast their approach (GLMM + permutation resistance/recovery framed around the MHW; Hamilton & Caselle 2015 sheephead allometry) against ours (pBACIPS before/after MPA establishment + multilevel meta-analysis); (3) scope **our own MHW analysis** — we currently include no climate/heatwave covariate.
+
+- Their code + data: cloned to `~/kumagai2024-comparison/` (full GitHub clone + Zenodo CC-BY-4.0 snapshot). See `~/kumagai2024-comparison/PROVENANCE.md` for sources/integrity. Key file: `repo/Processed_data/MLPA_data_summarized_wo_siteblocks.csv` (their processed subtidal data) + `repo/Processed_data/SST/MHW_cummulative_intensity_1km.tif` (their MHW-intensity raster).
+- MHW definitions / SBC LTER temperature context: `~/sbc-oceanography/` (`R/31_marine_heatwaves.R`, OISST-based MHW figure, mooring/satellite/reanalysis temperature data).
+- Kumagai PDF: `references/pdfs/Kumagai2024.pdf`.
+
 ## Known Limitations & Methodological Notes
 
 These limitations are documented in code comments throughout the pipeline and should be acknowledged in the manuscript discussion section.

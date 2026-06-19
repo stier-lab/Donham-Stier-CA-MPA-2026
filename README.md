@@ -309,6 +309,10 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 - **`docs/si_style.css`** - Supporting Information custom styles
 - **`docs/si_script.html`** - Supporting Information JavaScript (lightbox, progress bar)
 
+### Related work (compare & contrast — in progress)
+
+We are comparing this analysis against **Kumagai et al. 2024** (*Global Change Biology*, [doi:10.1111/gcb.17620](https://doi.org/10.1111/gcb.17620)) — *"Marine Protected Areas That Preserve Trophic Cascades Promote Resilience of Kelp Forests to Marine Heatwaves."* It is a parallel study on an overlapping system/dataset (same PISCO/MLPA subtidal + T. Bell SBC LTER Landsat) with a convergent conclusion. We are using it to (1) cross-check our PISCO numbers, (2) contrast their GLMM/permutation, heatwave-resilience approach with our pBACIPS + meta-analysis, and (3) scope our own marine-heatwave (MHW) analysis. Their code + data are mirrored locally (GitHub clone + Zenodo CC-BY-4.0 snapshot); see `CLAUDE.md` → "Related Work / External Comparison" for details.
+
 ---
 
 ## Known Limitations
