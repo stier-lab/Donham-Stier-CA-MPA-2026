@@ -57,3 +57,12 @@ plots/archive/
 # Temporary files
 *.tmp
 *~
+
+# Office/editor lock + scratch files (never commit)
+~$*
+.fuse_hidden*
+excalidraw.log
+
+# Working scratch dirs (literature PDFs, ad-hoc papers — not part of the analysis repo)
+references/
+docs/papers/

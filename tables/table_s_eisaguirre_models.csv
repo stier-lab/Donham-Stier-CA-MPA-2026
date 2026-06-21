@@ -1,0 +1,12 @@
+"period","model","k","AICc","dAICc","weight"
+"pre","+seastar*prot+sheephead",11,5487.43,0,1
+"pre","+sheephead(dens*len)",8,5514,26.57,0
+"pre","+sheephead(dens*len)+protection",9,5515.04,27.61,0
+"pre","+seastar*protection",8,5744.48,257.05,0
+"pre","+seastar",6,5751.14,263.71,0
+"pre","temp+depth",5,5776.88,289.45,0
+"pre","+protection",6,5777.8,290.37,0
+"post","+sheephead(dens*len)+protection",9,7924.44,0,1
+"post","+sheephead(dens*len)",8,7964.79,40.35,0
+"post","+protection",6,8084.43,159.99,0
+"post","temp+depth",5,8117.48,193.04,0

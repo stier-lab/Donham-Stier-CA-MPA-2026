@@ -1,0 +1,7 @@
+"contribution","mean_abs_delta_lnRR","max_abs_delta_lnRR","n_taxa_significance_flips"
+"METHOD: response scale (raw density -> proportion)",0.204,0.442,1
+"METHOD: distribution/link (Tweedie GLMM -> Gaussian log-LMM)",0.285,0.514,1
+"METHOD: reference (pooled -> paired)",0.091,0.214,0
+"METHOD: temporal autocorrelation (no AR1 -> AR1+SourceRE)",0.141,0.309,2
+"METHOD: weighting (AR1 LMM -> IV meta-analysis)",0.201,0.654,2
+"DATA: substrate (ours vs Kumagai) at matched pooled waypoints",0.632,1.828,5

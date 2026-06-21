@@ -26,6 +26,9 @@
 #'   10_temporal_analysis.R - Recovery trajectories, phase portraits, cascade consistency
 #'   11_figures.R           - All main text (Figs 1-4) and most SI figures
 #'   13_additional_analyses.R - Moderator comparisons (SMR vs SMCA, Islands vs Mainland)
+#'   14_heatwave_analysis.R - MPA cascade x 2014-16 marine heatwave (Kumagai 2024 comparison)
+#'   15_methods_comparison.R - Analytical multiverse: how method drives effect-size variation (SI)
+#'   16_environmental_moderators.R - Env covariates (Kumagai PCA) as meta-regression moderators (SI)
 #'   12_results_summary.R   - Summary CSVs, RESULTS_SUMMARY.md, data flow audit
 #'
 #' KEY OUTPUTS:
@@ -208,6 +211,12 @@ source_module("13_additional_analyses.R", "13")
 
 # --- 14: Heatwave analysis (MPA cascade x 2014-16 MHW; Kumagai 2024 comparison) ---
 source_module("14_heatwave_analysis.R", "14")
+
+# --- 15: Methods comparison (analytical multiverse vs Kumagai 2024; SI supplement) ---
+source_module("15_methods_comparison.R", "15")
+
+# --- 16: Environmental moderators (Kumagai PCA covariates as meta-regression; SI) ---
+source_module("16_environmental_moderators.R", "16")
 
 # --- 12: Results Summary --------------------------------------------------------------------------
 source_module("12_results_summary.R", "12")
