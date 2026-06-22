@@ -319,6 +319,8 @@ A companion **environmental-moderator analysis** (`code/R/16_environmental_moder
 
 We also **reproduce Eisaguirre et al. (2020, *Ecology*)** — the closest paired-design Channel-Islands analogue of our cascade claim — from the raw PISCO monitoring data we hold, since they archived no data or code (`code/R/17_eisaguirre_reproduction.R`, doc `docs/eisaguirre_reproduction.md`). The design-level results reproduce cleanly (post-disease top model identical; urchins higher outside MPAs; sheephead larger inside; bivariate sea-star→urchin, sheephead→urchin, and urchin→kelp signs all match), but the *partial* size-structured suppression does not survive once protection is in the model (sheephead–protection collinearity) — the same lesson as the Kumagai comparison: structural conclusions are robust, fine-grained partial-mechanism attribution is specification-sensitive.
 
+Finally, we test whether the among-MPA variation in **effectiveness** is *predictable* (`code/R/18_mpa_effectiveness_predictors.R`, doc `docs/mpa_effectiveness_predictors.md`): assembling environmental, reserve-design, and trophic predictors per MPA and validating with leave-one-out CV. It is not — no predictor survives FDR, and out-of-sample R² is negative (kelp LOO-CV R² = −0.40), so the variation is real but idiosyncratic and not captured by available covariates at this sample size. The defensible statement is the robust *average* MPA effect plus its meta-analytic heterogeneity, not a prediction of which reserves are most effective.
+
 ---
 
 ## Known Limitations

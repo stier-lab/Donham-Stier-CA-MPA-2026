@@ -1,0 +1,3 @@
+"target","k","n_predictors","metareg_pseudoR2","rf_oob_R2","loo_cv_R2","loo_predictors"
+"Giant kelp effectiveness (biomass lnRR)",12,7,0.649,-0.529,-0.395,"lat + cs_mean + log_size"
+"Purple urchin suppression (density lnRR)",10,7,0,-0.639,-4.622,"cs_mean + log_size + mhw_during"
