@@ -1,0 +1,6 @@
+"taxon","resp","inside_before","p_before","reorg_compound","p_compound","reorg_after","p_after"
+"Strongylocentrotus purpuratus","Den",-0.227,0.291,-0.593,0.175,-0.878,0.0082
+"Mesocentrotus franciscanus","Den",0.236,0.141,-0.346,0.287,-0.749,0.00249
+"Macrocystis pyrifera","Bio",-0.203,0.484,1.317,0.025,1.779,7.33e-05
+"Panulirus interruptus","Den",0.805,1.18e-05,0.68,0.0528,0.752,0.00546
+"Semicossyphus pulcher","Den",0.608,2.47e-07,-0.257,0.292,-0.239,0.176
