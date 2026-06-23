@@ -3,48 +3,49 @@
 # =============================================================================
 #
 # PURPOSE:
-#   Evaluate MPA resilience to a COMPOUND disturbance -- the 2013-14 sea-star
-#   wasting disease (SSWD) immediately followed by the 2014-16 marine heatwave
-#   (MHW) -- as a complement to the heat-only framing of Kumagai (2024) / script 14
-#   and the disease-focused Eisaguirre (2020). This is a DIFFERENT STRESSOR TYPE
-#   (biotic disease / keystone-predator removal) layered on the thermal event.
+#   Evaluate MPA resilience to the 2013-14 sea-star wasting disease (SSWD) as a
+#   complement to the heat-only framing of Kumagai (2024) / scripts 14 & 19 and the
+#   disease-focused Eisaguirre (2020). SSWD removed the SUNFLOWER STAR (Pycnopodia
+#   helianthoides), the one sea star that is a major urchin predator.
 #
-# THE HONEST FRAMING:
-#   In the Southern California Bight, SSWD (2013-14) and the MHW (2014-16) are
-#   temporally inseparable, so this is a *compound* stressor test, NOT an
-#   SSWD-specific one. The new empirical content our 5-taxon harmonized data lacks
-#   is the SEA-STAR LOSS itself, which we document from the raw PISCO swath.
-#
-#   Logical key (established here): the sea star crashed EQUALLY inside and outside
-#   reserves (disease is not stopped by protection), so any MPA buffering of the
-#   urchin->kelp cascade must come from the PROTECTED fished predators (lobster,
-#   sheephead), not from protecting the sea star -- the compensation hypothesis.
+# CRITICAL CAVEAT (this version):
+#   The sunflower star is a COLD-WATER species. In the Southern California Bight it
+#   was present mainly at the colder, northern / island reefs and essentially ABSENT
+#   at most warmer (mainland, Catalina) reefs. Pre-SSWD (2008-2012), only ~1/3 of
+#   our MPAs had meaningful Pycnopodia; ~half had ~0. An earlier draft lumped
+#   Pycnopodia with Pisaster giganteus -- but Pisaster (which dominated total
+#   sea-star density) is NOT a primary urchin predator, so that conflated the wrong
+#   species. Here we use Pycnopodia SPECIFICALLY, document its patchy distribution,
+#   and -- because pre-SSWD Pycnopodia VARIES across reserves while the MHW hit them
+#   all -- use that variation to partly DISENTANGLE the keystone-loss (SSWD) signal
+#   from the heatwave: if the cascade reorganization is stronger where more sunflower
+#   star was lost, that is an SSWD effect beyond the MHW.
 #
 # ANALYSES:
-#   (A) Document the disturbance: sea-star (Pycnopodia + Pisaster) density crash in
-#       SoCal, inside vs outside, 2008-2022 (raw PISCO swath).
-#   (B) Cascade reorganization: did the inside-outside gap for urchins and kelp
-#       reorganize across the compound event? log(raw) ~ status*period + (1|MPA),
-#       period = before(<=2013) / compound(2014-16) / after(>=2017).
-#   (C) Resilience (lnRR): MPA effect on urchin suppression & kelp across the
-#       compound event (glmmTMB AR1, as script 14).
-#   (D) Cross-study synthesis: Eisaguirre (SSWD) / Kumagai (MHW) / ours (compound).
+#   (A) Pycnopodia distribution + crash where present (raw PISCO swath; Pisaster
+#       reported separately for transparency, not as the urchin predator).
+#   (B) Keystone moderation: is the MPA cascade response (kelp lnRR up, urchin lnRR
+#       down) across before/compound/after stronger at HIGH- vs LOW-Pycnopodia
+#       reserves? Stratified period effects + a period x Pycnopodia interaction.
+#   (C) Overall resilience (lnRR, AR1) for context.
+#   (D) Cross-study synthesis (reframed: the keystone mechanism is geographically
+#       restricted to the cold-water reefs that had sunflower stars).
 #
-#   SCOPE: Southern California Bight (lat <= 34.45 N).
+#   SCOPE: Southern California Bight (lat <= 34.45 N). period = before(<=2013) /
+#   compound(2014-16, SSWD+MHW) / after(>=2017).
 #
 # OUTPUTS (tables/, plots/):
-#   table_compound_seastar_crash.csv       - sea-star density by status x year
-#   table_compound_cascade_reorg.csv       - status x period interactions (urchin, kelp)
-#   table_compound_resilience.csv          - lnRR MPA effect by period (AR1)
-#   table_compound_crossstudy.csv          - 3-study synthesis
-#   fig_compound_disturbance.{pdf,png}     - sea-star crash + cascade response
-#
-# NOTE: standalone (reads raw PISCO swath from the sibling data repo for sea stars).
+#   table_compound_pycnopodia_distribution.csv  - per-MPA pre-SSWD Pycnopodia/Pisaster, group
+#   table_compound_pycnopodia_crash.csv         - Pycnopodia density by year at high-Pyc reefs
+#   table_compound_keystone_moderation.csv      - cascade response, high vs low Pycnopodia
+#   table_compound_resilience.csv               - lnRR MPA effect by period (AR1)
+#   table_compound_crossstudy.csv               - 3-study synthesis
+#   fig_compound_disturbance.{pdf,png}          - Pycnopodia distribution + stratified response
 #
 # AUTHORS: Emily Donham & Adrian Stier
 # =============================================================================
 
-cat("Running compound-disturbance analysis (SSWD + MHW; Southern California)...\n")
+cat("Running compound-disturbance analysis (SSWD/Pycnopodia + MHW; Southern California)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
 source(here::here("code", "R", "01_utils.R"))
@@ -52,64 +53,41 @@ suppressMessages({library(glmmTMB); library(emmeans); library(lme4); library(lme
 safe <- function(e) tryCatch(suppressWarnings(suppressMessages(e)), error = function(x) NULL)
 period3 <- function(y) factor(ifelse(y <= 2013, "before", ifelse(y <= 2016, "compound", "after")),
                               levels = c("before", "compound", "after"))
+PYC_HI <- 0.5   # pre-SSWD sunflower-star density (per 60 m2) threshold for "had sunflower stars"
 
 # ---------------------------------------------------------------------------
-# (A) Document the SSWD: sea-star crash in SoCal, inside vs outside
+# (A) Pycnopodia distribution + crash (raw PISCO swath, SoCal)
 # ---------------------------------------------------------------------------
 DR <- path.expand("~/Donham-Stier-CA-MPA-Data-2026/data/PISCO")
 have_swath <- dir.exists(DR)
+pyc_grp <- NULL
 if (have_swath) {
   st <- fread(file.path(DR, "master_site_table_Emilyedit.csv"))
   soc <- unique(st[latitude <= 34.45 & site_status %in% c("mpa", "reference"),
-                   .(site, status = site_status)])[!duplicated(site)]
+                   .(site, lat = latitude, mpa = CA_MPA_Name_Short)])[!duplicated(site)]
   sw <- fread(file.path(DR, "MLPA_kelpforest_swath_2024.csv"), nThread = 2,
               select = c("site", "year", "zone", "transect", "classcode", "count"))
   sw <- merge(sw, soc, by = "site")[year %in% 2008:2022]
   sw$tid <- paste(sw$site, sw$year, sw$zone, sw$transect)
-  star <- sw[classcode %in% c("PYCHEL", "PISGIG"), .(star = sum(count)), by = .(tid, status, year)]
-  tr <- unique(sw[, .(tid, status, year)])
-  tr <- merge(tr, star, by = c("tid", "status", "year"), all.x = TRUE); tr$star[is.na(tr$star)] <- 0
-  crash <- tr[, .(star_density = round(mean(star), 2), n = .N), by = .(year, status)]
-  crash <- crash[order(year, status)]
-  write.csv(crash, here::here("tables", "table_compound_seastar_crash.csv"), row.names = FALSE)
-  # drop magnitude pre vs post, by status
-  pre  <- tr[year <= 2013, .(pre = mean(star)), by = status]
-  post <- tr[year >= 2014, .(post = mean(star)), by = status]
-  drop <- merge(pre, post, by = "status"); drop$pct_drop <- round(100 * (1 - drop$post / drop$pre), 1)
-} else message("  [20] raw PISCO swath not found; sea-star section skipped.")
-
-# ---------------------------------------------------------------------------
-# (B) Cascade reorganization across the compound event (harmonized raw responses)
-#     log(raw) ~ status*period + (1|MPA): does the inside-outside gap reorganize?
-# ---------------------------------------------------------------------------
-oraw <- as.data.table(read.csv(here::here("data", "harmonized", "harmonized_raw_responses.csv"), stringsAsFactors = FALSE))
-oraw <- oraw[year >= 2002]
-oraw$period <- period3(oraw$year)
-oraw$status <- factor(oraw$status, levels = c("reference", "mpa"))
-log_eps <- function(x) { nz <- x[x > 0 & is.finite(x)]; log(x + (if (length(nz)) min(nz) / 2 else 1e-6)) }
-reorg_one <- function(taxon, rsp) {
-  d <- oraw[taxon_name == taxon & resp == rsp]
-  if (nrow(d) < 30) return(NULL)
-  d$lv <- log_eps(d$value)
-  m <- safe(lmer(lv ~ status * period + (1 | CA_MPA_Name_Short), data = d, REML = TRUE))
-  if (is.null(m)) return(NULL)
-  cc <- coef(summary(m))
-  g <- function(r) if (r %in% rownames(cc)) cc[r, c("Estimate", "Pr(>|t|)")] else c(NA, NA)
-  data.frame(taxon = taxon, resp = rsp,
-             inside_before = round(g("statusmpa")[1], 3),       p_before = signif(g("statusmpa")[2], 3),
-             reorg_compound = round(g("statusmpa:periodcompound")[1], 3), p_compound = signif(g("statusmpa:periodcompound")[2], 3),
-             reorg_after = round(g("statusmpa:periodafter")[1], 3),       p_after = signif(g("statusmpa:periodafter")[2], 3))
+  tr <- unique(sw[, .(tid, site, mpa, lat, year)])
+  for (cc in c("PYCHEL", "PISGIG")) { x <- sw[classcode == cc, .(v = sum(count)), by = tid]
+    setnames(x, "v", cc); tr <- merge(tr, x, by = "tid", all.x = TRUE); tr[[cc]][is.na(tr[[cc]])] <- 0 }
+  # per-MPA pre-SSWD baseline (2008-2012)
+  pre <- tr[year <= 2012, .(pyc_pre = round(mean(PYCHEL), 3), pis_pre = round(mean(PISGIG), 2),
+                            lat = round(mean(lat), 3)), by = mpa]
+  pre$pyc_group <- ifelse(pre$pyc_pre >= PYC_HI, "high", "low/zero")
+  pre <- pre[order(-pyc_pre)]
+  write.csv(pre, here::here("tables", "table_compound_pycnopodia_distribution.csv"), row.names = FALSE)
+  pyc_grp <- pre[, .(mpa, pyc_pre, pyc_group)]
+  # Pycnopodia crash through time at HIGH-Pyc reefs (where there was something to lose)
+  hi_mpa <- pre[pyc_group == "high", mpa]
+  crash <- tr[mpa %in% hi_mpa, .(pyc = round(mean(PYCHEL), 3), n = .N), by = year][order(year)]
+  write.csv(crash, here::here("tables", "table_compound_pycnopodia_crash.csv"), row.names = FALSE)
+  pyc_share <- round(sum(pre$pyc_pre) / sum(pre$pyc_pre + pre$pis_pre), 3)
 }
-reorg <- do.call(rbind, list(
-  reorg_one("Strongylocentrotus purpuratus", "Den"),
-  reorg_one("Mesocentrotus franciscanus", "Den"),
-  reorg_one("Macrocystis pyrifera", "Bio"),
-  reorg_one("Panulirus interruptus", "Den"),
-  reorg_one("Semicossyphus pulcher", "Den")))
-write.csv(reorg, here::here("tables", "table_compound_cascade_reorg.csv"), row.names = FALSE)
 
 # ---------------------------------------------------------------------------
-# (C) Resilience: MPA effect (lnRR) by period, AR1 (as script 14)
+# (B) Keystone moderation: cascade response high vs low Pycnopodia reserves
 # ---------------------------------------------------------------------------
 rr <- read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"), stringsAsFactors = FALSE)
 rr <- subset(rr, !is.na(lnDiff) & year >= 2002); rr$period <- period3(rr$year); rr$yrf <- factor(rr$year)
@@ -119,80 +97,111 @@ fit_ar1 <- function(form_fixed, data) {
   m <- safe(glmmTMB(as.formula(paste(form_fixed, "+ (1|CA_MPA_Name_Short)", re)), data = data))
   if (!is.null(m) && isTRUE(m$sdr$pdHess)) m else NULL
 }
+ab_contrasts <- function(m) {
+  em <- emmeans(m, ~ period)
+  cc <- as.data.frame(contrast(em, method = list("compound-before" = c(-1, 1, 0), "after-before" = c(-1, 0, 1))))
+  list(cb = cc$estimate[1], pcb = cc[[ncol(cc)]][1], ab = cc$estimate[2], pab = cc[[ncol(cc)]][2])
+}
+mod_rows <- list()
+if (!is.null(pyc_grp)) {
+  rrm <- merge(rr, pyc_grp, by.x = "CA_MPA_Name_Short", by.y = "mpa")
+  for (tx in c("Macrocystis pyrifera", "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus")) {
+    for (grp in c("high", "low/zero")) {
+      s <- subset(rrm, y == tx & pyc_group == grp)
+      if (length(unique(s$CA_MPA_Name_Short)) < 3) next
+      m <- fit_ar1("lnDiff ~ period", s)
+      if (is.null(m)) m <- safe(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = s, REML = TRUE))
+      if (is.null(m)) next
+      ct <- ab_contrasts(m)
+      mod_rows[[paste(tx, grp)]] <- data.frame(taxon = tx, pyc_group = grp,
+        n_mpa = length(unique(s$CA_MPA_Name_Short)),
+        compound_before = round(ct$cb, 3), p_compound = signif(ct$pcb, 3),
+        after_before = round(ct$ab, 3), p_after = signif(ct$pab, 3))
+    }
+    # period x Pycnopodia-group interaction (does the response DIFFER by group?)
+    s <- subset(rrm, y == tx); s$pyc_group <- factor(s$pyc_group, levels = c("low/zero", "high"))
+    mi <- fit_ar1("lnDiff ~ period * pyc_group", s)
+    if (!is.null(mi)) { cc <- summary(mi)$coefficients$cond
+      ix <- grep("periodafter:pyc_grouphigh", rownames(cc))
+      if (length(ix)) mod_rows[[paste(tx, "INTERACTION")]] <- data.frame(taxon = tx,
+        pyc_group = "after x high (interaction)", n_mpa = length(unique(s$CA_MPA_Name_Short)),
+        compound_before = NA, p_compound = NA,
+        after_before = round(cc[ix, 1], 3), p_after = signif(cc[ix, 4], 3)) }
+  }
+}
+mod_tab <- do.call(rbind, mod_rows)
+write.csv(mod_tab, here::here("tables", "table_compound_keystone_moderation.csv"), row.names = FALSE)
+
+# ---------------------------------------------------------------------------
+# (C) Overall resilience (lnRR, AR1) for context + figure emmeans
+# ---------------------------------------------------------------------------
 taxa <- c("Panulirus interruptus", "Semicossyphus pulcher", "Strongylocentrotus purpuratus",
           "Mesocentrotus franciscanus", "Macrocystis pyrifera")
 short <- c("Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" = "S. pulcher",
            "Strongylocentrotus purpuratus" = "S. purpuratus",
            "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
-res_rows <- list(); em_list <- list()
+res_rows <- list()
 for (tx in taxa) {
-  sub <- subset(rr, y == tx)
-  m <- fit_ar1("lnDiff ~ period", sub)
-  if (is.null(m)) m <- suppressWarnings(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
-  em <- emmeans(m, ~ period); emdf <- as.data.frame(em)
-  names(emdf)[names(emdf) %in% c("asymp.LCL", "lower.CL")] <- "lower"
-  names(emdf)[names(emdf) %in% c("asymp.UCL", "upper.CL")] <- "upper"
-  em_list[[tx]] <- transform(emdf[, c("period", "emmean", "SE", "lower", "upper")], taxon = tx)
-  cc <- as.data.frame(contrast(em, method = list("compound-before" = c(-1, 1, 0), "after-before" = c(-1, 0, 1))))
-  res_rows[[tx]] <- data.frame(taxon = tx,
-    compound_before = round(cc$estimate[1], 3), p_compound = signif(cc[[ncol(cc)]][1], 3),
-    after_before = round(cc$estimate[2], 3), p_after = signif(cc[[ncol(cc)]][2], 3))
+  sub <- subset(rr, y == tx); m <- fit_ar1("lnDiff ~ period", sub)
+  if (is.null(m)) m <- safe(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
+  ct <- ab_contrasts(m)
+  res_rows[[tx]] <- data.frame(taxon = tx, compound_before = round(ct$cb, 3), p_compound = signif(ct$pcb, 3),
+                               after_before = round(ct$ab, 3), p_after = signif(ct$pab, 3))
 }
 write.csv(do.call(rbind, res_rows), here::here("tables", "table_compound_resilience.csv"), row.names = FALSE)
-emm <- do.call(rbind, em_list)
 
 # ---------------------------------------------------------------------------
-# (D) Cross-study synthesis
+# (D) Cross-study synthesis (reframed)
 # ---------------------------------------------------------------------------
 cross <- data.frame(
-  study = c("Eisaguirre et al. 2020", "Kumagai et al. 2024", "This study (compound)"),
-  region = c("N. Channel Islands", "S. + Central California", "S. California Bight"),
-  disturbance_framing = c("SSWD (sea-star loss)", "2014-16 marine heatwave",
-                          "compound SSWD + MHW (inseparable in SoCal)"),
-  design = c("paired inside/outside, pre/post-SSWD", "pooled protected-vs-unprotected, heatwave windows",
-             "pBACIPS paired lnRR + AR1, before/compound/after"),
-  kelp_conclusion = c("MPA predators buffer kelp after sea-star loss",
-                      "MPAs preserve cascade -> kelp resilience to MHW",
-                      "kelp resilient to the compound stressor (repeats across two MHWs, script 19)"),
-  sea_star = c("Pycnopodia, key NCI urchin predator", "cited as SSWD context (not modeled)",
-               "Pisaster + Pycnopodia crash documented, equal inside/outside (script 20)"))
+  study = c("Eisaguirre et al. 2020", "Kumagai et al. 2024", "This study"),
+  region = c("W. N. Channel Islands (cold)", "S. + Central California", "S. California Bight"),
+  disturbance = c("SSWD (sunflower-star loss)", "2014-16 marine heatwave", "compound SSWD + MHW"),
+  sunflower_star = c("abundant (cold reefs) -> strong keystone loss",
+                     "context only (not modeled)",
+                     "PATCHY: abundant at ~1/3 (cold/island) reefs, ~0 at the rest"),
+  inference = c("protected predators compensate for sunflower-star loss",
+                "MPAs preserve cascade -> kelp resilience to heat",
+                "kelp resilient to compound stressor; the keystone-loss mechanism applies only where sunflower stars occurred -- elsewhere the response is heat + fishing protection"))
 write.csv(cross, here::here("tables", "table_compound_crossstudy.csv"), row.names = FALSE)
 
 # ---------------------------------------------------------------------------
-# Figure: (a) sea-star crash inside/outside; (b) cascade MPA effect by period
+# Figure: (a) per-MPA pre-SSWD Pycnopodia distribution; (b) cascade response by group
 # ---------------------------------------------------------------------------
 plots <- list()
 if (have_swath) {
-  cr <- crash; cr$Status <- factor(cr$status, levels = c("reference", "mpa"), labels = c("Reference", "MPA"))
-  plots$a <- ggplot(cr, aes(year, star_density, color = Status)) +
-    annotate("rect", xmin = 2013.5, xmax = 2016.5, ymin = -Inf, ymax = Inf, alpha = 0.12, fill = "#D55E00") +
-    geom_line(linewidth = 0.7) + geom_point(size = 1.2) +
-    scale_color_manual(values = c(Reference = "#D55E00", MPA = "#0072B2"), name = NULL) +
-    labs(x = NULL, y = expression("Sea-star density (per 60 m"^2*")"),
-         title = "a  Sea-star wasting crash (Pycnopodia + Pisaster), equal inside & outside") +
-    theme_mpa(base_size = 9) + theme(legend.position = "bottom", plot.title = element_text(size = 8.5, face = "bold"))
+  pd <- pre; pd$Group <- factor(pd$pyc_group, levels = c("high", "low/zero"), labels = c("had sunflower stars", "~none"))
+  pd$mpa_f <- factor(pd$mpa, levels = pd$mpa[order(pd$pyc_pre)])
+  plots$a <- ggplot(pd, aes(pyc_pre + 0.02, mpa_f, color = Group)) +
+    geom_vline(xintercept = PYC_HI, linetype = "dotted", color = "grey50") +
+    geom_point(size = 1.6) +
+    scale_color_manual(values = c("had sunflower stars" = "#0072B2", "~none" = "#D55E00"), name = NULL) +
+    labs(x = expression("Pre-SSWD sunflower-star density (per 60 m"^2*", log)"), y = NULL,
+         title = "a  Sunflower star was patchy: present at ~1/3 of SoCal reserves, ~0 at the rest") +
+    scale_x_log10() +
+    theme_mpa(base_size = 8) + theme(legend.position = "bottom", axis.text.y = element_text(size = 5.5),
+                                     plot.title = element_text(size = 8, face = "bold"))
 }
-emm$lab <- factor(short[emm$taxon], levels = short[taxa])
-emm$period <- factor(emm$period, levels = c("before", "compound", "after"),
-                     labels = c("Before\n<=2013", "Compound\n'14-16", "After\n>=2017"))
-yr <- range(c(emm$lower, emm$upper), na.rm = TRUE)
-plots$b <- ggplot(emm, aes(period, emmean, group = lab, color = lab)) +
-  geom_hline(yintercept = 0, linetype = "dotted", color = "grey40") +
-  geom_line(linewidth = 0.5, alpha = 0.6) +
-  geom_pointrange(aes(ymin = lower, ymax = upper), linewidth = 0.5, size = 0.3) +
-  facet_wrap(~ lab, nrow = 1) + scale_color_taxa() +
-  scale_y_rr(yr[1], yr[2], name = "MPA effect (RR = MPA / Reference)") +
-  labs(x = NULL, title = "b  Cascade response to the compound disturbance") +
-  theme_mpa(base_size = 9) +
-  theme(legend.position = "none", axis.text.x = element_text(size = 6),
-        plot.title = element_text(size = 8.5, face = "bold"))
-fig <- if (!is.null(plots$a)) patchwork::wrap_plots(plots$a, plots$b, ncol = 1, heights = c(1, 1.1)) else plots$b
-ggsave(here::here("plots", "fig_compound_disturbance.pdf"), fig,
-       width = 180, height = if (!is.null(plots$a)) 175 else 90, units = "mm", device = cairo_pdf)
-ggsave(here::here("plots", "fig_compound_disturbance.png"), fig,
-       width = 180, height = if (!is.null(plots$a)) 175 else 90, units = "mm", dpi = 600)
+if (!is.null(mod_tab)) {
+  mt <- mod_tab[!grepl("INTERACTION|interaction", mod_tab$pyc_group), ]
+  mt$lab <- short[mt$taxon]; mt$Group <- factor(mt$pyc_group, levels = c("high", "low/zero"),
+                                                labels = c("had sunflower stars", "~none"))
+  plots$b <- ggplot(mt, aes(after_before, lab, color = Group)) +
+    geom_vline(xintercept = 0, linetype = "dotted", color = "grey40") +
+    geom_point(position = position_dodge(0.5), size = 2.2) +
+    scale_color_manual(values = c("had sunflower stars" = "#0072B2", "~none" = "#D55E00"), name = NULL) +
+    labs(x = "After-before change in MPA effect (lnRR)", y = NULL,
+         title = "b  Is the cascade response stronger where sunflower stars were lost?") +
+    theme_mpa(base_size = 8.5) + theme(legend.position = "bottom", axis.text.y = element_text(face = "italic"),
+                                       plot.title = element_text(size = 8.5, face = "bold"))
+}
+fig <- if (length(plots) == 2) patchwork::wrap_plots(plots$a, plots$b, ncol = 1, heights = c(1.4, 1)) else plots[[1]]
+ggsave(here::here("plots", "fig_compound_disturbance.pdf"), fig, width = 180, height = 190, units = "mm", device = cairo_pdf)
+ggsave(here::here("plots", "fig_compound_disturbance.png"), fig, width = 180, height = 190, units = "mm", dpi = 600)
 
-cat("\n=== Sea-star crash (% drop pre->post 2014, by status) ===\n"); if (have_swath) print(drop)
-cat("\n=== Cascade resilience (lnRR MPA effect by period, AR1) ===\n")
-print(do.call(rbind, res_rows), row.names = FALSE)
+cat("\n=== Pre-SSWD sunflower-star (Pycnopodia): patchy distribution ===\n")
+if (have_swath) { cat("Pycnopodia = only", round(100*pyc_share,1), "% of large-star density (rest is Pisaster, not an urchin predator)\n")
+  cat("MPAs with sunflower stars (>=", PYC_HI, "):", sum(pre$pyc_group=="high"), "of", nrow(pre), "\n") }
+cat("\n=== Cascade response: high vs low Pycnopodia reserves ===\n")
+print(mod_tab, row.names = FALSE)
 cat("\n  Tables + figure written.\n")
