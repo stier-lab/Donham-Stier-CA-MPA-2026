@@ -218,6 +218,15 @@ source_module("15_methods_comparison.R", "15")
 # --- 16: Environmental moderators (Kumagai PCA covariates as meta-regression; SI) ---
 source_module("16_environmental_moderators.R", "16")
 
+# --- 19: Heatwave replication (resilience repeats across two MHWs; harmonized only) ---
+source_module("19_heatwave_replication.R", "19")
+
+# --- 21: Temporal-stability resilience facet (harmonized only) ---
+source_module("21_resilience_stability.R", "21")
+
+# Resilience analyses that read raw PISCO / the Kumagai mirror (17, 18, 20) are run
+# via code/R/run_resilience.R; they skip gracefully if that external data is absent.
+
 # --- 12: Results Summary --------------------------------------------------------------------------
 source_module("12_results_summary.R", "12")
 

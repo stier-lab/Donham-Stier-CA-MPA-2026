@@ -309,6 +309,21 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 - **`docs/si_style.css`** - Supporting Information custom styles
 - **`docs/si_script.html`** - Supporting Information JavaScript (lightbox, progress bar)
 
+### Resilience analysis suite
+
+Scripts 14–21 form an integrated **resilience module** (run with
+`code/R/run_resilience.R`; synthesis in **`docs/RESILIENCE_SYNTHESIS.md`**). It tests
+resilience across facets: core heatwave response (14), repeatability across two
+heatwaves (19), generality across stressor types / sea-star wasting (20), temporal
+stability (21), method-vs-data robustness (15), environmental moderators (16),
+predictability of effectiveness (18), and cross-study reproduction of Eisaguirre
+2020 (17). **Theme:** robust, repeatable giant-kelp resilience to marine heatwaves —
+method-invariant, not modulated by environmental gradients, and not driven by
+sea-star wasting — while the urchin-mediated mechanism, predator diversity, and
+among-reserve prediction are specification-sensitive or unresolved. Temporal
+stability adds a null: resilience shows up in the *mean* kelp state, not in reduced
+variability (script 21).
+
 ### Related work (compare & contrast — in progress)
 
 We are comparing this analysis against **Kumagai et al. 2024** (*Global Change Biology*, [doi:10.1111/gcb.17620](https://doi.org/10.1111/gcb.17620)) — *"Marine Protected Areas That Preserve Trophic Cascades Promote Resilience of Kelp Forests to Marine Heatwaves."* It is a parallel study on an overlapping system/dataset (same PISCO/MLPA subtidal + T. Bell SBC LTER Landsat) with a convergent conclusion. We are using it to (1) cross-check our PISCO numbers, (2) contrast their GLMM/permutation, heatwave-resilience approach with our pBACIPS + meta-analysis, and (3) scope our own marine-heatwave (MHW) analysis. Their code + data are mirrored locally (GitHub clone + Zenodo CC-BY-4.0 snapshot); see `CLAUDE.md` → "Related Work / External Comparison" for details.
