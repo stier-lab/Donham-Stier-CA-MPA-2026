@@ -95,8 +95,9 @@ if (file.exists(path.expand(cs_path))) {
   mpa_ll$cs_mean <- NA_real_
 }
 
-# wave exposure (Bell SBC LTER swell model, EDI knb-lter-sbc.144; mainland MPAs only --
-# the coastline segments do not cover the Channel Islands, so island MPAs are NA)
+# wave exposure: per-MPA mean HSMAX (max significant wave height) from Bell (2023)
+# island-inclusive kelp-canopy-env product (EDI knb-lter-sbc.162; CDIP MOP v1.1 waves),
+# derived by code/R/extract_wave_exposure.R -> data/per_mpa_wave_exposure.csv (all 34 MPAs)
 wave_path <- here::here("data", "per_mpa_wave_exposure.csv")
 wave_dt <- if (file.exists(wave_path)) {
   w <- read.csv(wave_path, stringsAsFactors = FALSE); w[, c("MPA", "wave_hs")]
@@ -117,7 +118,7 @@ write.csv(env, here::here("tables", "table_s_mpa_env_covariates.csv"), row.names
 dat <- merge(ss[, c("MPA", "Taxa", "Resp", "Mean", "SE", "Source")], env, by = "MPA")
 moderators <- c(mhw_during = "MHW intensity (during)", cs_mean = "Cold-spell intensity",
                 lat = "Latitude", log_size = "log MPA size")
-if (!is.null(wave_dt)) moderators <- c(moderators, wave_hs = "Wave exposure (mainland MPAs)")
+if (!is.null(wave_dt)) moderators <- c(moderators, wave_hs = "Wave exposure (HSMAX)")
 
 rows <- list()
 for (tx in taxa) {

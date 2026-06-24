@@ -1,35 +1,35 @@
-MPA,Lat,Lon,nearest_seg,dist_km,wave_hs,coverage
-Abalone Cove SMCA,33.7392,-118.3857,332,0.3,0.961,mainland_valid
-Anacapa Island SMCA,34.00288,-119.4252,301,34.36,,island_uncovered
-Anacapa Island SMR 2003,34.008,-119.3983,301,33.46,,island_uncovered
-Anacapa Island SMR 1978,34.008,-119.3983,301,33.46,,island_uncovered
-Arrow Point to Lion Head Point SMCA,33.4649,-118.5221,331,32.24,,island_uncovered
-Begg Rock SMR,33.22,-119.5078,304,104.89,,island_uncovered
-Blue Cavern Onshore SMCA,33.4466,-118.4764,331,32.97,,island_uncovered
-Cabrillo SMR,32.6628,-117.2464,361,0.78,2.532,mainland_valid
-Campus Point SMCA,34.4049,-119.8651,283,0.23,1.407,mainland_valid
-Cat Harbor SMCA,33.42609,-118.5118,331,36.01,,island_uncovered
-Crystal Cove SMCA,33.5753,-117.8511,346,1.15,1.275,mainland_valid
-Dana Point SMCA,33.4687,-117.7251,351,1.15,1.758,mainland_valid
-Farnsworth Onshore SMCA,33.3339,-118.473,343,44.46,,island_uncovered
-Gull Island SMR,33.9562,-119.8234,292,49.56,,island_uncovered
-Harris Point SMR,34.053,-120.3424,250,43.66,,island_uncovered
-Judith Rk SMR,34.0254,-120.4363,243,46.39,,island_uncovered
-Laguna Beach SMR,33.5356,-117.7858,350,0.59,1.538,mainland_valid
-Long Point SMR,33.24,-118.21,346,49.89,,island_uncovered
-Matlahuayl SMR,32.85167,-117.2783,353,2.41,2.928,mainland_valid
-Naples SMCA,34.4321,-119.9514,274,0.47,1.738,mainland_valid
-Painted Cave SMCA,34.05658,-119.8212,292,38.56,,island_uncovered
-Point Conception SMR,34.447,-120.4308,246,0.26,1.526,mainland_valid
-Point Dume SMCA,34.0344,-118.872,312,0.17,1.445,mainland_valid
-Point Dume SMR,34.0079,-118.7917,316,0.26,1.058,mainland_valid
-Point Vicente SMCA,33.7403,-118.4087,329,0.13,1.439,mainland_valid
-San Miguel Island SC,34.0301,-120.443,243,45.86,,island_uncovered
-Santa Barbara Island SMR,33.4658,-119.0306,315,63.79,,island_uncovered
-Scorpion SMR,34.05428,-119.5669,301,33.87,,island_uncovered
-Skunk Pt SMR,33.9588,-119.9733,282,50.39,,island_uncovered
-South La Jolla SMR,32.8121,-117.288,355,0.46,2.466,mainland_valid
-South Point SMR,33.9022,-120.1391,282,60.88,,island_uncovered
-Swamis SMCA,33.0212,-117.2936,353,20.49,,island_uncovered
-Lover's Cove SMCA,33.333461,-118.30025,344,41.19,,island_uncovered
-Carrington Pt SMR,34.027,-120.0473,282,44.85,,island_uncovered
+MPA,Lat,Lon,nearest_km,n_stations,wave_hs,island,coverage
+Abalone Cove SMCA,33.7392,-118.3857,0,977,1.859,FALSE,valid
+Anacapa Island SMCA,34.00288,-119.4252,0.01,873,1.261,TRUE,valid
+Anacapa Island SMR 2003,34.008,-119.3983,0.37,925,1.213,TRUE,valid
+Anacapa Island SMR 1978,34.008,-119.3983,0.37,925,1.213,TRUE,valid
+Arrow Point to Lion Head Point SMCA,33.4649,-118.5221,0.05,176,0.964,TRUE,valid
+Begg Rock SMR,33.22,-119.5078,0,737,1.645,TRUE,valid
+Blue Cavern Onshore SMCA,33.4466,-118.4764,0.02,99,0.649,TRUE,valid
+Cabrillo SMR,32.6628,-117.2464,0.02,7123,2.625,FALSE,valid
+Campus Point SMCA,34.4049,-119.8651,0.01,2078,1.311,FALSE,valid
+Cat Harbor SMCA,33.42609,-118.5118,0.13,160,0.989,TRUE,valid
+Crystal Cove SMCA,33.5753,-117.8511,0.42,325,1.736,FALSE,valid
+Dana Point SMCA,33.4687,-117.7251,0.02,1411,2.206,FALSE,valid
+Farnsworth Onshore SMCA,33.3339,-118.473,0.2,272,1.842,TRUE,valid
+Gull Island SMR,33.9562,-119.8234,0.13,2496,1.302,TRUE,valid
+Harris Point SMR,34.053,-120.3424,0.01,1077,2.31,TRUE,valid
+Judith Rk SMR,34.0254,-120.4363,0.02,6221,4.442,TRUE,valid
+Laguna Beach SMR,33.5356,-117.7858,0.1,568,1.696,FALSE,valid
+Long Point SMR,33.24,-118.21,11.88,1,0.968,TRUE,far
+Matlahuayl SMR,32.85167,-117.2783,0.05,4365,2.888,FALSE,valid
+Naples SMCA,34.4321,-119.9514,0.01,1895,1.569,FALSE,valid
+Painted Cave SMCA,34.05658,-119.8212,0.06,116,1.499,TRUE,valid
+Point Conception SMR,34.447,-120.4308,0.01,3829,1.725,FALSE,valid
+Point Dume SMCA,34.0344,-118.872,0,1300,1.627,FALSE,valid
+Point Dume SMR,34.0079,-118.7917,0.02,1597,1.239,FALSE,valid
+Point Vicente SMCA,33.7403,-118.4087,0,1144,1.992,FALSE,valid
+San Miguel Island SC,34.0301,-120.443,0.08,7693,4.905,TRUE,valid
+Santa Barbara Island SMR,33.4658,-119.0306,0.02,2166,2.111,TRUE,valid
+Scorpion SMR,34.05428,-119.5669,0.04,86,1.308,TRUE,valid
+Skunk Pt SMR,33.9588,-119.9733,0.07,884,1.416,TRUE,valid
+South La Jolla SMR,32.8121,-117.288,0.01,5287,2.752,FALSE,valid
+South Point SMR,33.9022,-120.1391,0.01,2166,2.075,TRUE,valid
+Swamis SMCA,33.0212,-117.2936,0.03,1603,2.269,FALSE,valid
+Lover's Cove SMCA,33.333461,-118.30025,0.76,11,0.747,TRUE,valid
+Carrington Pt SMR,34.027,-120.0473,0.52,1471,1.798,TRUE,valid

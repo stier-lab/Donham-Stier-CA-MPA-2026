@@ -97,12 +97,13 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
 - [ ] **Alternative-stable-state / hysteresis** — formal test for persistent urchin
   barrens (a reserve's cascade failing to return); script 22 already hints outside
   sites did not recover. *Feasible with the time series.*
-- [~] **Spatial wave-exposure (storm) resilience** — wave exposure obtained for the
-  *mainland* MPAs (Bell SBC LTER swell product, EDI knb-lter-sbc.144;
-  `data/per_mpa_wave_exposure.csv`) and added to the moderator screen (script 16): no
-  significant modulation (mainland k=5–8, all p≥0.26). The 20 Channel-Islands MPAs are
-  not covered by that product's mainland coastline segments; island-inclusive nearshore
-  waves would require CDIP MOP or the per-pixel CAkelpCanopyEnv NetCDF. *Partial.*
+- [x] **Spatial wave-exposure (storm) resilience** — wave exposure (HSMAX) obtained
+  for **all 34 MPAs including the Channel Islands** from Bell's (2023) island-inclusive
+  per-pixel kelp-canopy-env NetCDF (EDI knb-lter-sbc.162, CDIP MOP v1.1 waves;
+  `code/R/extract_wave_exposure.R` → `data/per_mpa_wave_exposure.csv`; recovers the
+  San Miguel-exposed → Catalina-lee-sheltered gradient) and added to the moderator
+  screen (script 16): no significant modulation of any taxon (k=10–17, all p≥0.35).
+  Wave exposure does not explain the MPA effect or its among-reserve variation.
 
 ## Outputs and reproducibility
 
