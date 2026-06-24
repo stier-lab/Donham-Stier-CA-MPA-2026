@@ -311,18 +311,22 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 
 ### Resilience analysis suite
 
-Scripts 14–21 form an integrated **resilience module** (run with
+Scripts 14–23 form an integrated **resilience module** (run with
 `code/R/run_resilience.R`; synthesis in **`docs/RESILIENCE_SYNTHESIS.md`**). It tests
 resilience across facets: core heatwave response (14), repeatability across two
-heatwaves (19), generality across stressor types / sea-star wasting (20), temporal
-stability (21), method-vs-data robustness (15), environmental moderators (16),
-predictability of effectiveness (18), and cross-study reproduction of Eisaguirre
-2020 (17). **Theme:** robust, repeatable giant-kelp resilience to marine heatwaves —
-method-invariant, not modulated by environmental gradients, and not driven by
-sea-star wasting — while the urchin-mediated mechanism, predator diversity, and
-among-reserve prediction are specification-sensitive or unresolved. Temporal
-stability adds a null: resilience shows up in the *mean* kelp state, not in reduced
-variability (script 21).
+heatwaves (19), resistance/recovery on the state variable (22), ecological
+memory/reserve-consistency (23), generality across stressor types / sea-star wasting
+(20), temporal stability (21), method-vs-data robustness (15), environmental
+moderators (16), predictability of effectiveness (18), and cross-study reproduction
+of Eisaguirre 2020 (17). **Theme:** robust, repeatable giant-kelp resilience to marine
+heatwaves — kelp *grows* inside reserves while it declines outside (resistance 2.18×
+vs 0.94×, recovery to 2.38× vs 0.83×), the *same* reserves respond in both heatwaves,
+and the result is method-invariant, not modulated by environmental gradients, and not
+driven by sea-star wasting. The weak links are consistent across the suite: the
+urchin-mediated mechanism, predator diversity, and *predicting which reserves are most
+effective* are specification-sensitive or unexplained (reserve effectiveness is
+repeatable but not predictable from current covariates), and protection does not
+clearly reduce variability (resilience is in the mean, not the variance).
 
 ### Related work (compare & contrast — in progress)
 

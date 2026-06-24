@@ -224,6 +224,12 @@ source_module("19_heatwave_replication.R", "19")
 # --- 21: Temporal-stability resilience facet (harmonized only) ---
 source_module("21_resilience_stability.R", "21")
 
+# --- 22: Resistance/recovery decomposition on the state variable (harmonized only) ---
+source_module("22_resistance_recovery.R", "22")
+
+# --- 23: Ecological memory across two heatwaves (harmonized only) ---
+source_module("23_ecological_memory.R", "23")
+
 # Resilience analyses that read raw PISCO / the Kumagai mirror (17, 18, 20) are run
 # via code/R/run_resilience.R; they skip gracefully if that external data is absent.
 

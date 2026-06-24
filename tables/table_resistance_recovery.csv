@@ -1,0 +1,16 @@
+"taxon","metric","n_mpa","inside","outside","paired_p"
+"Panulirus interruptus","resistance",8,7.3,5.71,0.844
+"Panulirus interruptus","recovery",9,8.51,3.85,0.57
+"Panulirus interruptus","recovery_recent",9,7.5,4.84,0.25
+"Semicossyphus pulcher","resistance",12,1.89,3.05,0.204
+"Semicossyphus pulcher","recovery",15,1.89,2.6,0.389
+"Semicossyphus pulcher","recovery_recent",15,2.18,1.66,0.978
+"Strongylocentrotus purpuratus","resistance",10,0.27,0.48,0.492
+"Strongylocentrotus purpuratus","recovery",11,0.2,0.38,0.102
+"Strongylocentrotus purpuratus","recovery_recent",10,0.11,0.53,0.0195
+"Mesocentrotus franciscanus","resistance",10,0.41,0.41,0.131
+"Mesocentrotus franciscanus","recovery",11,0.16,0.24,0.147
+"Mesocentrotus franciscanus","recovery_recent",11,0.16,0.4,0.0137
+"Macrocystis pyrifera","resistance",10,2.18,0.94,0.00977
+"Macrocystis pyrifera","recovery",10,2.38,0.83,0.0137
+"Macrocystis pyrifera","recovery_recent",10,2.1,0.64,0.0137

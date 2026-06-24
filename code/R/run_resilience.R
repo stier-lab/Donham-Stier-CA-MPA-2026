@@ -16,6 +16,10 @@
 #'   GENERALITY ACROSS STRESSOR TYPES (does it hold for non-thermal disturbance?)
 #'     20_compound_disturbance.R     - sea-star wasting (SSWD): patchy sunflower star;
 #'                                     the cascade response is heat+protection, not SSWD
+#'   RESISTANCE & RECOVERY (state-variable decomposition, Kumagai-comparable)
+#'     22_resistance_recovery.R      - kelp grew inside / declined outside; recent urchin suppression inside
+#'   MEMORY (do the same reserves repeat?)
+#'     23_ecological_memory.R        - reserve MHW1 response predicts its MHW2 response (consistency)
 #'   STABILITY (does protection damp variability?)
 #'     21_resilience_stability.R     - temporal CV inside vs outside (a distinct facet)
 #'   ROBUSTNESS / ATTRIBUTION (how much do method, data, covariates change the story?)
@@ -39,7 +43,8 @@
 
 rm(list = ls())
 modules <- c("14_heatwave_analysis.R", "19_heatwave_replication.R", "20_compound_disturbance.R",
-             "21_resilience_stability.R", "15_methods_comparison.R", "16_environmental_moderators.R",
+             "22_resistance_recovery.R", "23_ecological_memory.R", "21_resilience_stability.R",
+             "15_methods_comparison.R", "16_environmental_moderators.R",
              "18_mpa_effectiveness_predictors.R", "17_eisaguirre_reproduction.R")
 cat("==============================================================\n")
 cat("  MPA RESILIENCE ANALYSIS SUITE\n  ", length(modules), "modules\n")

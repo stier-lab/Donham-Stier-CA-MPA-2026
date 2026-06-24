@@ -21,6 +21,8 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
 |---|---|---|---|
 | **Core response** | Does the MPA cascade respond to a heatwave? | `14` | Giant kelp far more abundant inside reserves during/after the 2014–16 MHW; predator/urchin steps weaker under AR1 |
 | **Repeatability** | Does the resilience recur for a second event? | `19` | **Yes** — kelp elevated inside in *both* the 2014–16 and 2018–20 heatwaves (only taxon significant in both); tracks heat beyond recovery |
+| **Resistance & recovery** | Did kelp hold/return on the *state* variable? | `22` | **Yes** — kelp *grew* inside (resistance 2.18× baseline) while declining outside (0.94×), recovered to 2.38× inside vs 0.83× outside, and by 2020–23 inside held 2.10× vs outside 0.64× (all p ≤ 0.014); recent urchin suppression inside (p ≈ 0.02) |
+| **Memory / consistency** | Do the *same* reserves repeat? | `23` | **Yes** — a reserve's MHW1 response predicts its MHW2 response (kelp ρ=0.71, p=0.028; purple urchin r=0.87, p=0.001); resilience is a consistent reserve property, with no priming |
 | **Generality across stressor types** | Does it hold for disease, not just heat? | `20` | The cascade response is **heat + fishing protection, not sea-star wasting** — the sunflower star was patchy (present at ~1/3 of reserves) and the response is the same where it was absent |
 | **Stability** | Does protection damp variability? | `21` | **No clear effect** — kelp trends more stable inside (ns); urchins more variable inside. Resilience is in the *mean*, not the *variance* |
 | **Robustness / attribution** | How much do method & data change the story? | `15` | Kelp resilience is method-invariant; urchin inference hinges on the AR1 choice; the **dataset is the single largest lever** |
@@ -44,6 +46,12 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
    kelp-resilience conclusion as Kumagai's (2024) unpaired GLMM and Eisaguirre's
    (2020) Channel-Islands study — three datasets/designs, one conclusion (script 15
    cross-substrate; script 17 reproduction).
+4. **Resistance, recovery, and reserve-level consistency.** On the state variable
+   (script 22), kelp *grew* inside reserves during the heatwave while it *declined*
+   outside, recovered above baseline inside while staying depressed outside, and the
+   gap widened through 2023 — significant resistance *and* recovery. And the *same*
+   reserves repeat across both heatwaves (script 23) — resilience is a consistent
+   reserve property, not a different set of reserves each time.
 
 ## What is fragile or unresolved (state honestly, do not overclaim)
 
@@ -56,9 +64,13 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
    beyond total predation pressure; it is confounded with protection and reverses by
    subset. The "compensation" pattern is consistent with protection/abundance, not
    with diversity per se.
-3. **Among-reserve effectiveness is unpredictable** from environmental, design, or
-   trophic covariates at our sample size (script 18). Report the average effect and
-   its heterogeneity (τ²/I²), not a model of which reserves win.
+3. **Among-reserve effectiveness is consistent but unexplained.** Reserve responses
+   are *repeatable* across the two heatwaves (script 23) — yet *not predictable* from
+   environmental, design, or trophic covariates (script 18, negative LOO-CV R²). So
+   reserves differ reliably and persistently, but we cannot yet say *why*: report the
+   average effect and its heterogeneity (τ²/I²), and note that the heterogeneity is a
+   stable reserve property awaiting better (e.g. wave, governance, connectivity)
+   covariates — not a modelling target with current data.
 
 ## Limitations that cut across the suite
 
@@ -73,27 +85,20 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
 - **Observational design** — partial-mechanism attribution (which predator, diversity
   vs abundance) is the recurring weak point, as the multiverse and reproductions show.
 
-## Other analyses worth doing (candidates)
+## Other analyses (status)
 
-Ordered by value × feasibility with data in hand:
-
-1. **Resistance vs recovery decomposition (Kumagai's framework) on the state
-   variable.** We have before/during/after on the lnRR; an explicit
-   resistance (during/baseline) vs recovery (after/baseline) decomposition of *kelp
-   area/biomass* inside vs outside would make the resilience facets directly
-   comparable to Kumagai's resistance/recovery permutation results. *Feasible now.*
-2. **Recovery rate / return time.** After MHW1, how fast did kelp return to (or
-   exceed) baseline inside vs outside? Fit per-MPA recovery slopes 2017→2019.
-   *Feasible now.*
-3. **Ecological memory / priming.** Did reserves that buffered MHW1 also buffer MHW2
-   (per-MPA correlation across the two events)? Script 19 establishes repeatability at
-   the average; this tests whether the *same* reserves repeat. *Feasible now (small k).*
-4. **Alternative-stable-state / hysteresis check.** Did any reserve's cascade fail to
-   return (urchin barren persistence)? Phase-portrait recovery completeness. *Feasible
-   with the time series.*
-5. **Spatial wave-exposure resilience.** Physical (storm) disturbance is a distinct
-   stressor type, but needs a per-MPA wave product (only regional series held locally;
-   flagged in scripts 16/18). *Needs new data.*
+- [x] **Resistance vs recovery decomposition (Kumagai's framework) on the state
+  variable** — done, script 22.
+- [x] **Recovery completeness / return** — done, script 22 (`recovery_recent`: outside
+  kelp stays at 0.64× baseline through 2023, incomplete recovery; inside fully recovered).
+- [x] **Ecological memory / consistency** — done, script 23 (same reserves repeat).
+- [ ] **Recovery *rate* / return time** — per-MPA recovery slopes (e.g. 2016→2020) to
+  quantify *how fast*, not just whether, kelp recovered inside vs outside. *Feasible now.*
+- [ ] **Alternative-stable-state / hysteresis** — formal test for persistent urchin
+  barrens (a reserve's cascade failing to return); script 22 already hints outside
+  sites did not recover. *Feasible with the time series.*
+- [ ] **Spatial wave-exposure (storm) resilience** — a distinct physical stressor, but
+  needs a per-MPA wave product (only regional series held locally). *Needs new data.*
 
 ## Outputs and reproducibility
 
