@@ -175,19 +175,27 @@ also holds temperature/npp/depth; provenance in `~/sbc-kelp-env/`); all 34 MPAs 
 covered (median 0.03 km to the nearest station) and the values recover the expected
 gradients (wave: San Miguel Island 4.9 m → Catalina-lee Blue Cavern 0.65 m; nitrate:
 cold upwelling 3.0 µM at Pt Conception / NW islands → warm 0.39 µM at San Diego).
+We also added **human gravity** (a Cinner et al. 2018-style population-pressure /
+accessibility index — population within 50 km weighted by inverse-square distance)
+from Kumagai et al.'s per-kelp-patch grid, matched to the nearest point; it spans
+0 at the remote NW islands (San Miguel, Santa Rosa, Santa Barbara Is.) to ~22,000 at
+urban-mainland reserves (Campus Point, Palos Verdes, San Diego), correctly capturing
+the human-pressure gradient. With this, the **entire set of environmental covariates
+Kumagai mapped in their PCA is now obtained per MPA** (island-inclusive) and tested.
 (An earlier attempt used the mainland-only tabular product `knb-lter-sbc.144`, whose
 500-m coastline segments left the island MPAs 32–105 km from data; it is superseded.)
-Of Kumagai's PCA covariates only human-gravity remains unobtained.
 
 The result is a clean null. **No environmental moderator survives FDR correction**
 (`table_s_env_moderators.csv`). The strongest signal is a decline in the red-urchin
 (*M. franciscanus*) effect with marine-heatwave intensity (−1.84 lnRR per SD,
 *p* = 0.003, FDR = 0.052) — suggestive but not robust, and directionally sensible
 (red urchins fared relatively worse inside the most heat-exposed reserves).
-**Wave exposure** and **nitrate** (all 34 MPAs incl. islands, *k* = 10–17) do not
-significantly modulate any taxon's effect either (all FDR > 0.4; nitrate's only
-nominal signal, red urchin *p* = 0.04, mirrors its MHW signal because nitrate is
-SST-derived and tracks the cold-upwelling gradient).
+**Wave exposure**, **nitrate**, and **human gravity** (all 34 MPAs incl. islands,
+*k* = 10–17) do not significantly modulate any taxon's effect either (none survive
+FDR; nitrate's only nominal signal, red urchin *p* = 0.04, mirrors its MHW signal
+because nitrate is SST-derived and tracks the cold-upwelling gradient; human gravity's
+nominal lobster signal, *p* = 0.07, is in the expected direction — weaker reserve
+benefit near cities — but does not survive correction).
 Critically, **giant kelp's effect is not detectably modulated by any gradient**
 (all *p* ≥ 0.17): its heatwave resilience is not an artifact of where reserves
 happen to sit thermally, biogeographically, by size, or by wave exposure. The Knapp–Hartung

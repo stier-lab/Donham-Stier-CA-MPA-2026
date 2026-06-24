@@ -101,14 +101,15 @@ if (file.exists(path.expand(cs_path))) {
 # data/per_mpa_kelp_env.csv (all 34 MPAs, incl. Channel Islands)
 bell_path <- here::here("data", "per_mpa_kelp_env.csv")
 bell_dt <- if (file.exists(bell_path)) {
-  w <- read.csv(bell_path, stringsAsFactors = FALSE); w[, c("MPA", "wave_hs", "nitrate")]
+  w <- read.csv(bell_path, stringsAsFactors = FALSE); w[, c("MPA", "wave_hs", "nitrate", "gravity")]
 } else NULL
 
 env <- Reduce(function(a, b) merge(a, b, by = "MPA", all.x = TRUE),
               c(list(mpa_ll, mhw_during, size), if (!is.null(bell_dt)) list(bell_dt)))
 env$log_size <- log(env$Hectares)
+if (!is.null(bell_dt)) env$log_gravity <- log1p(env$gravity)   # human pressure: skewed, has zeros
 keep_cols <- c("MPA", "Lat", "Lon", "mhw_during", "cs_mean", "log_size", "Hectares")
-if (!is.null(bell_dt)) keep_cols <- c(keep_cols, "wave_hs", "nitrate")
+if (!is.null(bell_dt)) keep_cols <- c(keep_cols, "wave_hs", "nitrate", "gravity", "log_gravity")
 env <- env[, keep_cols]
 names(env)[names(env) == "Lat"] <- "lat"
 write.csv(env, here::here("tables", "table_s_mpa_env_covariates.csv"), row.names = FALSE)
@@ -120,7 +121,8 @@ dat <- merge(ss[, c("MPA", "Taxa", "Resp", "Mean", "SE", "Source")], env, by = "
 moderators <- c(mhw_during = "MHW intensity (during)", cs_mean = "Cold-spell intensity",
                 lat = "Latitude", log_size = "log MPA size")
 if (!is.null(bell_dt)) moderators <- c(moderators, wave_hs = "Wave exposure (HSMAX)",
-                                       nitrate = "Nitrate (nutrients)")
+                                       nitrate = "Nitrate (nutrients)",
+                                       log_gravity = "Human gravity (log)")
 
 rows <- list()
 for (tx in taxa) {

@@ -22,6 +22,13 @@
 #     npp         -> npp        : net primary productivity proxy
 #     depth       -> depth_m    : station depth (m)
 #
+#   Plus HUMAN GRAVITY (human-pressure / accessibility index, Cinner et al. 2018
+#   framework: population within 50 km weighted by inverse-square travel distance),
+#   per kelp patch, from Kumagai et al. (2024)'s repository
+#   (~/kumagai2024-comparison/repo/Data/Population/human_gravity_for_kelp_patches.csv;
+#   0 = no population within 50 km). Joined by nearest grid point; NA if the mirror
+#   is absent. This completes the set of environmental covariates Kumagai mapped.
+#
 # METHOD:
 #   Per covariate, take the climatological (time-mean) value at each kelp-pixel
 #   station, then average over all stations within 3 km of the MPA (nearest station
@@ -31,7 +38,7 @@
 #        (download instructions + full metadata in ~/sbc-kelp-env/PROVENANCE.md)
 # OUTPUT (tracked):                data/per_mpa_kelp_env.csv
 #        columns: MPA, Lat, Lon, nearest_km, n_stations, wave_hs, nitrate,
-#                 temperature, npp, depth_m, island, coverage
+#                 temperature, npp, depth_m, gravity, island, coverage
 #
 # Standalone; only re-run if the source NetCDF changes. The derived CSV is tracked
 # so the analyses run without it. Skips gracefully if the NetCDF is absent.
@@ -78,6 +85,17 @@ if (!file.exists(NC)) {
       list(island = !is.na(ChannelIsland)))
   }, by = .(MPA = CA_MPA_Name_Short, Lat, Lon)]
   res[, coverage := ifelse(nearest_km <= 5, "valid", "far")]
+
+  # human gravity (human-pressure index) from Kumagai's per-kelp-patch grid (nearest point)
+  GRAV <- path.expand("~/kumagai2024-comparison/repo/Data/Population/human_gravity_for_kelp_patches.csv")
+  if (file.exists(GRAV)) {
+    g <- as.data.table(read.csv(GRAV, stringsAsFactors = FALSE))
+    res[, gravity := vapply(seq_len(.N), function(i) {
+      d <- hav(Lat[i], Lon[i], g$lat, g$lon); g$gravity[which.min(d)] }, numeric(1))]
+    res[, gravity := round(gravity, 1)]
+  } else { message("  [env] Kumagai gravity file not found; gravity = NA."); res[, gravity := NA_real_] }
+  setcolorder(res, c("MPA", "Lat", "Lon", "nearest_km", "n_stations", "wave_hs", "nitrate",
+                     "temperature", "npp", "depth_m", "gravity", "island", "coverage"))
 
   fwrite(res, here::here("data", "per_mpa_kelp_env.csv"))
   cat("  Wrote data/per_mpa_kelp_env.csv:", nrow(res), "MPAs (",
