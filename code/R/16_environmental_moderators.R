@@ -95,10 +95,19 @@ if (file.exists(path.expand(cs_path))) {
   mpa_ll$cs_mean <- NA_real_
 }
 
+# wave exposure (Bell SBC LTER swell model, EDI knb-lter-sbc.144; mainland MPAs only --
+# the coastline segments do not cover the Channel Islands, so island MPAs are NA)
+wave_path <- here::here("data", "per_mpa_wave_exposure.csv")
+wave_dt <- if (file.exists(wave_path)) {
+  w <- read.csv(wave_path, stringsAsFactors = FALSE); w[, c("MPA", "wave_hs")]
+} else NULL
+
 env <- Reduce(function(a, b) merge(a, b, by = "MPA", all.x = TRUE),
-              list(mpa_ll, mhw_during, size))
+              c(list(mpa_ll, mhw_during, size), if (!is.null(wave_dt)) list(wave_dt)))
 env$log_size <- log(env$Hectares)
-env <- env[, c("MPA", "Lat", "Lon", "mhw_during", "cs_mean", "log_size", "Hectares")]
+keep_cols <- c("MPA", "Lat", "Lon", "mhw_during", "cs_mean", "log_size", "Hectares")
+if (!is.null(wave_dt)) keep_cols <- c(keep_cols, "wave_hs")
+env <- env[, keep_cols]
 names(env)[names(env) == "Lat"] <- "lat"
 write.csv(env, here::here("tables", "table_s_mpa_env_covariates.csv"), row.names = FALSE)
 
@@ -108,6 +117,7 @@ write.csv(env, here::here("tables", "table_s_mpa_env_covariates.csv"), row.names
 dat <- merge(ss[, c("MPA", "Taxa", "Resp", "Mean", "SE", "Source")], env, by = "MPA")
 moderators <- c(mhw_during = "MHW intensity (during)", cs_mean = "Cold-spell intensity",
                 lat = "Latitude", log_size = "log MPA size")
+if (!is.null(wave_dt)) moderators <- c(moderators, wave_hs = "Wave exposure (mainland MPAs)")
 
 rows <- list()
 for (tx in taxa) {
