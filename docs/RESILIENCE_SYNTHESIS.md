@@ -26,7 +26,7 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
 | **Generality across stressor types** | Does it hold for disease, not just heat? | `20` | The cascade response is **heat + fishing protection, not sea-star wasting** — the sunflower star was patchy (present at ~1/3 of reserves) and the response is the same where it was absent |
 | **Stability** | Does protection damp variability? | `21` | **No clear effect** — kelp trends more stable inside (ns); urchins more variable inside. Resilience is in the *mean*, not the *variance* |
 | **Robustness / attribution** | How much do method & data change the story? | `15` | Kelp resilience is method-invariant; urchin inference hinges on the AR1 choice; the **dataset is the single largest lever** |
-| **Moderators** | What environmental gradients modulate the effect? | `16` | **None survive FDR**; kelp effect not modulated by MHW/cold-spell intensity, latitude, or reserve size |
+| **Moderators** | What environmental gradients modulate the effect? | `16` | **None survive FDR** (30 tests); kelp effect not modulated by MHW/cold-spell intensity, latitude, reserve size, wave exposure, or nutrients (nitrate) — wave & nitrate now island-inclusive from Bell 2023 (EDI sbc.162) |
 | **Predictability** | Can we predict which MPAs are most effective? | `18` | **No** — leave-one-out CV R² is negative; among-reserve variation is real but idiosyncratic |
 | **Cross-study reproduction** | Does the paired-design literature reproduce? | `17` | Eisaguirre (2020) design-level results reproduce; the partial size-structure/diversity mechanism does **not** robustly reproduce |
 

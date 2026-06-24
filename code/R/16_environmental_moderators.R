@@ -95,19 +95,20 @@ if (file.exists(path.expand(cs_path))) {
   mpa_ll$cs_mean <- NA_real_
 }
 
-# wave exposure: per-MPA mean HSMAX (max significant wave height) from Bell (2023)
-# island-inclusive kelp-canopy-env product (EDI knb-lter-sbc.162; CDIP MOP v1.1 waves),
-# derived by code/R/extract_wave_exposure.R -> data/per_mpa_wave_exposure.csv (all 34 MPAs)
-wave_path <- here::here("data", "per_mpa_wave_exposure.csv")
-wave_dt <- if (file.exists(wave_path)) {
-  w <- read.csv(wave_path, stringsAsFactors = FALSE); w[, c("MPA", "wave_hs")]
+# wave exposure (HSMAX) and nitrate (nutrients): per-MPA values from Bell (2023)
+# island-inclusive kelp-canopy-env product (EDI knb-lter-sbc.162; CDIP MOP v1.1 waves,
+# SST-derived nitrate), derived by code/R/extract_kelp_env_covariates.R ->
+# data/per_mpa_kelp_env.csv (all 34 MPAs, incl. Channel Islands)
+bell_path <- here::here("data", "per_mpa_kelp_env.csv")
+bell_dt <- if (file.exists(bell_path)) {
+  w <- read.csv(bell_path, stringsAsFactors = FALSE); w[, c("MPA", "wave_hs", "nitrate")]
 } else NULL
 
 env <- Reduce(function(a, b) merge(a, b, by = "MPA", all.x = TRUE),
-              c(list(mpa_ll, mhw_during, size), if (!is.null(wave_dt)) list(wave_dt)))
+              c(list(mpa_ll, mhw_during, size), if (!is.null(bell_dt)) list(bell_dt)))
 env$log_size <- log(env$Hectares)
 keep_cols <- c("MPA", "Lat", "Lon", "mhw_during", "cs_mean", "log_size", "Hectares")
-if (!is.null(wave_dt)) keep_cols <- c(keep_cols, "wave_hs")
+if (!is.null(bell_dt)) keep_cols <- c(keep_cols, "wave_hs", "nitrate")
 env <- env[, keep_cols]
 names(env)[names(env) == "Lat"] <- "lat"
 write.csv(env, here::here("tables", "table_s_mpa_env_covariates.csv"), row.names = FALSE)
@@ -118,7 +119,8 @@ write.csv(env, here::here("tables", "table_s_mpa_env_covariates.csv"), row.names
 dat <- merge(ss[, c("MPA", "Taxa", "Resp", "Mean", "SE", "Source")], env, by = "MPA")
 moderators <- c(mhw_during = "MHW intensity (during)", cs_mean = "Cold-spell intensity",
                 lat = "Latitude", log_size = "log MPA size")
-if (!is.null(wave_dt)) moderators <- c(moderators, wave_hs = "Wave exposure (HSMAX)")
+if (!is.null(bell_dt)) moderators <- c(moderators, wave_hs = "Wave exposure (HSMAX)",
+                                       nitrate = "Nitrate (nutrients)")
 
 rows <- list()
 for (tx in taxa) {

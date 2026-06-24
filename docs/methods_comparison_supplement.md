@@ -164,26 +164,30 @@ meta-regression of the per-MPA effect size on each standardised moderator
 (`metafor::rma`, REML, Knapp–Hartung small-sample *t*-test on *k* − 2 df; density
 effect sizes for the four animals, biomass for giant kelp, which has no density
 effect sizes in our pipeline), with Benjamini–Hochberg FDR across all tests.
-We added **wave exposure** for all MPAs (including the Channel Islands) from Bell's
-(2023) island-inclusive kelp-canopy-environment product — the per-pixel NetCDF
-(EDI `knb-lter-sbc.162`; 332,640 Landsat-pixel stations × quarterly 1984–2021; CDIP
-MOP v1.1 waves) that underlies Kumagai et al.'s `hsmax` and Wanner et al. (2024)'s
-Channel-Islands kelp-synchrony analysis. Per-MPA exposure = mean climatological HSMAX
-over kelp-pixel stations within 3 km of each MPA (`code/R/extract_wave_exposure.R` →
-`data/per_mpa_wave_exposure.csv`; provenance in `~/sbc-kelp-env/`); all 34 MPAs are
-covered (median 0.03 km to the nearest station) and the values correctly recover the
-exposed→sheltered gradient (San Miguel Island 4.9 m → Catalina-lee Blue Cavern 0.65 m).
+We added **wave exposure** and **nitrate (nutrients)** for all MPAs (including the
+Channel Islands) from Bell's (2023) island-inclusive kelp-canopy-environment product —
+the per-pixel NetCDF (EDI `knb-lter-sbc.162`; 332,640 Landsat-pixel stations ×
+quarterly 1984–2021; CDIP MOP v1.1 waves, SST-derived nitrate) that underlies Kumagai
+et al.'s `hsmax` and Wanner et al. (2024)'s Channel-Islands kelp-synchrony analysis.
+Per-MPA values = mean climatological covariate over kelp-pixel stations within 3 km of
+each MPA (`code/R/extract_kelp_env_covariates.R` → `data/per_mpa_kelp_env.csv`, which
+also holds temperature/npp/depth; provenance in `~/sbc-kelp-env/`); all 34 MPAs are
+covered (median 0.03 km to the nearest station) and the values recover the expected
+gradients (wave: San Miguel Island 4.9 m → Catalina-lee Blue Cavern 0.65 m; nitrate:
+cold upwelling 3.0 µM at Pt Conception / NW islands → warm 0.39 µM at San Diego).
 (An earlier attempt used the mainland-only tabular product `knb-lter-sbc.144`, whose
 500-m coastline segments left the island MPAs 32–105 km from data; it is superseded.)
-The remaining PCA covariates (nitrate, depth) are still not reconstructed per MPA.
+Of Kumagai's PCA covariates only human-gravity remains unobtained.
 
 The result is a clean null. **No environmental moderator survives FDR correction**
 (`table_s_env_moderators.csv`). The strongest signal is a decline in the red-urchin
 (*M. franciscanus*) effect with marine-heatwave intensity (−1.84 lnRR per SD,
 *p* = 0.003, FDR = 0.052) — suggestive but not robust, and directionally sensible
 (red urchins fared relatively worse inside the most heat-exposed reserves).
-**Wave exposure** (all 34 MPAs incl. islands, *k* = 10–17) does not significantly
-modulate any taxon's effect either (all *p* ≥ 0.35).
+**Wave exposure** and **nitrate** (all 34 MPAs incl. islands, *k* = 10–17) do not
+significantly modulate any taxon's effect either (all FDR > 0.4; nitrate's only
+nominal signal, red urchin *p* = 0.04, mirrors its MHW signal because nitrate is
+SST-derived and tracks the cold-upwelling gradient).
 Critically, **giant kelp's effect is not detectably modulated by any gradient**
 (all *p* ≥ 0.17): its heatwave resilience is not an artifact of where reserves
 happen to sit thermally, biogeographically, by size, or by wave exposure. The Knapp–Hartung
