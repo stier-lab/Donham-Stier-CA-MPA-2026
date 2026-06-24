@@ -122,6 +122,8 @@ Raw data processing (scripts 03-07) lives in a separate repo:
 | Figure S (candidate, new) | MPA resilience across TWO heatwaves: per-taxon RR across before/MHW1/interim/MHW2/recent (kelp resilience repeats) | `fig_heatwave_replication.pdf` | 19_heatwave_replication.R |
 | Figure S (candidate, new) | Sunflower-star (Pycnopodia) patchy distribution across SoCal reserves + cascade response split by whether a reserve had sunflower stars | `fig_compound_disturbance.pdf` | 20_compound_disturbance.R |
 | Figure S (candidate, new) | Temporal stability: paired CV of annual abundance inside vs outside MPAs, by taxon | `fig_resilience_stability.pdf` | 21_resilience_stability.R |
+| Figure (candidate, main) | Giant-kelp resistance & recovery: inside-vs-outside biomass trajectory through the 2014-16 MHW (single column) | `fig_kelp_resilience.pdf` | 22_resistance_recovery.R |
+| Figure S (candidate, new) | Per-reserve paired resilience: each reserve vs its own control, resistance & recovery (kelp) | `fig_kelp_resilience_paired.pdf` | 22_resistance_recovery.R |
 | Figure S (candidate, new) | Resistance/recovery: kelp & urchin abundance trajectories inside vs outside (MHW shaded) | `fig_resistance_recovery.pdf` | 22_resistance_recovery.R |
 | Figure S (candidate, new) | Ecological memory: per-MPA MHW1 vs MHW2 response scatter (same reserves repeat) | `fig_ecological_memory.pdf` | 23_ecological_memory.R |
 
