@@ -48,6 +48,7 @@ taxa <- c("Panulirus interruptus", "Semicossyphus pulcher",
 role <- c("Panulirus interruptus" = "Predator", "Semicossyphus pulcher" = "Predator",
           "Strongylocentrotus purpuratus" = "Herbivore",
           "Mesocentrotus franciscanus" = "Herbivore", "Macrocystis pyrifera" = "Producer")
+pick_resp <- function(tx) if (tx == "Macrocystis pyrifera") "Bio" else "Den"
 short <- c("Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" = "S. pulcher",
            "Strongylocentrotus purpuratus" = "S. purpuratus",
            "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
@@ -90,7 +91,7 @@ ctr_defs <- list("MHW1-before"  = c(-1, 1, 0, 0, 0),
                  "MHW1-MHW2"    = c(0, 1, 0, -1, 0))
 em_list <- list(); rep_rows <- list()
 for (tx in taxa) {
-  sub <- subset(rr, y == tx)
+  sub <- subset(rr, y == tx & resp == pick_resp(tx))
   # need all five periods present to estimate the full contrast set
   m <- fit_ar1("lnDiff ~ period", sub)
   if (is.null(m)) { m <- suppressWarnings(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
@@ -126,7 +127,7 @@ emm <- do.call(rbind, em_list)
 # ---------------------------------------------------------------------------
 cont_rows <- list()
 for (tx in taxa) {
-  s <- subset(rr, y == tx & BA == "After" & !is.na(time))
+  s <- subset(rr, y == tx & resp == pick_resp(tx) & BA == "After" & !is.na(time))
   s$z <- as.numeric(scale(s$mhw_icum))
   m <- fit_ar1("lnDiff ~ time + z", s)
   if (!is.null(m)) { co <- summary(m)$coefficients$cond

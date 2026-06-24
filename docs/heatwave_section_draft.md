@@ -68,7 +68,7 @@ abundant inside reserves throughout (RR ≈ 1.8) and did not change with the hea
 accounted for, the urchin signal was much weaker than an autocorrelation-naive
 analysis suggests. Purple urchins were marginally fewer inside reserves during the
 heatwave (RR 0.97 → 0.55, during-vs-before p = 0.055) but not significantly so
-afterward (p = 0.19), and red urchins showed no significant period shift (p ≥ 0.15);
+afterward (p = 0.06), and red urchins showed no significant period shift (p ≥ 0.15);
 neither showed a heatwave-specific effect beyond recovery (p ≥ 0.48). (The same
 contrasts under a naive no-AR1 model returned p < 10⁻¹⁰, illustrating the
 autocorrelation inflation.)

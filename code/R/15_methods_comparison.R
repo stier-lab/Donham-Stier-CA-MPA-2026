@@ -195,7 +195,7 @@ fit_meta_paired <- function(d) {  # WP5: paired, inverse-variance multilevel met
   ag <- subset(ag, is.finite(yi) & is.finite(vi) & vi > 0)
   if (is.null(ag) || nrow(ag) < 4 || length(unique(ag$period)) < 2) return(NULL)
   ag$period <- factor(ag$period, levels = c("before", "during", "after"))
-  m <- safe(rma.mv(yi = yi, V = vi, mods = ~ period, random = ~ 1 | MPA, data = ag, method = "REML"))
+  m <- safe(rma.mv(yi = yi, V = vi, mods = ~ period, random = ~ 1 | MPA, data = ag, method = "REML", test = "t"))
   if (is.null(m)) return(NULL)
   cmat <- cbind(est = as.numeric(m$b), se = m$se, p = m$pval)
   rownames(cmat) <- rownames(m$b)

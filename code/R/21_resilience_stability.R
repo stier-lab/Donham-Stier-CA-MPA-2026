@@ -49,7 +49,10 @@ cv_table <- function(year_min, era_label) {
   rows <- list()
   for (tx in taxa) {
     s <- d[taxon_name == tx & resp == resp_of[tx] & year >= year_min]
-    # CV per MPA x status (require >= MINYRS years and positive mean)
+    # collapse to ONE value per year (mean over monitoring programs) so the temporal CV
+    # is not contaminated by within-year between-program variance, and .N counts years
+    s <- s[, .(value = mean(value)), by = .(CA_MPA_Name_Short, status, year)]
+    # CV per MPA x status (require >= MINYRS distinct years and positive mean)
     cv <- s[, .(cv = if (.N >= MINYRS && mean(value) > 0) sd(value) / mean(value) else NA_real_,
                 ny = .N), by = .(CA_MPA_Name_Short, status)]
     w <- dcast(cv[!is.na(cv)], CA_MPA_Name_Short ~ status, value.var = "cv")

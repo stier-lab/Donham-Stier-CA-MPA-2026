@@ -1,10 +1,10 @@
 "taxon","pyc_group","n_mpa","compound_before","p_compound","after_before","p_after"
-"Macrocystis pyrifera","high",5,1.096,0.0306,1.495,0.00095
-"Macrocystis pyrifera","low/zero",6,1.589,0.0329,1.573,0.025
-"Macrocystis pyrifera","after x high (interaction)",11,NA,NA,-0.225,0.783
-"Strongylocentrotus purpuratus","high",5,-0.519,0.177,-0.402,0.403
-"Strongylocentrotus purpuratus","low/zero",6,-0.605,0.154,-0.772,0.101
-"Strongylocentrotus purpuratus","after x high (interaction)",11,NA,NA,-0.141,0.845
-"Mesocentrotus franciscanus","high",5,-0.012,0.969,-0.191,0.623
-"Mesocentrotus franciscanus","low/zero",6,-0.011,0.974,-0.272,0.525
-"Mesocentrotus franciscanus","after x high (interaction)",11,NA,NA,0.242,0.697
+"Macrocystis pyrifera","high",5,0.846,0.0717,1.481,0.000473
+"Macrocystis pyrifera","low/zero",6,1.718,0.021,1.598,0.0284
+"Macrocystis pyrifera","after x high (interaction)",11,NA,NA,-0.148,0.859
+"Strongylocentrotus purpuratus","high",5,-0.487,0.255,-0.41,0.434
+"Strongylocentrotus purpuratus","low/zero",6,-0.815,0.0496,-1.086,0.00813
+"Strongylocentrotus purpuratus","after x high (interaction)",11,NA,NA,0.234,0.742
+"Mesocentrotus franciscanus","high",5,-0.13,0.689,-0.226,0.576
+"Mesocentrotus franciscanus","low/zero",6,-0.247,0.466,-0.612,0.129
+"Mesocentrotus franciscanus","after x high (interaction)",11,NA,NA,0.337,0.556

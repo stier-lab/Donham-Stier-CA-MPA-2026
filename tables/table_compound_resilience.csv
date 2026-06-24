@@ -1,6 +1,6 @@
 "taxon","compound_before","p_compound","after_before","p_after"
-"Panulirus interruptus",0.43,0.123,0.854,0.00542
-"Semicossyphus pulcher",0.012,0.951,-0.064,0.749
-"Strongylocentrotus purpuratus",-0.463,0.113,-0.358,0.319
-"Mesocentrotus franciscanus",-0.069,0.774,-0.277,0.376
-"Macrocystis pyrifera",1.386,0.00144,1.556,0.000172
+"Panulirus interruptus",0.488,0.0558,0.758,0.00565
+"Semicossyphus pulcher",-0.115,0.504,-0.126,0.454
+"Strongylocentrotus purpuratus",-0.531,0.0861,-0.57,0.116
+"Mesocentrotus franciscanus",-0.24,0.318,-0.474,0.104
+"Macrocystis pyrifera",1.297,0.00231,1.581,0.00022

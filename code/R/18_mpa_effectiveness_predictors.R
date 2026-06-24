@@ -98,7 +98,7 @@ predictors <- c(env_design, trophic)
 screen <- function(target, target_se, preds, data) {
   rows <- lapply(preds, function(p) {
     d <- data[is.finite(get(target)) & is.finite(get(target_se)) & is.finite(get(p))]
-    if (nrow(d) < 7 || length(unique(d[[p]])) < 3) return(NULL)
+    if (nrow(d) < 7 || length(unique(d[[p]])) < 2) return(NULL)
     d$z <- as.numeric(scale(d[[p]])); d$.yi <- d[[target]]; d$.sei <- d[[target_se]]
     m <- safe(rma(yi = .yi, sei = .sei, mods = ~ z, data = d, method = "REML", test = "knha"))
     if (is.null(m)) return(NULL)

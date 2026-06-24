@@ -1,6 +1,6 @@
 "taxon","KS_uniformity_p","dispersion_p","outlier_p","mean_lag1_resid_ACF"
-"Panulirus interruptus",1.54e-06,0.845,1,0.23
-"Semicossyphus pulcher",2.45e-11,0.805,3.43e-08,0.29
-"Strongylocentrotus purpuratus",2.89e-08,0.945,0.172,0.48
-"Mesocentrotus franciscanus",5.51e-09,0.84,0.167,0.41
-"Macrocystis pyrifera",0.000182,0.49,0.00474,0.55
+"Panulirus interruptus",4.41e-09,0.765,0.268,0.09
+"Semicossyphus pulcher",0.00135,0.83,0.171,0.12
+"Strongylocentrotus purpuratus",0.00633,0.805,0.448,0.32
+"Mesocentrotus franciscanus",0.00904,0.86,0.718,0.38
+"Macrocystis pyrifera",0.00424,0.545,0.0397,0.26

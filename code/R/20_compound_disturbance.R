@@ -54,6 +54,7 @@ safe <- function(e) tryCatch(suppressWarnings(suppressMessages(e)), error = func
 period3 <- function(y) factor(ifelse(y <= 2013, "before", ifelse(y <= 2016, "compound", "after")),
                               levels = c("before", "compound", "after"))
 PYC_HI <- 0.5   # pre-SSWD sunflower-star density (per 60 m2) threshold for "had sunflower stars"
+pick_resp <- function(tx) if (tx == "Macrocystis pyrifera") "Bio" else "Den"  # one response per taxon (avoid Bio+Den pooling)
 
 # ---------------------------------------------------------------------------
 # (A) Pycnopodia distribution + crash (raw PISCO swath, SoCal)
@@ -107,7 +108,7 @@ if (!is.null(pyc_grp)) {
   rrm <- merge(rr, pyc_grp, by.x = "CA_MPA_Name_Short", by.y = "mpa")
   for (tx in c("Macrocystis pyrifera", "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus")) {
     for (grp in c("high", "low/zero")) {
-      s <- subset(rrm, y == tx & pyc_group == grp)
+      s <- subset(rrm, y == tx & resp == pick_resp(tx) & pyc_group == grp)
       if (length(unique(s$CA_MPA_Name_Short)) < 3) next
       m <- fit_ar1("lnDiff ~ period", s)
       if (is.null(m)) m <- safe(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = s, REML = TRUE))
@@ -119,7 +120,7 @@ if (!is.null(pyc_grp)) {
         after_before = round(ct$ab, 3), p_after = signif(ct$pab, 3))
     }
     # period x Pycnopodia-group interaction (does the response DIFFER by group?)
-    s <- subset(rrm, y == tx); s$pyc_group <- factor(s$pyc_group, levels = c("low/zero", "high"))
+    s <- subset(rrm, y == tx & resp == pick_resp(tx)); s$pyc_group <- factor(s$pyc_group, levels = c("low/zero", "high"))
     mi <- fit_ar1("lnDiff ~ period * pyc_group", s)
     if (!is.null(mi)) { cc <- summary(mi)$coefficients$cond
       ix <- grep("periodafter:pyc_grouphigh", rownames(cc))
@@ -142,7 +143,7 @@ short <- c("Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" =
            "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
 res_rows <- list()
 for (tx in taxa) {
-  sub <- subset(rr, y == tx); m <- fit_ar1("lnDiff ~ period", sub)
+  sub <- subset(rr, y == tx & resp == pick_resp(tx)); m <- fit_ar1("lnDiff ~ period", sub)
   if (is.null(m)) m <- safe(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
   ct <- ab_contrasts(m)
   res_rows[[tx]] <- data.frame(taxon = tx, compound_before = round(ct$cb, 3), p_compound = signif(ct$pcb, 3),
@@ -156,7 +157,7 @@ write.csv(do.call(rbind, res_rows), here::here("tables", "table_compound_resilie
 cross <- data.frame(
   study = c("Eisaguirre et al. 2020", "Kumagai et al. 2024", "This study"),
   region = c("W. N. Channel Islands (cold)", "S. + Central California", "S. California Bight"),
-  disturbance = c("SSWD (sunflower-star loss)", "2014-16 marine heatwave", "compound SSWD + MHW"),
+  disturbance = c("SSWD (sunflower-star loss)", "2014-16 marine heatwave", "2014-16 MHW (SSWD keystone target mostly absent in SoCal)"),
   sunflower_star = c("abundant (cold reefs) -> strong keystone loss",
                      "context only (not modeled)",
                      "PATCHY: abundant at ~1/3 (cold/island) reefs, ~0 at the rest"),

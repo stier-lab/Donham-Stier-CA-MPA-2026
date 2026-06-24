@@ -46,7 +46,7 @@ reef-year.
 | Mean sheephead TL, MPA vs reference | 32.3 / 29.4 cm (larger inside) | MPA larger (ref 30.34) |
 | **Post-disease top model (AICc)** | **sheephead(dens×len) + protection** | **sheephead(dens×len) + protection (wt 0.99)** |
 | Pre-disease top model | includes sunflower star | temp+depth+seastar (wt 0.51) |
-| **Protection: urchins higher outside MPA** | **YES (MPA −1.35 log, p<0.001; 582 vs 327 / 60 m²)** | **YES (urchin barrens outside MPA)** |
+| **Protection: urchins higher outside MPA** | **YES (MPA −1.47 log, p<0.001; 614 vs 339 / 60 m²)** | **YES (urchin barrens outside MPA)** |
 | Sea-star ~ urchin, bivariate (pre) | −0.22 (negative) | negative |
 | Sheephead ~ urchin, bivariate (post) | −0.23 (negative) | negative |
 | Macroalgae ~ purple urchin | −0.40 (negative) | negative (wt 1.00) |

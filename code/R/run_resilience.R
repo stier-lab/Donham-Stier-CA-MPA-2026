@@ -1,6 +1,6 @@
 #' ---
 #' title: "Resilience analysis suite"
-#' description: "Runs the full MPA-resilience module (scripts 14-21) in one call"
+#' description: "Runs the full MPA-resilience module (scripts 14-23) in one call"
 #' author: "Emily Donham & Adrian Stier"
 #' ---
 #'
@@ -33,7 +33,7 @@
 #'
 #' DATA NEEDS
 #'   14, 19, 21 use only the tracked harmonized CSVs (always run; also in run_all.R).
-#'   15, 16, 18 additionally read data/sumstats_final.csv (tracked) and the Kumagai
+#'   16, 18 additionally read data/sumstats_final.csv (tracked) and the Kumagai
 #'     mirror (~/kumagai2024-comparison) for cold-spell/cross-substrate parts.
 #'   17, 20 read raw PISCO from the sibling data repo (~/Donham-Stier-CA-MPA-Data-2026).
 #'   Scripts skip gracefully (with a message) if their external inputs are absent.

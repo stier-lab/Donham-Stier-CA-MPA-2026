@@ -93,7 +93,9 @@ sw <- fread(file.path(DATA_REPO, "MLPA_kelpforest_swath_2024.csv"), nThread = 2,
 sw <- sw[site %in% keep_sites & year %in% c(PRE, POST)]
 sw$tid <- paste(sw$site, sw$year, sw$zone, sw$transect, sep = "|")
 pull <- function(cc) { x <- sw[classcode == cc, .(val = sum(count)), by = tid]; setnames(x, "val", cc); x }
-trans <- unique(sw[, .(tid, site, year, zone, transect, depth)])
+# ONE row per transect: depth varies within a tid, so collapse it (mean) instead of
+# unique(), which would keep multiple depth rows and fan out the count merges.
+trans <- sw[, .(depth = mean(depth, na.rm = TRUE)), by = .(tid, site, year, zone, transect)]
 for (cc in c("STRPURAD", "PYCHEL", "MACPYRAD", "PANINT")) trans <- merge(trans, pull(cc), by = "tid", all.x = TRUE)
 for (cc in c("STRPURAD", "PYCHEL", "MACPYRAD", "PANINT")) trans[[cc]][is.na(trans[[cc]])] <- 0
 trans <- merge(trans, site_meta, by = "site")
@@ -112,8 +114,15 @@ sst <- fi[is.finite(temp), .(sst = mean(temp)), by = .(reef, year)]
 # Restrict to post-settlement (>=15 cm TL): the mechanism is SIZE structure -- only
 # adult sheephead prey on urchins -- and recruits otherwise deflate the size metric.
 sp <- fi[classcode == "SPUL" & fish_tl >= 15]
-sp_t <- sp[, .(n = sum(count), tl = sum(fish_tl * count) / pmax(sum(count), 1)), by = .(reef, year, site, zone, transect)]
-sheep <- sp_t[, .(sheep_dens = mean(n), sheep_tl = sum(tl * n) / pmax(sum(n), 1)), by = .(reef, year)]
+spn <- sp[, .(n = sum(count), tl = sum(fish_tl * count) / pmax(sum(count), 1)), by = .(reef, year, site, zone, transect)]
+# include the ZERO-adult-sheephead transects so density is not a presence-conditional mean:
+# universe of sampled fish transects, left-joined to adult-SPUL counts (missing -> 0).
+allt <- unique(fi[, .(reef, year, site, zone, transect)])
+sp_t <- merge(allt, spn, by = c("reef", "year", "site", "zone", "transect"), all.x = TRUE)
+sp_t[is.na(n), n := 0]
+sheep <- sp_t[, .(sheep_dens = mean(n),                                   # density INCLUDES zero transects
+                  sheep_tl = sum(tl * n, na.rm = TRUE) / pmax(sum(n), 1)), # TL count-weighted over present fish
+              by = .(reef, year)]
 sheep$sheep_tl[is.na(sheep$sheep_tl) | sheep$sheep_dens == 0] <- NA
 
 # all sheephead lengths (for size-class quartiles)
@@ -187,6 +196,9 @@ dem <- demo_post[, .(mean_TL = round(mean(sheep_tl, na.rm = TRUE), 2),
 pc <- summary(m_post)$coefficients
 prot_row <- grep("^protection", rownames(pc), value = TRUE)[1]
 prot_eff   <- if (!is.null(m_post)) signif(pc[prot_row, "Estimate"], 3) else NA
+prot_pcol  <- if ("Pr(>|t|)" %in% colnames(pc)) "Pr(>|t|)" else colnames(pc)[ncol(pc)]
+prot_p     <- if (!is.null(m_post)) pc[prot_row, prot_pcol] else NA
+prot_pstr  <- if (is.na(prot_p)) "p=NA" else if (prot_p < 0.001) "p<0.001" else paste0("p=", signif(prot_p, 2))
 urch_by_prot <- dpost[, .(mean_urch = round(mean(STRPURAD), 1)), by = protection]
 sheep_dens_partial <- if (!is.null(m_post)) signif(pc["scale(sheep_dens)", "Estimate"], 3) else NA
 sheep_biv  <- round(cor(dpost$log_urchin, dpost$sheep_dens, use = "complete.obs"), 3)   # bivariate sheephead-urchin
@@ -224,7 +236,7 @@ cmp <- data.frame(
     paste(round(qtl, 2), collapse = " / "),
     paste(mpa_tl, ref_tl, sep = " / "),
     pre_models$model[1], post_models$model[1],
-    paste0("YES (MPA ", prot_eff, " log-units vs reference, p<0.001)"),
+    paste0("YES (MPA ", prot_eff, " log-units vs reference, ", prot_pstr, ")"),
     paste(urch_by_prot[protection == "reference", mean_urch], urch_by_prot[protection == "mpa", mean_urch], sep = " / "),
     paste0(star_raw, " (negative, MATCHES)"),
     paste0(sheep_biv, " (negative, MATCHES)"),

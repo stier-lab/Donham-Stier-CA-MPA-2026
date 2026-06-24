@@ -34,7 +34,7 @@ vs *fitting*.**
 | Giant kelp effectiveness | 12 | 0.65 | **−0.53** | **−0.40** |
 | Purple-urchin suppression | 10 | 0.00 | **−0.64** | **−4.6** |
 
-- **No predictor survives FDR** in the univariate screen (0 of 15).
+- **No predictor survives FDR** in the univariate screen (0 of 21).
 - The kelp in-sample pseudo-R² of 0.65 is a **pure overfitting artifact** (7
   predictors, 12 MPAs). Both honest out-of-sample metrics are **negative** — the
   models predict *worse than the grand mean*. In the random forest, most predictors
@@ -58,8 +58,8 @@ effective is not predictable from these covariates. Three non-exclusive reasons:
    state, recruitment pulses, SSWD/heatwave timing, enforcement, larval connectivity)
    that our standardized covariates do not encode.
 3. **The right predictors aren't measured per-MPA.** Wave exposure, nutrients, depth,
-   fishing pressure/displacement, and habitat quality — flagged as unavailable in
-   script 16 — are plausible drivers we cannot test without fabrication.
+   fishing pressure/displacement, enforcement, and habitat quality remain unmeasured
+   per-MPA (wave exposure and nutrients ARE now tested as moderators in script 16, also null).
 
 **Practical upshot:** report the robust *average* MPA effect with its among-reserve
 heterogeneity (the meta-analytic τ²/I²), but do **not** claim to explain or predict

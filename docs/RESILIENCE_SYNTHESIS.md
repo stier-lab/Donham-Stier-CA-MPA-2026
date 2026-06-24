@@ -1,4 +1,4 @@
-# MPA resilience: synthesis of the analysis suite (scripts 14–21)
+# MPA resilience: synthesis of the analysis suite (scripts 14–23)
 
 *Integrating the resilience analyses for Donham & Stier. Each section links to the
 script that produces it and its standalone doc. Run the whole suite with
@@ -100,7 +100,7 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
 - [x] **Spatial wave-exposure (storm) resilience** — wave exposure (HSMAX) obtained
   for **all 34 MPAs including the Channel Islands** from Bell's (2023) island-inclusive
   per-pixel kelp-canopy-env NetCDF (EDI knb-lter-sbc.162, CDIP MOP v1.1 waves;
-  `code/R/extract_wave_exposure.R` → `data/per_mpa_wave_exposure.csv`; recovers the
+  `code/R/extract_kelp_env_covariates.R` → `data/per_mpa_kelp_env.csv`; recovers the
   San Miguel-exposed → Catalina-lee-sheltered gradient) and added to the moderator
   screen (script 16): no significant modulation of any taxon (k=10–17, all p≥0.35).
   Wave exposure does not explain the MPA effect or its among-reserve variation.

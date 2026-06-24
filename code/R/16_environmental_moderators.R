@@ -12,19 +12,21 @@
 #   or reserve size. Here we do, as an inverse-variance meta-regression on our
 #   per-MPA effect sizes.
 #
-# MODERATORS (per-MPA; standardized to per-SD slopes):
-#   mhw_during   marine-heatwave cumulative intensity during 2014-2016
-#                (Kumagai's 1-km MHW raster sampled at MPA centroids;
-#                 data/per_mpa_mhw_exposure.csv) -- THERMAL STRESS
-#   cs_mean      cold-spell cumulative intensity, climatological mean
-#                (Kumagai's 1-km cold-spell grid, nearest cell) -- UPWELLING / THERMAL REGIME
+# MODERATORS (per-MPA; standardized to per-SD slopes) -- the full set Kumagai mapped:
+#   mhw_during   marine-heatwave cumulative intensity during 2014-2016 (Kumagai 1-km
+#                MHW raster; data/per_mpa_mhw_exposure.csv) -- THERMAL STRESS
+#   cs_mean      cold-spell cumulative intensity (Kumagai 1-km grid) -- UPWELLING / REGIME
 #   lat          latitude -- BIOGEOGRAPHIC / THERMAL GRADIENT
 #   log_size     log MPA area (Hectares) -- RESERVE DESIGN
-#
-#   NOT INCLUDED (no per-MPA data without fabrication): wave exposure (Kumagai's
-#   per-site `hsmax` came from a kelp-canopy NetCDF not in the mirror; only a
-#   single REGIONAL SBC wave series exists locally, with no among-MPA variation),
-#   nitrate/NPP, depth, human gravity. Documented as a recommended addition.
+#   wave_hs      max significant wave height -- WAVE EXPOSURE
+#   nitrate      seawater nitrate -- NUTRIENTS
+#   log_gravity  log(1+human gravity) -- HUMAN PRESSURE
+#   wave_hs/nitrate from Bell (2023) EDI knb-lter-sbc.162 and gravity from Kumagai's
+#   per-kelp-patch grid, all per-MPA incl. the Channel Islands, via
+#   code/R/extract_kelp_env_covariates.R -> data/per_mpa_kelp_env.csv.
+#   (per_mpa_kelp_env.csv also carries temperature/npp/depth, not modeled here:
+#   temperature/npp are collinear with the thermal moderators; only human-gravity of
+#   Kumagai's PCA set was previously unobtained and is now included.)
 #
 # MODEL: per taxon, a random-effects meta-regression rma(yi = effect size,
 #   sei = SE, mods = ~ z(moderator), method = "REML", test = "knha") on the
@@ -67,6 +69,7 @@ safe <- function(expr) tryCatch(suppressWarnings(suppressMessages(expr)), error 
 ss <- read.csv(here::here("data", "sumstats_final.csv"), stringsAsFactors = FALSE)
 ss <- subset(ss, Taxa %in% taxa & is.finite(Mean) & is.finite(SE) & SE > 0)
 ss <- subset(ss, (Taxa != "M. pyrifera" & Resp == "Den") | (Taxa == "M. pyrifera" & Resp == "Bio"))
+ss <- ss[order(ss$SE), ]                                # keep the most precise replicate (lowest SE)
 ss <- ss[!duplicated(ss[, c("MPA", "Taxa")]), ]   # one effect per MPA x taxon
 
 # MPA size (Hectares) from response ratios

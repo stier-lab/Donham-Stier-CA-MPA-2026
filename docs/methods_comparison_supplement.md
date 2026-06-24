@@ -67,7 +67,7 @@ analytical choices is in `table_s_methods_crosswalk.csv`.
 **Giant kelp resilience is method-invariant.** The after-versus-before increase in
 giant kelp's inside-MPA advantage is large and highly significant at *every*
 waypoint — from the Kumagai-style endpoint (Δln = +1.06, *p* < 10⁻⁵) through our
-meta-analytic endpoint (Δln = +1.44, *p* < 10⁻¹⁸) — and on both datasets. No single
+meta-analytic endpoint (Δln = +1.44, *p* < 10⁻⁹) — and on both datasets. No single
 analytical choice, and no combination, makes the kelp signal appear or disappear.
 The foundation-species result that anchors both papers does not depend on how it is
 analysed.
@@ -87,7 +87,7 @@ Without an AR1 structure, purple-urchin suppression is "highly significant"
 (WP3, *p* = 1.4 × 10⁻⁶); adding AR1(year | MPA) — the spec our heatwave analysis
 adopts as primary — renders the same effect non-significant (WP4, *p* = 0.12); and
 an autocorrelation-naive inverse-variance meta-analysis returns it to spurious high
-significance (WP5, *p* = 10⁻²²). Red urchin behaves identically (WP3 *p* = 4 × 10⁻⁶
+significance (WP5, *p* ~ 10⁻¹⁰). Red urchin behaves identically (WP3 *p* = 4 × 10⁻⁶
 → WP4 *p* = 0.10). The autocorrelation flip moves the point estimate by only 0.14
 ln units on average yet flips the significance of two of five taxa — it is an
 *inferential* lever, not a magnitude lever.
@@ -188,7 +188,7 @@ Kumagai mapped in their PCA is now obtained per MPA** (island-inclusive) and tes
 The result is a clean null. **No environmental moderator survives FDR correction**
 (`table_s_env_moderators.csv`). The strongest signal is a decline in the red-urchin
 (*M. franciscanus*) effect with marine-heatwave intensity (−1.84 lnRR per SD,
-*p* = 0.003, FDR = 0.052) — suggestive but not robust, and directionally sensible
+*p* = 0.003, FDR = 0.21) — suggestive but not robust, and directionally sensible
 (red urchins fared relatively worse inside the most heat-exposed reserves).
 **Wave exposure**, **nitrate**, and **human gravity** (all 34 MPAs incl. islands,
 *k* = 10–17) do not significantly modulate any taxon's effect either (none survive

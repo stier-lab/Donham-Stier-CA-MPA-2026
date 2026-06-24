@@ -1,11 +1,11 @@
 "taxon","contrast","dlnRR","p_AR1","p_naive"
-"Panulirus interruptus","during-before",0.424,0.0974,8.04e-05
-"Panulirus interruptus","after-before",0.85,0.0045,9.8e-14
-"Semicossyphus pulcher","during-before",0.071,0.727,0.859
-"Semicossyphus pulcher","after-before",0.02,0.923,0.231
-"Strongylocentrotus purpuratus","during-before",-0.558,0.0549,7.18e-08
-"Strongylocentrotus purpuratus","after-before",-0.491,0.189,6.01e-17
-"Mesocentrotus franciscanus","during-before",-0.138,0.554,0.04
-"Mesocentrotus franciscanus","after-before",-0.421,0.148,5.52e-10
-"Macrocystis pyrifera","during-before",1.777,9.66e-05,1.77e-12
-"Macrocystis pyrifera","after-before",2.068,4.63e-06,5.24e-27
+"Panulirus interruptus","during-before",0.499,0.0399,1.29e-05
+"Panulirus interruptus","after-before",0.774,0.00306,1.53e-11
+"Semicossyphus pulcher","during-before",-0.043,0.825,0.825
+"Semicossyphus pulcher","after-before",-0.027,0.891,0.805
+"Strongylocentrotus purpuratus","during-before",-0.633,0.0418,3.62e-05
+"Strongylocentrotus purpuratus","after-before",-0.719,0.0615,5.32e-12
+"Mesocentrotus franciscanus","during-before",-0.258,0.265,0.0216
+"Mesocentrotus franciscanus","after-before",-0.51,0.0707,3.87e-08
+"Macrocystis pyrifera","during-before",1.615,0.000293,7.82e-07
+"Macrocystis pyrifera","after-before",2.037,1.18e-05,3.55e-14
