@@ -1,5 +1,14 @@
 # MPA resilience: synthesis of the analysis suite (scripts 14–23)
 
+> **PAPER STATUS (decided).** Exactly **one** result from this suite goes into the
+> Conservation Letters main text: the **giant-kelp resilience figure**
+> (`plots/fig_kelp_resilience.pdf`, script 22) + a short results paragraph + a few
+> "we also checked X" robustness one-liners for the Discussion. **Everything else in
+> scripts 14–23 is internal / SI-supporting robustness — not a numbered manuscript
+> figure unless later promoted.** The Emily-facing catch-up memo (text + figures) is
+> `docs/Resilience_findings_for_Emily.docx`; the paste-ready paragraph/caption is in
+> `docs/kelp_resilience_figure_text.md`. This doc below is the full internal map.
+
 *Integrating the resilience analyses for Donham & Stier. Each section links to the
 script that produces it and its standalone doc. Run the whole suite with
 `source(here::here("code","R","run_resilience.R"))`.*

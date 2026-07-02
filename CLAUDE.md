@@ -113,6 +113,12 @@ Raw data processing (scripts 03-07) lives in a separate repo:
 | Figure 2 | Trophic cascade case studies: 3×3 grid (predators/urchins/kelp rows × 3 Channel Islands sites), before/after MPA with linear trends | `fig_02_cascade_case_studies.pdf` | 11_figures.R |
 | Figure 3 | Meta-analytic mean effect sizes by taxa (RR-scaled axis) | `fig_03_mean_effects.pdf` | 11_figures.R |
 | Figure 4 | Recovery trajectories: 3×2 trophic grid (predators/herbivores/producer rows, 2 species per row), biomass lmer predictions with 95% CI | `fig_04_recovery_curves.pdf` | 11_figures.R |
+<!-- RESILIENCE-SUITE FIGURES (scripts 14-23) — PAPER STATUS DECIDED.
+     Only `fig_kelp_resilience.pdf` (script 22) is accepted for the MAIN TEXT. Every other
+     row below is INTERNAL / SI-SUPPORTING ROBUSTNESS — not a numbered manuscript figure
+     unless later promoted. "candidate" = available if needed, not committed. See
+     docs/RESILIENCE_SYNTHESIS.md (PAPER STATUS banner) and the Emily memo
+     docs/Resilience_findings_for_Emily.docx. -->
 | Figure 5 (candidate, new) | Heatwave × MPA cascade: per-taxon lnRR (emmeans ± 95% CI) across before/during/after the 2014-16 MHW, RR-scaled axis, Southern California. Companion to Kumagai et al. 2024. | `fig_heatwave_cascade.pdf` | 14_heatwave_analysis.R |
 | Figure S (candidate, new) | Cascade regressions across MPA-years (kelp~urchin, urchin~lobster), density lnRR; cf. Kumagai 2024 Fig 7 | `fig_heatwave_cascade_regression.pdf` | 14_heatwave_analysis.R |
 | Figure S (candidate, new) | Analytical multiverse: method bridge (one analytical flip per step, Kumagai-style → ours) + cross-substrate data effect; after-before lnRR change per taxon, RR-scaled | `fig_s_methods_multiverse.pdf` | 15_methods_comparison.R |
@@ -122,7 +128,7 @@ Raw data processing (scripts 03-07) lives in a separate repo:
 | Figure S (candidate, new) | MPA resilience across TWO heatwaves: per-taxon RR across before/MHW1/interim/MHW2/recent (kelp resilience repeats) | `fig_heatwave_replication.pdf` | 19_heatwave_replication.R |
 | Figure S (candidate, new) | Sunflower-star (Pycnopodia) patchy distribution across SoCal reserves + cascade response split by whether a reserve had sunflower stars | `fig_compound_disturbance.pdf` | 20_compound_disturbance.R |
 | Figure S (candidate, new) | Temporal stability: paired CV of annual abundance inside vs outside MPAs, by taxon | `fig_resilience_stability.pdf` | 21_resilience_stability.R |
-| Figure (candidate, main) | Giant-kelp resistance & recovery: inside-vs-outside biomass trajectory through the 2014-16 MHW (single column) | `fig_kelp_resilience.pdf` | 22_resistance_recovery.R |
+| **Figure (ACCEPTED, main text)** | Giant-kelp resistance & recovery: inside-vs-outside biomass trajectory through the 2014-16 MHW (single column). **The one resilience result going into the main text.** | `fig_kelp_resilience.pdf` | 22_resistance_recovery.R |
 | Figure S (candidate, new) | Per-reserve paired resilience: each reserve vs its own control, resistance & recovery (kelp) | `fig_kelp_resilience_paired.pdf` | 22_resistance_recovery.R |
 | Figure S (candidate, new) | Resistance/recovery: kelp & urchin abundance trajectories inside vs outside (MHW shaded) | `fig_resistance_recovery.pdf` | 22_resistance_recovery.R |
 | Figure S (candidate, new) | Ecological memory: per-MPA MHW1 vs MHW2 response scatter (same reserves repeat) | `fig_ecological_memory.pdf` | 23_ecological_memory.R |
