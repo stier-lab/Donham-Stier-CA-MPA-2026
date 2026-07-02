@@ -63,6 +63,7 @@ plots/archive/
 .fuse_hidden*
 excalidraw.log
 
-# Working scratch dirs (literature PDFs, ad-hoc papers — not part of the analysis repo)
-references/
-docs/papers/
+# Single literature library — PDFs/HTML are copyrighted, kept local; the
+# LITERATURE.md index IS tracked
+literature/pdfs/
+!literature/LITERATURE.md

@@ -556,7 +556,7 @@ Goals of the comparison: (1) confirm our PISCO numbers match theirs at shared si
 
 - Their code + data: cloned to `~/kumagai2024-comparison/` (full GitHub clone + Zenodo CC-BY-4.0 snapshot). See `~/kumagai2024-comparison/PROVENANCE.md` for sources/integrity. Key file: `repo/Processed_data/MLPA_data_summarized_wo_siteblocks.csv` (their processed subtidal data) + `repo/Processed_data/SST/MHW_cummulative_intensity_1km.tif` (their MHW-intensity raster).
 - MHW definitions / SBC LTER temperature context: `~/sbc-oceanography/` (`R/31_marine_heatwaves.R`, OISST-based MHW figure, mooring/satellite/reanalysis temperature data).
-- Kumagai PDF: `references/pdfs/Kumagai2024.pdf`.
+- Kumagai PDF: `literature/pdfs/Kumagai_2024_GCB.pdf` (single consolidated library; see `literature/LITERATURE.md`).
 
 ## Known Limitations & Methodological Notes
 
