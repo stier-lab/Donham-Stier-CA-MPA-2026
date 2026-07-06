@@ -63,7 +63,7 @@ plots/archive/
 .fuse_hidden*
 excalidraw.log
 
-# Single literature library — PDFs/HTML are copyrighted, kept local; the
-# LITERATURE.md index IS tracked
-literature/pdfs/
-!literature/LITERATURE.md
+# Single literature library — PDFs/HTML are tracked in this PRIVATE repo.
+# NOTE: repo is private specifically because these are copyrighted publisher
+# PDFs. Do NOT flip this repo public without first purging literature/ from
+# history (git-filter-repo), or you will publicly redistribute copyrighted PDFs.
