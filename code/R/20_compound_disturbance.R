@@ -48,13 +48,14 @@
 cat("Running compound-disturbance analysis (SSWD/Pycnopodia + MHW; Southern California)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages({library(glmmTMB); library(emmeans); library(lme4); library(lmerTest); library(data.table)})
 safe <- function(e) tryCatch(suppressWarnings(suppressMessages(e)), error = function(x) NULL)
 period3 <- function(y) factor(ifelse(y <= 2013, "before", ifelse(y <= 2016, "compound", "after")),
                               levels = c("before", "compound", "after"))
 PYC_HI <- 0.5   # pre-SSWD sunflower-star density (per 60 m2) threshold for "had sunflower stars"
-pick_resp <- function(tx) if (tx == "Macrocystis pyrifera") "Bio" else "Den"  # one response per taxon (avoid Bio+Den pooling)
+# one response per taxon (avoid Bio+Den pooling): resilience_resp() from 01_utils.R
 
 # ---------------------------------------------------------------------------
 # (A) Pycnopodia distribution + crash (raw PISCO swath, SoCal)
@@ -64,7 +65,7 @@ have_swath <- dir.exists(DR)
 pyc_grp <- NULL
 if (have_swath) {
   st <- fread(file.path(DR, "master_site_table_Emilyedit.csv"))
-  soc <- unique(st[latitude <= 34.45 & site_status %in% c("mpa", "reference"),
+  soc <- unique(st[latitude <= SOCAL_MAX_LAT & site_status %in% c("mpa", "reference"),
                    .(site, lat = latitude, mpa = CA_MPA_Name_Short)])[!duplicated(site)]
   sw <- fread(file.path(DR, "MLPA_kelpforest_swath_2024.csv"), nThread = 2,
               select = c("site", "year", "zone", "transect", "classcode", "count"))
@@ -90,7 +91,7 @@ if (have_swath) {
 # ---------------------------------------------------------------------------
 # (B) Keystone moderation: cascade response high vs low Pycnopodia reserves
 # ---------------------------------------------------------------------------
-rr <- read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"), stringsAsFactors = FALSE)
+rr <- load_harmonized_rr()
 rr <- subset(rr, !is.na(lnDiff) & year >= 2002); rr$period <- period3(rr$year); rr$yrf <- factor(rr$year)
 fit_ar1 <- function(form_fixed, data) {
   nsrc <- length(unique(data$source))
@@ -108,7 +109,7 @@ if (!is.null(pyc_grp)) {
   rrm <- merge(rr, pyc_grp, by.x = "CA_MPA_Name_Short", by.y = "mpa")
   for (tx in c("Macrocystis pyrifera", "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus")) {
     for (grp in c("high", "low/zero")) {
-      s <- subset(rrm, y == tx & resp == pick_resp(tx) & pyc_group == grp)
+      s <- subset(rrm, y == tx & resp == resilience_resp(tx) & pyc_group == grp)
       if (length(unique(s$CA_MPA_Name_Short)) < 3) next
       m <- fit_ar1("lnDiff ~ period", s)
       if (is.null(m)) m <- safe(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = s, REML = TRUE))
@@ -120,7 +121,7 @@ if (!is.null(pyc_grp)) {
         after_before = round(ct$ab, 3), p_after = signif(ct$pab, 3))
     }
     # period x Pycnopodia-group interaction (does the response DIFFER by group?)
-    s <- subset(rrm, y == tx & resp == pick_resp(tx)); s$pyc_group <- factor(s$pyc_group, levels = c("low/zero", "high"))
+    s <- subset(rrm, y == tx & resp == resilience_resp(tx)); s$pyc_group <- factor(s$pyc_group, levels = c("low/zero", "high"))
     mi <- fit_ar1("lnDiff ~ period * pyc_group", s)
     if (!is.null(mi)) { cc <- summary(mi)$coefficients$cond
       ix <- grep("periodafter:pyc_grouphigh", rownames(cc))
@@ -136,14 +137,11 @@ write.csv(mod_tab, here::here("tables", "table_compound_keystone_moderation.csv"
 # ---------------------------------------------------------------------------
 # (C) Overall resilience (lnRR, AR1) for context + figure emmeans
 # ---------------------------------------------------------------------------
-taxa <- c("Panulirus interruptus", "Semicossyphus pulcher", "Strongylocentrotus purpuratus",
-          "Mesocentrotus franciscanus", "Macrocystis pyrifera")
-short <- c("Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" = "S. pulcher",
-           "Strongylocentrotus purpuratus" = "S. purpuratus",
-           "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
+taxa <- RESILIENCE_TAXA
+short <- RESILIENCE_TAXA_SHORT
 res_rows <- list()
 for (tx in taxa) {
-  sub <- subset(rr, y == tx & resp == pick_resp(tx)); m <- fit_ar1("lnDiff ~ period", sub)
+  sub <- subset(rr, y == tx & resp == resilience_resp(tx)); m <- fit_ar1("lnDiff ~ period", sub)
   if (is.null(m)) m <- safe(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
   ct <- ab_contrasts(m)
   res_rows[[tx]] <- data.frame(taxon = tx, compound_before = round(ct$cb, 3), p_compound = signif(ct$pcb, 3),

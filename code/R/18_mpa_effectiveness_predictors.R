@@ -42,6 +42,7 @@
 cat("Modeling predictors of MPA effectiveness (script 18)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages({library(metafor); library(data.table)})
 have_rf <- requireNamespace("randomForest", quietly = TRUE)
@@ -67,12 +68,12 @@ meta <- ss[!duplicated(MPA), .(MPA, lat = Lat, type, MPA_Start, island = as.inte
 meta[, `:=`(smr = as.integer(type == "SMR"), est_year = MPA_Start)]
 
 # reserve size
-rr <- as.data.table(read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"), stringsAsFactors = FALSE))
+rr <- as.data.table(load_harmonized_rr())
 size <- unique(rr[, .(MPA = CA_MPA_Name_Short, log_size = log(Hectares))])[!duplicated(MPA)]
 
-# environmental: MHW intensity during 2014-16
+# environmental: MHW intensity during MHW1 (2014-16)
 mhw <- as.data.table(read.csv(here::here("data", "per_mpa_mhw_exposure.csv"), stringsAsFactors = FALSE))
-mhw_d <- mhw[year %in% 2014:2016, .(mhw_during = mean(mhw_icum_mpa)), by = .(MPA = CA_MPA_Name_Short)]
+mhw_d <- mhw[year %in% MHW1_YEARS, .(mhw_during = mean(mhw_icum_mpa)), by = .(MPA = CA_MPA_Name_Short)]
 # cold-spell climatology (nearest 1-km cell), if Kumagai grid present
 cs_path <- path.expand("~/kumagai2024-comparison/repo/Processed_data/SST/CS_cummulative_intensity_1km.rds")
 meta[, lon := ss[!duplicated(MPA)]$Lon]   # lon for cs nearest-cell match

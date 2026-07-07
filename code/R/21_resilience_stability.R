@@ -30,20 +30,17 @@
 cat("Running temporal-stability resilience analysis (script 21)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages(library(data.table))
 
-taxa <- c("Panulirus interruptus", "Semicossyphus pulcher", "Strongylocentrotus purpuratus",
-          "Mesocentrotus franciscanus", "Macrocystis pyrifera")
-short <- c("Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" = "S. pulcher",
-           "Strongylocentrotus purpuratus" = "S. purpuratus",
-           "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
-resp_of <- c("Panulirus interruptus" = "Den", "Semicossyphus pulcher" = "Den",
-             "Strongylocentrotus purpuratus" = "Den", "Mesocentrotus franciscanus" = "Den",
-             "Macrocystis pyrifera" = "Bio")
-MINYRS <- 5
+# Shared resilience constants/helpers: 00c_analysis_constants.R + 01_utils.R
+taxa <- RESILIENCE_TAXA
+short <- RESILIENCE_TAXA_SHORT
+resp_of <- RESILIENCE_RESP_OF
+MINYRS <- MINIMUM_YEARS_OF_DATA
 
-d <- as.data.table(read.csv(here::here("data", "harmonized", "harmonized_raw_responses.csv"), stringsAsFactors = FALSE))
+d <- as.data.table(load_harmonized_raw())
 
 cv_table <- function(year_min, era_label) {
   rows <- list()

@@ -43,27 +43,25 @@
 cat("Running heatwave analysis (Southern California; AR1 + Source RE)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages({library(glmmTMB); library(emmeans); library(lme4); library(lmerTest); library(DHARMa)})
 
-taxa <- c("Panulirus interruptus", "Semicossyphus pulcher",
-          "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus",
-          "Macrocystis pyrifera")
-role <- c("Panulirus interruptus" = "Predator", "Semicossyphus pulcher" = "Predator",
-          "Strongylocentrotus purpuratus" = "Herbivore",
-          "Mesocentrotus franciscanus" = "Herbivore", "Macrocystis pyrifera" = "Producer")
-# Use ONE response per taxon (giant kelp = biomass; animals = density) so each MPA-year
+# Shared resilience constants/helpers: 00c_analysis_constants.R + 01_utils.R
+taxa <- RESILIENCE_TAXA
+role <- RESILIENCE_TAXA_ROLE
+# One response per taxon (giant kelp = biomass; animals = density) so each MPA-year
 # contributes a single lnRR row -- avoids pooling the non-independent Bio/Den/RD rows and
 # feeding duplicate years into ar1(year|MPA). (The cascade regression below stays density.)
-pick_resp <- function(tx) if (tx == "Macrocystis pyrifera") "Bio" else "Den"
+# resilience_resp() (01_utils.R) encodes this rule.
 
 # ---------------------------------------------------------------------------
 # 1. Load + join
 # ---------------------------------------------------------------------------
-rr   <- read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"), stringsAsFactors = FALSE)
+rr   <- load_harmonized_rr()
 hw   <- read.csv(here::here("data", "heatwave_exposure_SBC_annual.csv"), stringsAsFactors = FALSE)
 meta <- read.csv(here::here("data", "harmonized", "harmonized_site_metadata.csv"), stringsAsFactors = FALSE)
-stopifnot("Non-Southern-California sites (lat > 34.45 N)" = all(meta$Lat <= 34.45, na.rm = TRUE))
+assert_socal_scope(meta)
 
 rr <- merge(rr, hw[, c("year", "mhw_days", "mhw_icum", "period")], by = "year", all.x = TRUE)
 rr <- subset(rr, !is.na(period) & !is.na(lnDiff))
@@ -87,7 +85,7 @@ pval <- function(m, term) { cc <- summary(m)$coefficients$cond
 # ---------------------------------------------------------------------------
 em_list <- list(); ct_list <- list()
 for (tx in taxa) {
-  sub <- subset(rr, y == tx & resp == pick_resp(tx))
+  sub <- subset(rr, y == tx & resp == resilience_resp(tx))
   m  <- fit_ar1("lnDiff ~ period", sub)
   mn <- suppressWarnings(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
   if (is.null(m)) { message("  [14] AR1 period model failed for ", tx, "; using naive."); m <- mn }
@@ -119,7 +117,7 @@ write.csv(tab[match(taxa, tab$taxon), c("taxon", "Role", "RR_before", "RR_during
 # ---------------------------------------------------------------------------
 diag_rows <- list()
 for (tx in taxa) {
-  sub <- subset(rr, y == tx & resp == pick_resp(tx))
+  sub <- subset(rr, y == tx & resp == resilience_resp(tx))
   mn <- suppressWarnings(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
   sim <- simulateResiduals(mn, n = 400, plot = FALSE)
   sub$r <- resid(mn)
@@ -209,7 +207,7 @@ if (file.exists(expo_path)) {
 
   ex_rows <- list(); int_rows <- list()
   for (tx in taxa) {
-    s <- subset(je, y == tx & resp == pick_resp(tx)); s$z <- as.numeric(scale(s$mhw_icum_mpa))
+    s <- subset(je, y == tx & resp == resilience_resp(tx)); s$z <- as.numeric(scale(s$mhw_icum_mpa))
     m <- fit_ar1("lnDiff ~ z", s)
     if (!is.null(m)) { co <- summary(m)$coefficients$cond["z", ]
       ex_rows[[tx]] <- data.frame(Taxon = tx, Role = role[tx], n = nrow(s),
@@ -241,7 +239,7 @@ scen <- list(all_MPAs = function(x) x,
 )
 sens_rows <- list()
 for (tx in c("Panulirus interruptus", "Strongylocentrotus purpuratus", "Macrocystis pyrifera"))
-  for (nm in names(scen)) { sub <- scen[[nm]](subset(rr, y == tx & resp == pick_resp(tx))); r <- ab_p(sub)
+  for (nm in names(scen)) { sub <- scen[[nm]](subset(rr, y == tx & resp == resilience_resp(tx))); r <- ab_p(sub)
     sens_rows[[paste(tx, nm)]] <- data.frame(Taxon = tx, scenario = nm, n = nrow(sub),
       n_mpa = length(unique(sub$CA_MPA_Name_Short)), after_before_dlnRR = round(r[1], 3), p = signif(r[2], 3)) }
 write.csv(do.call(rbind, sens_rows), here::here("tables", "table_heatwave_sensitivity.csv"), row.names = FALSE)

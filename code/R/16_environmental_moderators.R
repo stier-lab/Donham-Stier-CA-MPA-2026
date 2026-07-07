@@ -49,12 +49,13 @@
 cat("Running environmental moderator meta-regression (script 16)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages(library(metafor))
 
-taxa <- c("P. interruptus", "S. pulcher", "S. purpuratus", "M. franciscanus", "M. pyrifera")
-role <- c("P. interruptus" = "Predator", "S. pulcher" = "Predator", "S. purpuratus" = "Herbivore",
-          "M. franciscanus" = "Herbivore", "M. pyrifera" = "Producer")
+# Shared constants (00c): 16 keys by abbreviated names to match sumstats_final's Taxa column
+taxa <- unname(RESILIENCE_TAXA_SHORT)
+role <- setNames(RESILIENCE_TAXA_ROLE, RESILIENCE_TAXA_SHORT)
 safe <- function(expr) tryCatch(suppressWarnings(suppressMessages(expr)), error = function(e) NULL)
 
 # ---------------------------------------------------------------------------
@@ -73,7 +74,7 @@ ss <- ss[order(ss$SE), ]                                # keep the most precise 
 ss <- ss[!duplicated(ss[, c("MPA", "Taxa")]), ]   # one effect per MPA x taxon
 
 # MPA size (Hectares) from response ratios
-rr <- read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"), stringsAsFactors = FALSE)
+rr <- load_harmonized_rr()
 size <- unique(rr[, c("CA_MPA_Name_Short", "Hectares")]); names(size)[1] <- "MPA"
 
 # MHW thermal stress during the heatwave (per-MPA centroid sample of Kumagai raster)

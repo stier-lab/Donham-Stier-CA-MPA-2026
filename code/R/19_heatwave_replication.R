@@ -39,27 +39,22 @@
 cat("Running heatwave replication analysis (two MHWs; Southern California)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages({library(glmmTMB); library(emmeans); library(lme4); library(lmerTest)})
 
-taxa <- c("Panulirus interruptus", "Semicossyphus pulcher",
-          "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus",
-          "Macrocystis pyrifera")
-role <- c("Panulirus interruptus" = "Predator", "Semicossyphus pulcher" = "Predator",
-          "Strongylocentrotus purpuratus" = "Herbivore",
-          "Mesocentrotus franciscanus" = "Herbivore", "Macrocystis pyrifera" = "Producer")
-pick_resp <- function(tx) if (tx == "Macrocystis pyrifera") "Bio" else "Den"
-short <- c("Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" = "S. pulcher",
-           "Strongylocentrotus purpuratus" = "S. purpuratus",
-           "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
+# Shared resilience constants/helpers: 00c_analysis_constants.R + 01_utils.R
+taxa <- RESILIENCE_TAXA
+role <- RESILIENCE_TAXA_ROLE
+short <- RESILIENCE_TAXA_SHORT
 
 # ---------------------------------------------------------------------------
 # 1. Load + join + 5-level period
 # ---------------------------------------------------------------------------
-rr   <- read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"), stringsAsFactors = FALSE)
+rr   <- load_harmonized_rr()
 hw   <- read.csv(here::here("data", "heatwave_exposure_SBC_annual.csv"), stringsAsFactors = FALSE)
 meta <- read.csv(here::here("data", "harmonized", "harmonized_site_metadata.csv"), stringsAsFactors = FALSE)
-stopifnot("Non-Southern-California sites (lat > 34.45 N)" = all(meta$Lat <= 34.45, na.rm = TRUE))
+assert_socal_scope(meta)
 
 rr <- merge(rr, hw[, c("year", "mhw_days", "mhw_icum")], by = "year", all.x = TRUE)
 rr <- subset(rr, !is.na(lnDiff) & !is.na(mhw_icum))
@@ -91,7 +86,7 @@ ctr_defs <- list("MHW1-before"  = c(-1, 1, 0, 0, 0),
                  "MHW1-MHW2"    = c(0, 1, 0, -1, 0))
 em_list <- list(); rep_rows <- list()
 for (tx in taxa) {
-  sub <- subset(rr, y == tx & resp == pick_resp(tx))
+  sub <- subset(rr, y == tx & resp == resilience_resp(tx))
   # need all five periods present to estimate the full contrast set
   m <- fit_ar1("lnDiff ~ period", sub)
   if (is.null(m)) { m <- suppressWarnings(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
@@ -127,7 +122,7 @@ emm <- do.call(rbind, em_list)
 # ---------------------------------------------------------------------------
 cont_rows <- list()
 for (tx in taxa) {
-  s <- subset(rr, y == tx & resp == pick_resp(tx) & BA == "After" & !is.na(time))
+  s <- subset(rr, y == tx & resp == resilience_resp(tx) & BA == "After" & !is.na(time))
   s$z <- as.numeric(scale(s$mhw_icum))
   m <- fit_ar1("lnDiff ~ time + z", s)
   if (!is.null(m)) { co <- summary(m)$coefficients$cond

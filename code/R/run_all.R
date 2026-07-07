@@ -26,9 +26,16 @@
 #'   10_temporal_analysis.R - Recovery trajectories, phase portraits, cascade consistency
 #'   11_figures.R           - All main text (Figs 1-4) and most SI figures
 #'   13_additional_analyses.R - Moderator comparisons (SMR vs SMCA, Islands vs Mainland)
-#'   14_heatwave_analysis.R - MPA cascade x 2014-16 marine heatwave (Kumagai 2024 comparison)
-#'   15_methods_comparison.R - Analytical multiverse: how method drives effect-size variation (SI)
-#'   16_environmental_moderators.R - Env covariates (Kumagai PCA) as meta-regression moderators (SI)
+#'   RESILIENCE MODULE (scripts 14-23; membership defined in resilience_modules.R) -
+#'     the in-pipeline subset runs here, the full suite via run_resilience.R:
+#'       14_heatwave_analysis.R        - MPA cascade x 2014-16 marine heatwave (Kumagai 2024 comparison)
+#'       15_methods_comparison.R       - Analytical multiverse: method vs data drives effect sizes (SI)
+#'       16_environmental_moderators.R - Env covariates (Kumagai PCA) as meta-regression moderators (SI)
+#'       19_heatwave_replication.R     - Does resilience repeat across TWO heatwaves? (SI)
+#'       21_resilience_stability.R     - Temporal stability (CV) inside vs outside (SI)
+#'       22_resistance_recovery.R      - Resistance/recovery on the state variable (main-text kelp fig)
+#'       23_ecological_memory.R        - Do the same reserves respond in both heatwaves? (SI)
+#'     (17/18/20 need raw PISCO / the Kumagai mirror; run via run_resilience.R only.)
 #'   12_results_summary.R   - Summary CSVs, RESULTS_SUMMARY.md, data flow audit
 #'
 #' KEY OUTPUTS:
@@ -209,29 +216,15 @@ source_module("11_figures.R", "11")
 # --- 13: Additional analyses (moderator comparisons, supplemental fig S9) ---
 source_module("13_additional_analyses.R", "13")
 
-# --- 14: Heatwave analysis (MPA cascade x 2014-16 MHW; Kumagai 2024 comparison) ---
-source_module("14_heatwave_analysis.R", "14")
-
-# --- 15: Methods comparison (analytical multiverse vs Kumagai 2024; SI supplement) ---
-source_module("15_methods_comparison.R", "15")
-
-# --- 16: Environmental moderators (Kumagai PCA covariates as meta-regression; SI) ---
-source_module("16_environmental_moderators.R", "16")
-
-# --- 19: Heatwave replication (resilience repeats across two MHWs; harmonized only) ---
-source_module("19_heatwave_replication.R", "19")
-
-# --- 21: Temporal-stability resilience facet (harmonized only) ---
-source_module("21_resilience_stability.R", "21")
-
-# --- 22: Resistance/recovery decomposition on the state variable (harmonized only) ---
-source_module("22_resistance_recovery.R", "22")
-
-# --- 23: Ecological memory across two heatwaves (harmonized only) ---
-source_module("23_ecological_memory.R", "23")
-
-# Resilience analyses that read raw PISCO / the Kumagai mirror (17, 18, 20) are run
-# via code/R/run_resilience.R; they skip gracefully if that external data is absent.
+# --- RESILIENCE MODULE (scripts 14-23) -----------------------------------------------------------
+# Heatwave resilience + robustness suite. Module membership is defined once in
+# resilience_modules.R (shared with run_resilience.R). The in-pipeline subset runs here; the
+# full suite (adding 17/18/20, which need raw PISCO / the Kumagai mirror) runs via
+# run_resilience.R. External-data scripts skip gracefully when their inputs are absent.
+source(here::here("code", "R", "resilience_modules.R"))
+for (resil_module in RESILIENCE_MODULES_IN_PIPELINE) {
+  source_module(resil_module, sub("_.*", "", resil_module))
+}
 
 # --- 12: Results Summary --------------------------------------------------------------------------
 source_module("12_results_summary.R", "12")

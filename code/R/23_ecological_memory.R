@@ -29,20 +29,21 @@
 cat("Running ecological-memory analysis (do the same reserves repeat?) (script 23)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages(library(data.table))
 
-MHW1 <- 2014:2016; MHW2 <- 2018:2020
-taxa <- c("Macrocystis pyrifera", "Strongylocentrotus purpuratus")
-pick_resp <- function(tx) if (tx == "Macrocystis pyrifera") "Bio" else "Den"
-short <- c("Macrocystis pyrifera" = "M. pyrifera", "Strongylocentrotus purpuratus" = "S. purpuratus")
+# Shared resilience constants/helpers: 00c_analysis_constants.R + 01_utils.R
+MHW1 <- MHW1_YEARS; MHW2 <- MHW2_YEARS
+taxa <- c("Macrocystis pyrifera", "Strongylocentrotus purpuratus")  # kelp + purple urchin subset
+short <- RESILIENCE_TAXA_SHORT[taxa]
 
-rr <- as.data.table(read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"), stringsAsFactors = FALSE))
+rr <- as.data.table(load_harmonized_rr())
 rr <- rr[is.finite(lnDiff)]
 
 mem_rows <- list(); pts <- list()
 for (tx in taxa) {
-  s <- rr[y == tx & resp == pick_resp(tx)]
+  s <- rr[y == tx & resp == resilience_resp(tx)]
   e1 <- s[year %in% MHW1, .(mhw1 = mean(lnDiff)), by = CA_MPA_Name_Short]
   e2 <- s[year %in% MHW2, .(mhw2 = mean(lnDiff)), by = CA_MPA_Name_Short]
   w <- merge(e1, e2, by = "CA_MPA_Name_Short")

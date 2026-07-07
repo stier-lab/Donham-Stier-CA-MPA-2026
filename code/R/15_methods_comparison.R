@@ -57,18 +57,14 @@
 cat("Running methods comparison / analytical multiverse (script 15)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages({library(glmmTMB); library(lme4); library(lmerTest); library(metafor)})
 
-taxa <- c("Panulirus interruptus", "Semicossyphus pulcher",
-          "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus",
-          "Macrocystis pyrifera")
-role <- c("Panulirus interruptus" = "Predator", "Semicossyphus pulcher" = "Predator",
-          "Strongylocentrotus purpuratus" = "Herbivore",
-          "Mesocentrotus franciscanus" = "Herbivore", "Macrocystis pyrifera" = "Producer")
-short <- c("Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" = "S. pulcher",
-           "Strongylocentrotus purpuratus" = "S. purpuratus",
-           "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
+# Shared resilience constants/helpers: 00c_analysis_constants.R + 01_utils.R
+taxa <- RESILIENCE_TAXA
+role <- RESILIENCE_TAXA_ROLE
+short <- RESILIENCE_TAXA_SHORT
 
 # Heatwave-period coding identical to Kumagai et al. (calendar windows)
 hw_period <- function(year) factor(ifelse(year <= 2013, "before",
@@ -116,11 +112,11 @@ safe <- function(expr) tryCatch(suppressWarnings(suppressMessages(expr)), error 
 
 # --- OURS ------------------------------------------------------------------
 # RAW: harmonized_raw_responses (status = mpa/reference, value = raw density)
-oraw <- read.csv(here::here("data", "harmonized", "harmonized_raw_responses.csv"), stringsAsFactors = FALSE)
+oraw <- load_harmonized_raw()
 oraw <- subset(oraw, resp == "Den" & year >= 2002 & taxon_name %in% taxa)
 oraw <- aggregate(value ~ CA_MPA_Name_Short + year + taxon_name + status, data = oraw, FUN = mean)
 # PROP + paired lnRR: harmonized_response_ratios (mpa, reference = proportions; lnDiff = paired lnRR)
-orr <- read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"), stringsAsFactors = FALSE)
+orr <- load_harmonized_rr()
 orr <- subset(orr, resp == "Den" & year >= 2002 & y %in% taxa)
 orr$period <- hw_period(orr$year)
 

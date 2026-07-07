@@ -303,8 +303,15 @@ Pipeline order:
 21_resilience_stability.R - Temporal stability facet: does protection reduce year-to-year variability (CV)? (SI)
 22_resistance_recovery.R  - Resistance/recovery on the state variable (kelp grew inside, declined outside) (SI)
 23_ecological_memory.R    - Do the same reserves respond in both heatwaves? (consistency) (SI)
+resilience_modules.R      - Single source of truth for resilience-module membership (RESILIENCE_MODULES_IN_PIPELINE / _FULL_SUITE), sourced by both run_all.R and run_resilience.R
 run_resilience.R          - Runs the full resilience suite (14,19,20,22,23,21,15,16,18,17); see docs/RESILIENCE_SYNTHESIS.md
 extract_kelp_env_covariates.R - Derive per-MPA wave/nitrate/temp/npp/depth from Bell 2023 EDI NetCDF -> data/per_mpa_kelp_env.csv (standalone)
+
+Resilience-module integration (scripts 14-23 are NOT tacked on): shared constants live in
+`00c_analysis_constants.R` Section 8 (MHW1_YEARS/MHW2_YEARS, RESILIENCE_BASELINE/AFTER/RECENT_YEARS,
+SOCAL_MAX_LAT, RESILIENCE_TAXA/_SHORT/_ROLE/_RESP_OF); shared loaders/helpers live in `01_utils.R`
+Section 11 (load_harmonized_raw/rr, resilience_resp, window_mean, assert_socal_scope). Scripts
+14/15/16/18/19/20/21/22/23 source these instead of re-typing the constants or re-reading CSV paths.
 
 Derived per-MPA covariate files in `data/` (tracked; small):
   per_mpa_mhw_exposure.csv  - annual MHW cumulative intensity per MPA (Kumagai 1-km raster; used by 14/16/18)

@@ -42,10 +42,9 @@
 #'   source(here::here("code", "R", "run_resilience.R"))
 
 rm(list = ls())
-modules <- c("14_heatwave_analysis.R", "19_heatwave_replication.R", "20_compound_disturbance.R",
-             "22_resistance_recovery.R", "23_ecological_memory.R", "21_resilience_stability.R",
-             "15_methods_comparison.R", "16_environmental_moderators.R",
-             "18_mpa_effectiveness_predictors.R", "17_eisaguirre_reproduction.R")
+# Module membership is the single source of truth in resilience_modules.R (shared with run_all.R)
+source(here::here("code", "R", "resilience_modules.R"))
+modules <- RESILIENCE_MODULES_FULL_SUITE
 cat("==============================================================\n")
 cat("  MPA RESILIENCE ANALYSIS SUITE\n  ", length(modules), "modules\n")
 cat("==============================================================\n\n")

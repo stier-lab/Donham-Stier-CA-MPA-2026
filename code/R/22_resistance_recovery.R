@@ -30,29 +30,26 @@
 cat("Running resistance/recovery decomposition (script 22)...\n")
 source(here::here("code", "R", "00_libraries.R"))
 source(here::here("code", "R", "00b_color_palette.R"))
+source(here::here("code", "R", "00c_analysis_constants.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages(library(data.table))
 
-taxa <- c("Panulirus interruptus", "Semicossyphus pulcher", "Strongylocentrotus purpuratus",
-          "Mesocentrotus franciscanus", "Macrocystis pyrifera")
-short <- c("Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" = "S. pulcher",
-           "Strongylocentrotus purpuratus" = "S. purpuratus",
-           "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
-resp_of <- c("Panulirus interruptus" = "Den", "Semicossyphus pulcher" = "Den",
-             "Strongylocentrotus purpuratus" = "Den", "Mesocentrotus franciscanus" = "Den",
-             "Macrocystis pyrifera" = "Bio")
-BASE <- 2010:2013; DUR <- 2014:2016; AFT <- 2017:2019; REC <- 2020:2023
+# Shared resilience constants/helpers live in 00c_analysis_constants.R + 01_utils.R
+taxa <- RESILIENCE_TAXA
+short <- RESILIENCE_TAXA_SHORT
+resp_of <- RESILIENCE_RESP_OF
+BASE <- RESILIENCE_BASELINE_YEARS; DUR <- MHW1_YEARS; AFT <- RESILIENCE_AFTER_YEARS; REC <- RESILIENCE_RECENT_YEARS
 
-d <- as.data.table(read.csv(here::here("data", "harmonized", "harmonized_raw_responses.csv"), stringsAsFactors = FALSE))
+d <- as.data.table(load_harmonized_raw())
 # one abundance per MPA x year x taxon x status (mean over source)
 d <- d[, .(value = mean(value)), by = .(CA_MPA_Name_Short, year, taxon_name, status, resp)]
 
-win <- function(s, yrs) { v <- s$value[s$year %in% yrs]; if (length(v) >= 1) mean(v) else NA_real_ }
 rr_rows <- list()
 for (tx in taxa) {
   st <- d[taxon_name == tx & resp == resp_of[tx]]
-  # per MPA x status windows
-  agg <- st[, .(base = win(.SD, BASE), dur = win(.SD, DUR), aft = win(.SD, AFT), rec = win(.SD, REC)),
+  # per MPA x status windows (window_mean from 01_utils replaces the old win() helper)
+  agg <- st[, .(base = window_mean(value, year, BASE), dur = window_mean(value, year, DUR),
+                aft = window_mean(value, year, AFT), rec = window_mean(value, year, REC)),
             by = .(CA_MPA_Name_Short, status)]
   agg <- agg[is.finite(base) & base > 0]
   agg[, `:=`(resistance = dur / base, recovery = aft / base, recovery_recent = rec / base)]
@@ -118,8 +115,8 @@ ggsave(here::here("plots", "fig_kelp_resilience.png"), p_kelp, width = 80, heigh
 # pattern is consistent across pairs, not a pooled-mean artifact. Ratios to 2010-13 baseline.
 kb <- d[taxon_name == "Macrocystis pyrifera" & resp == "Bio", .(value = mean(value)),
         by = .(CA_MPA_Name_Short, status, year)]
-winb <- function(s, yrs) { v <- s$value[s$year %in% yrs]; if (length(v)) mean(v) else NA_real_ }
-agb <- kb[, .(base = winb(.SD, 2010:2013), dur = winb(.SD, 2014:2016), rec = winb(.SD, 2020:2023)),
+agb <- kb[, .(base = window_mean(value, year, BASE), dur = window_mean(value, year, DUR),
+              rec = window_mean(value, year, REC)),
           by = .(CA_MPA_Name_Short, status)][is.finite(base) & base > 0]
 wb <- dcast(agb, CA_MPA_Name_Short ~ status, value.var = c("base", "dur", "rec"))
 wb <- wb[is.finite(base_mpa) & is.finite(base_reference)]

@@ -169,6 +169,48 @@ trophic_assignment <- c(
 
 
 # =============================================================================
+# SECTION 8: RESILIENCE / HEATWAVE MODULE PARAMETERS (scripts 14-23)
+# =============================================================================
+# Single source of truth for the constants shared across the resilience suite
+# (heatwave, resistance/recovery, replication, memory, stability). Previously each
+# of scripts 14/19/21/22/23 re-typed these; centralizing prevents drift.
+
+#' Marine heatwave event windows for the Santa Barbara Coastal region
+#' (Hobday et al. 2016 heatwaveR catalog on daily NOAA OISST; see 14_heatwave_analysis.R).
+MHW1_YEARS <- 2014:2016   # first heatwave ("the Blob" + 2015-16 El Nino); most extreme on record
+MHW2_YEARS <- 2018:2020   # second heatwave ("Blob 2.0")
+
+#' State-variable resistance/recovery windows, relative to a pre-heatwave baseline (script 22).
+RESILIENCE_BASELINE_YEARS <- 2010:2013   # pre-heatwave baseline
+RESILIENCE_AFTER_YEARS    <- 2017:2019   # immediate post-MHW1 recovery
+RESILIENCE_RECENT_YEARS   <- 2020:2023   # recent / recovery-completeness window
+
+#' Southern California Bight scope. Resilience analyses are restricted to reefs
+#' south of Point Conception; this is the maximum latitude (deg N), asserted in
+#' scripts 14 and 19 via assert_socal_scope() (01_utils.R).
+SOCAL_MAX_LAT <- 34.45
+
+#' Canonical resilience taxa (top predator -> primary producer), with abbreviated
+#' display names, trophic role, and the response metric used (biomass for giant
+#' kelp, density for the animals). Consumed by scripts 14/19/21/22/23.
+RESILIENCE_TAXA <- c("Panulirus interruptus", "Semicossyphus pulcher",
+                     "Strongylocentrotus purpuratus", "Mesocentrotus franciscanus",
+                     "Macrocystis pyrifera")
+RESILIENCE_TAXA_SHORT <- c(
+  "Panulirus interruptus" = "P. interruptus", "Semicossyphus pulcher" = "S. pulcher",
+  "Strongylocentrotus purpuratus" = "S. purpuratus",
+  "Mesocentrotus franciscanus" = "M. franciscanus", "Macrocystis pyrifera" = "M. pyrifera")
+RESILIENCE_TAXA_ROLE <- c(
+  "Panulirus interruptus" = "Predator", "Semicossyphus pulcher" = "Predator",
+  "Strongylocentrotus purpuratus" = "Herbivore", "Mesocentrotus franciscanus" = "Herbivore",
+  "Macrocystis pyrifera" = "Producer")
+RESILIENCE_RESP_OF <- c(
+  "Panulirus interruptus" = "Den", "Semicossyphus pulcher" = "Den",
+  "Strongylocentrotus purpuratus" = "Den", "Mesocentrotus franciscanus" = "Den",
+  "Macrocystis pyrifera" = "Bio")
+
+
+# =============================================================================
 # Confirmation message
 # =============================================================================
 cat("Analysis constants loaded.\n")

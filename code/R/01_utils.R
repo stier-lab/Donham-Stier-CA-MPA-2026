@@ -400,6 +400,45 @@ scale_y_rr_free <- function(name = "MPA / Reference",
 }
 
 # =============================================================================
+# SECTION 11: RESILIENCE MODULE HELPERS (scripts 14-23)
+# =============================================================================
+# Shared loaders and helpers for the resilience suite. Constants they rely on
+# (RESILIENCE_TAXA, SOCAL_MAX_LAT, MHW*_YEARS, ...) live in 00c_analysis_constants.R,
+# which resilience scripts source before this file.
+
+#' Load the harmonized raw abundance table (density/biomass per MPA x year x taxon
+#' x status x source). Single source of truth for the file path.
+load_harmonized_raw <- function() {
+  read.csv(here::here("data", "harmonized", "harmonized_raw_responses.csv"),
+           stringsAsFactors = FALSE)
+}
+
+#' Load the harmonized response-ratio table (lnDiff = ln[MPA / Reference]).
+load_harmonized_rr <- function() {
+  read.csv(here::here("data", "harmonized", "harmonized_response_ratios.csv"),
+           stringsAsFactors = FALSE)
+}
+
+#' Response metric for a taxon in the resilience analyses: biomass for giant kelp,
+#' density for the animals. Mirrors the RESILIENCE_RESP_OF named vector.
+resilience_resp <- function(tx) if (tx == "Macrocystis pyrifera") "Bio" else "Den"
+
+#' Mean of `values` over rows whose `years` fall in `target_years` (NA if none).
+#' Replaces the per-script win()/winb() window helpers.
+window_mean <- function(values, years, target_years) {
+  v <- values[years %in% target_years]
+  if (length(v)) mean(v) else NA_real_
+}
+
+#' Assert that a site-metadata frame lies within the Southern California Bight
+#' scope (<= SOCAL_MAX_LAT). Used by scripts 14 and 19.
+assert_socal_scope <- function(meta, lat_col = "Lat") {
+  stopifnot("Non-Southern-California sites (lat > SOCAL_MAX_LAT)" =
+              all(meta[[lat_col]] <= SOCAL_MAX_LAT, na.rm = TRUE))
+  invisible(TRUE)
+}
+
+# =============================================================================
 # Confirmation message
 # =============================================================================
 cat("Utility functions and constants loaded.\n")
