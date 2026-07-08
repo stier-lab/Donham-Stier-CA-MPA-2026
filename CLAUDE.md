@@ -1,5 +1,9 @@
 # CA MPA Kelp Forest Analysis - Project Guidelines
 
+> **Note:** This file is technical configuration for an AI coding assistant (conventions,
+> file mappings, working notes). **Human collaborators should start with `README.md`**,
+> which has the friendly overview, how to run things, and where results live.
+
 ## Project Overview
 
 This project analyzes the effects of California Marine Protected Areas (MPAs) on kelp forest ecosystems using the progressive-change Before-After-Control-Impact-Pairs (pBACIPS) methodology. The analysis combines data from multiple monitoring programs (PISCO, KFM/MBON, LTER) and produces publication-quality figures and statistical summaries.
@@ -117,8 +121,7 @@ Raw data processing (scripts 03-07) lives in a separate repo:
      Only `fig_kelp_resilience.pdf` (script 22) is accepted for the MAIN TEXT. Every other
      row below is INTERNAL / SI-SUPPORTING ROBUSTNESS — not a numbered manuscript figure
      unless later promoted. "candidate" = available if needed, not committed. See
-     docs/RESILIENCE_SYNTHESIS.md (PAPER STATUS banner) and the Emily memo
-     docs/Resilience_findings_for_Emily.docx. -->
+     docs/RESILIENCE_SYNTHESIS.md (PAPER STATUS banner). -->
 | Figure 5 (candidate, new) | Heatwave × MPA cascade: per-taxon lnRR (emmeans ± 95% CI) across before/during/after the 2014-16 MHW, RR-scaled axis, Southern California. Companion to Kumagai et al. 2024. | `fig_heatwave_cascade.pdf` | 14_heatwave_analysis.R |
 | Figure S (candidate, new) | Cascade regressions across MPA-years (kelp~urchin, urchin~lobster), density lnRR; cf. Kumagai 2024 Fig 7 | `fig_heatwave_cascade_regression.pdf` | 14_heatwave_analysis.R |
 | Figure S (candidate, new) | Analytical multiverse: method bridge (one analytical flip per step, Kumagai-style → ours) + cross-substrate data effect; after-before lnRR change per taxon, RR-scaled | `fig_s_methods_multiverse.pdf` | 15_methods_comparison.R |
@@ -524,7 +527,6 @@ When adding new figures or outputs:
 - `docs/ANALYSIS_REVISIONS.md` - Comprehensive comparison of original archived code vs current pipeline (12 sections)
 - `docs/analysis_revisions.html` - Styled HTML rendering of ANALYSIS_REVISIONS.md (with sidebar TOC)
 - `docs/BEFORE_AFTER_COMPARISON.md` - Line-by-line manuscript revision guide (old vs new values)
-- `docs/email_draft_for_emily.md` - Summary email for Emily with reading order and action items
 - `docs/RESULTS_SUMMARY.md` - Auto-generated results summary from 12_results_summary.R
 - `docs/results_report.html` - Interactive HTML report (generate by knitting `code/R/results_report.Rmd`)
 - `docs/supporting_information.Rmd` - Supporting Information R Markdown source

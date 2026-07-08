@@ -201,7 +201,7 @@ Critically, **giant kelp's effect is not detectably modulated by any gradient**
 happen to sit thermally, biogeographically, by size, or by wave exposure. The Knapp–Hartung
 adjustment is essential here — without it the same *k* = 9–15 regressions return
 implausibly tiny *p*-values (down to 10⁻¹⁸) because inverse-variance weighting with
-a handful of high-precision MPAs is badly overconfident; these tests are exploratory
+a handful of high-precision MPAs is overconfident; these tests are exploratory
 and the thermal/biogeographic moderators are mutually collinear. The practical
 upshot for the main analysis is reassuring: incorporating the environmental
 covariates Kumagai only visualised does not reveal hidden modulation of the reserve

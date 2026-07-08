@@ -90,7 +90,7 @@ The four-way sensitivity analysis confirms all of this. Significant results hold
 | MPA | `~1\|MPA` | `~1\|MPA/Type.x` | `~1\|MPA` |
 | Source | — | nested within MPA | `~1\|Source` (crossed) |
 
-V5 used different random effects for density vs biomass. The biomass nesting was wrong. Source (PISCO/KFM/LTER) isn't nested within MPA because the same program samples multiple MPAs. Crossed random effects are the right structure. I ran a sensitivity check and estimates change less than 10% with vs. without the Source RE. Significance is identical either way.
+V5 used different random-effect structures for density vs biomass (the biomass model nested Source within MPA). Because the same program (PISCO/KFM/LTER) samples multiple MPAs, Source and MPA are crossed rather than nested, so the current pipeline uses crossed random effects for both responses. This is a small change in practice: a sensitivity check shows estimates move less than 10% with vs. without the Source random effect, and significance is identical either way.
 
 ---
 

@@ -5,9 +5,8 @@
 > (`plots/fig_kelp_resilience.pdf`, script 22) + a short results paragraph + a few
 > "we also checked X" robustness one-liners for the Discussion. **Everything else in
 > scripts 14–23 is internal / SI-supporting robustness — not a numbered manuscript
-> figure unless later promoted.** The Emily-facing catch-up memo (text + figures) is
-> `docs/Resilience_findings_for_Emily.docx`; the paste-ready paragraph/caption is in
-> `docs/kelp_resilience_figure_text.md`. This doc below is the full internal map.
+> figure unless later promoted.** The paste-ready paragraph/caption + SI robustness
+> text are in `docs/kelp_resilience_figure_text.md`. This doc below is the full internal map.
 
 *Integrating the resilience analyses for Donham & Stier. Each section links to the
 script that produces it and its standalone doc. Run the whole suite with
@@ -62,7 +61,7 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
    reserves repeat across both heatwaves (script 23) — resilience is a consistent
    reserve property, not a different set of reserves each time.
 
-## What is fragile or unresolved (state honestly, do not overclaim)
+## What is less well resolved (report cautiously)
 
 1. **The urchin-mediated cascade step.** Under the autocorrelation-robust AR1 model
    the predator→urchin→kelp mediation is weak (lobster→urchin dissolves; urchin

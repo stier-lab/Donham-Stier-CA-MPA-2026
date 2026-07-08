@@ -8,6 +8,17 @@
 
 ---
 
+> **For co-authors — the short version.** You don't need to run anything to write the
+> paper. Figures are in `plots/`, tables in `tables/`, and plain-language results
+> summaries in `docs/` (start with `docs/RESULTS_SUMMARY.md`). The core paper analyses
+> are scripts `08`–`13`. The resilience / marine-heatwave analyses (`14`–`23`) are
+> newer and **optional** — supporting material we can draw on for the discussion or
+> supplement, not required for the main result; a plain tour is in
+> `docs/RESILIENCE_SYNTHESIS.md`. The `CLAUDE.md` file in the root is a technical config
+> for an AI coding assistant — you can ignore it. Questions on any of it — just ask Adrian.
+
+---
+
 ## Overview
 
 This repository contains the complete analysis pipeline for evaluating the effects of California's Marine Protected Area (MPA) network on kelp forest ecosystems. Using the **progressive-change Before-After-Control-Impact-Pairs (pBACIPS)** methodology, we quantify how MPA protection has influenced trophic cascades—from predator recovery through urchin suppression to kelp restoration.
@@ -322,11 +333,13 @@ of Eisaguirre 2020 (17). **Theme:** robust, repeatable giant-kelp resilience to 
 heatwaves — kelp *grows* inside reserves while it declines outside (resistance 2.18×
 vs 0.94×, recovery to 2.38× vs 0.83×), the *same* reserves respond in both heatwaves,
 and the result is method-invariant, not modulated by environmental gradients, and not
-driven by sea-star wasting. The weak links are consistent across the suite: the
-urchin-mediated mechanism, predator diversity, and *predicting which reserves are most
-effective* are specification-sensitive or unexplained (reserve effectiveness is
-repeatable but not predictable from current covariates), and protection does not
-clearly reduce variability (resilience is in the mean, not the variance).
+driven by sea-star wasting. The less-resolved questions are consistent across the suite:
+the urchin-mediated mechanism, predator diversity, and *predicting which reserves are
+most effective* are sensitive to modeling choices or not yet explained (reserve
+effectiveness is repeatable across events but not predictable from the covariates we
+have), and protection does not clearly reduce year-to-year variability (the resilience
+shows up in the mean state, not the variance). These are honest limitations to note,
+not problems with the core result.
 
 ### Related work (compare & contrast — in progress)
 
