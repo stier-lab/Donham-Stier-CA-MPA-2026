@@ -56,3 +56,26 @@ urchin-mediation, predator-diversity, and among-reserve-prediction analyses.
 *(Optional companion for the SI: the two-heatwave replication, `fig_heatwave_replication`,
 showing the same kelp elevation inside reserves through both the 2014–16 and 2018–20
 heatwaves — evidence the resilience is not a one-off.)*
+
+## Robustness of the headline (SI paragraph, ready to paste)
+
+*Source: `table_resistance_recovery_sensitivity.csv` (giant kelp, `22_resistance_recovery.R`).
+Reports the inside/outside geometric-mean ratio with 95% CI, three paired tests, and
+leave-one-reserve-out, across six pre-heatwave baseline windows.*
+
+The MPA advantage in giant kelp was robust to the choices underlying the paired test.
+Across six pre-heatwave baseline windows (2008–2013 through 2013 alone), giant kelp was
+2.5–10× more abundant inside reserves than at paired references during the heatwave,
+after it, and through 2020–2023, and the paired Wilcoxon signed-rank test on
+reserve-level log ratios remained significant in every window (all *p* ≤ 0.047; primary
+2010–2013 baseline: *p* = 0.010, 0.014, 0.014 for resistance, recovery, and the
+2020–2023 window). Reported on the primary baseline, the inside/outside ratio was 4.2×
+(95% CI 1.3–13.0) during the heatwave, 5.2× (1.3–20.0) in the recovery window, and 4.9×
+(1.5–16.0) by 2020–2023 — every confidence interval excluding parity. The result did not
+depend on any single reserve: leaving each reserve out in turn, the worst-case *p*
+stayed ≤ 0.027 and the inside/outside ratio never fell below 2.9× (direction never
+reversed). The one qualification is that the 2020–2023 elevation is carried by
+magnitude rather than by a unanimous count — the ratio and both the Wilcoxon and *t*
+tests are significant, but only 8 of 10 reserves individually exceed their reference, so
+the sign test is not significant (*p* = 0.11); we therefore describe the sustained
+2020–2023 advantage in terms of magnitude rather than as a per-reserve tally.

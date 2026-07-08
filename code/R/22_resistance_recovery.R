@@ -22,6 +22,8 @@
 #
 # OUTPUTS (tables/, plots/):
 #   table_resistance_recovery.csv   - per taxon: resistance/recovery inside vs outside, paired p
+#   table_resistance_recovery_sensitivity.csv - giant-kelp headline robustness:
+#                                     baseline-window + test-choice (+95% CI) + leave-one-reserve-out
 #   fig_resistance_recovery.{pdf,png} - abundance trajectories inside vs outside (kelp + urchins)
 #
 # AUTHORS: Emily Donham & Adrian Stier
@@ -70,6 +72,51 @@ for (tx in taxa) {
 }
 rr_tab <- do.call(rbind, rr_rows)
 write.csv(rr_tab, here::here("tables", "table_resistance_recovery.csv"), row.names = FALSE)
+
+# ---------------------------------------------------------------------------
+# Robustness of the HEADLINE giant-kelp result (writes a separate table; the
+# primary result above is unchanged). Attacks the three soft spots of an n~10
+# paired test: (a) baseline-window choice, (b) test choice + a 95% CI on the
+# inside/outside ratio (Conservation Letters requires CIs), (c) leave-one-
+# reserve-out influence. The primary spec is the paired Wilcoxon on log-ratios
+# at the 2010-13 baseline (row "2010-2013*"), matching table_resistance_recovery.
+# ---------------------------------------------------------------------------
+kelp <- d[taxon_name == "Macrocystis pyrifera" & resp == "Bio"]
+gm <- function(x) exp(mean(log(x)))
+kelp_pairs <- function(base_yrs, metric_yrs) {
+  agg <- kelp[, .(base = window_mean(value, year, base_yrs),
+                  m    = window_mean(value, year, metric_yrs)),
+              by = .(CA_MPA_Name_Short, status)]
+  agg <- agg[is.finite(base) & base > 0 & is.finite(m) & m > 0]
+  agg[, ratio := m / base]
+  w <- dcast(agg, CA_MPA_Name_Short ~ status, value.var = "ratio")
+  if (!all(c("mpa", "reference") %in% names(w))) return(NULL)
+  w <- w[is.finite(mpa) & is.finite(reference)]
+  w[, dlog := log(mpa) - log(reference)]
+  w[]
+}
+baselines <- list("2008-2013" = 2008:2013, "2009-2013" = 2009:2013, "2010-2013*" = BASE,
+                  "2011-2013" = 2011:2013, "2012-2013" = 2012:2013, "2013" = 2013)
+metric_windows <- list(resistance = DUR, recovery = AFT, recovery_recent = REC)
+sens_rows <- list()
+for (bn in names(baselines)) for (mn in names(metric_windows)) {
+  w <- kelp_pairs(baselines[[bn]], metric_windows[[mn]])
+  if (is.null(w) || nrow(w) < 5) next
+  n <- nrow(w); dlog <- w$dlog
+  pw <- suppressWarnings(wilcox.test(dlog)$p.value)              # PRIMARY: signed-rank on log-ratios
+  tt <- t.test(dlog)                                            # paired t on log-ratios -> ratio CI
+  ps <- suppressWarnings(binom.test(sum(dlog > 0), n)$p.value)  # sign test (direction only)
+  loo_p <- vapply(seq_len(n), function(i) suppressWarnings(wilcox.test(dlog[-i])$p.value), numeric(1))
+  loo_r <- vapply(seq_len(n), function(i) gm(w$mpa[-i]) / gm(w$reference[-i]), numeric(1))
+  sens_rows[[paste(bn, mn)]] <- data.frame(
+    metric = mn, baseline = bn, n_mpa = n,
+    ratio_in_over_out = round(gm(w$mpa) / gm(w$reference), 2),
+    ratio_CI_low = round(exp(tt$conf.int[1]), 2), ratio_CI_high = round(exp(tt$conf.int[2]), 2),
+    p_wilcoxon = signif(pw, 3), p_ttest = signif(tt$p.value, 3), p_sign = signif(ps, 3),
+    loo_p_max = signif(max(loo_p), 3), loo_ratio_min = round(min(loo_r), 2))
+}
+sens_tab <- do.call(rbind, sens_rows)
+write.csv(sens_tab, here::here("tables", "table_resistance_recovery_sensitivity.csv"), row.names = FALSE)
 
 # ---------------------------------------------------------------------------
 # Figure: abundance trajectories inside vs outside (kelp + purple urchin)
@@ -146,4 +193,6 @@ ggsave(here::here("plots", "fig_kelp_resilience_paired.png"), p_pair, width = 15
 
 cat("\n=== Resistance / recovery (state-based, inside vs outside; ratio to 2010-13 baseline) ===\n")
 print(rr_tab, row.names = FALSE)
+cat("\n=== Giant-kelp headline robustness (baseline windows x tests x leave-one-reserve-out) ===\n")
+print(sens_tab, row.names = FALSE)
 cat("\n  Tables + figure written.\n")
