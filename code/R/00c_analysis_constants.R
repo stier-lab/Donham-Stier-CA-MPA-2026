@@ -119,6 +119,9 @@ MAX_OBS_SHAPIRO_TEST <- 5000
 #' DHARMa simulation count for residual diagnostics
 DHARMA_N_SIMULATIONS <- 250
 
+#' DHARMa RNG seed for reproducible simulation-based diagnostics
+DHARMA_SEED <- 424242L
+
 #' Heteroscedasticity correlation thresholds
 #' LM (linear models): more strict
 #' NLS (non-linear models): more lenient due to inherent complexity

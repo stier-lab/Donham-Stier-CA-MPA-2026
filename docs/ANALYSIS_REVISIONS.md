@@ -1,5 +1,11 @@
 **From:** Adrian  |  **Date:** February 27, 2026
 
+> **Historical / superseded.** This memo predates the later heatwave,
+> environmental-moderator, SSWD, and resilience modules now integrated in scripts
+> 14-23. Treat old figure numbers, table numbers, action items, and "no climate
+> covariates" language below as provenance from that revision stage, not current
+> repo guidance.
+
 Emily, this walks through every meaningful difference between our original analysis (V5 manuscript / `pBACIPS_PISCO_V10.R`) and the rebuilt pipeline. I cover the stats, results, figures, tables, and repo layout. It's long but worth reading through before we sit down to rewrite the manuscript.
 
 ---

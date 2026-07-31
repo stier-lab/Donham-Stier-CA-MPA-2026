@@ -120,7 +120,12 @@ dharma_diagnostics_to_row <- function(model, taxa, mpa, source, model_type) {
     hetero_cor <- cor(abs(resid), fitted(model), use = "complete.obs")
 
     # DHARMa simulation-based tests
-    sim_resid <- simulateResiduals(model, n = 250, plot = FALSE)
+    sim_resid <- simulateResiduals(
+      model,
+      n = DHARMA_N_SIMULATIONS,
+      plot = FALSE,
+      seed = DHARMA_SEED
+    )
     uniformity <- testUniformity(sim_resid, plot = FALSE)
     dispersion <- testDispersion(sim_resid, plot = FALSE)
     outliers <- testOutliers(sim_resid, plot = FALSE)

@@ -173,6 +173,9 @@ KEY (rigorous, AR1): only **giant kelp** is robust — far more abundant inside 
 | Figure S10 | lmer temporal model residual diagnostics (4-panel) | `fig_s13_lmer_residuals.pdf` | 11_figures.R |
 | Figure S11 | NLS model selection frequencies & DW autocorrelation | `fig_s14_model_selection.pdf` | 11_figures.R |
 | Figure S12 | Cook's distance & outlier sensitivity summary | `fig_s15_sensitivity_summary.pdf` | 11_figures.R |
+| Figure S13 | Outlier removal rationale (4-panel) | `fig_s16_outlier_rationale.pdf` | 11_figures.R |
+| Figure S14 | Temporal trajectories by outlier status (lnRR) | `fig_s17_temporal_outlier_trajectories.pdf` | 11_figures.R |
+| Figure S15 | Raw data trajectories by outlier status | `fig_s18_raw_trajectories_outlier_status.pdf` | 11_figures.R |
 
 Dropped from SI (not included in manuscript; code still renderable via `should_render()`):
 - `fig_s03_all_taxa_timeseries` (was old S3)
@@ -294,7 +297,7 @@ Pipeline order:
 08_effect_sizes.R        - Calculate effect sizes
 09_meta_analysis.R       - Multilevel meta-analysis (joint model primary, per-taxa sensitivity)
 10_temporal_analysis.R   - Temporal dynamics (SI Figs S3-S5, temporal tables)
-11_figures.R             - Publication figures (Figs 1-4, S1-S2, S7a-e, S8-S12 diagnostics)
+11_figures.R             - Publication figures (Figs 1-4, S1-S2, S7a-e, S8-S15 diagnostics/outlier figures)
 13_additional_analyses.R - Moderator analyses (SI Fig S6, moderator tables)
 14_heatwave_analysis.R   - MPA cascade x 2014-16 marine heatwave (Southern CA; Kumagai 2024 comparison)
 15_methods_comparison.R  - Analytical multiverse: how method of analysis drives effect-size variation vs Kumagai (SI supplement)
@@ -526,9 +529,8 @@ When adding new figures or outputs:
 - `docs/MPA_Kelp_MS_V5.pdf` - Archived original manuscript draft (reference for revision)
 - `docs/ANALYSIS_REVISIONS.md` - Comprehensive comparison of original archived code vs current pipeline (12 sections)
 - `docs/analysis_revisions.html` - Styled HTML rendering of ANALYSIS_REVISIONS.md (with sidebar TOC)
-- `docs/BEFORE_AFTER_COMPARISON.md` - Line-by-line manuscript revision guide (old vs new values)
 - `docs/RESULTS_SUMMARY.md` - Auto-generated results summary from 12_results_summary.R
-- `docs/results_report.html` - Interactive HTML report (generate by knitting `code/R/results_report.Rmd`)
+- `docs/results_report.html` - Ignored local HTML report (generate by knitting `code/R/results_report.Rmd`)
 - `docs/supporting_information.Rmd` - Supporting Information R Markdown source
 - `docs/supporting_information.html` - Rendered Supporting Information HTML
 - `docs/si_style.css` - Supporting Information custom CSS
@@ -541,7 +543,7 @@ When adding new figures or outputs:
 
 We are running a **compare-and-contrast** against **Kumagai et al. 2024, *Global Change Biology*** — "Marine Protected Areas That Preserve Trophic Cascades Promote Resilience of Kelp Forests to Marine Heatwaves." It is a parallel study on an overlapping system and dataset (same PISCO/MLPA subtidal surveys + the same T. Bell SBC LTER Landsat product) that reaches a convergent conclusion: Southern California no-take MPAs preserve the lobster/sheephead → urchin → kelp cascade, conferring resilience to the 2014–2016 marine heatwave (MHW), with no effect in Central California (sea otters protected statewide; sunflower stars lost to SSWD).
 
-Goals of the comparison: (1) confirm our PISCO numbers match theirs at shared sites; (2) contrast their approach (GLMM + permutation resistance/recovery framed around the MHW; Hamilton & Caselle 2015 sheephead allometry) against ours (pBACIPS before/after MPA establishment + multilevel meta-analysis); (3) scope **our own MHW analysis** — we currently include no climate/heatwave covariate.
+Goals of the comparison: (1) confirm our PISCO numbers match theirs at shared sites; (2) contrast their approach (GLMM + permutation resistance/recovery framed around the MHW; Hamilton & Caselle 2015 sheephead allometry) against ours (pBACIPS before/after MPA establishment + multilevel meta-analysis); (3) scope and stress-test **our own MHW analysis**, now implemented in scripts 14, 19, 22, and 23 with environmental-moderator follow-up in script 16.
 
 **Formal method-vs-data decomposition (done):** `15_methods_comparison.R` quantifies how much of the difference between the two studies is method vs data via an analytical multiverse — a 6-waypoint method bridge (one analytical flip per step) on a common dataset, plus the pooled waypoints run on both datasets. See the "Methods-comparison supplement" note under the figure-mapping section above and `docs/methods_comparison_supplement.md`. Headline: kelp resilience is method-invariant; urchin inference hinges on the AR1 autocorrelation choice; the dataset itself is the single largest lever.
 
@@ -586,8 +588,8 @@ These limitations are documented in code comments throughout the pipeline and sh
 
 ### Ecological
 - **Extreme kelp effect sizes**: Some MPA-taxa combinations (e.g., Scorpion SMR M. pyrifera lnRR ~ 9) reflect near-zero reference-site kelp, not measurement error. Handled by inverse-variance weighting.
-- **No climate covariates**: ENSO, marine heatwaves, and sea star wasting disease are potential confounds not formally included as covariates. Should be acknowledged in Discussion.
-- **SSWD confound**: Sea Star Wasting Disease (2013-2014) affected urchin populations differentially inside vs outside MPAs during the study period.
+- **Climate/stressor attribution**: The core pBACIPS analysis is paired but observational. Scripts 14–23 now test MHW timing/intensity, environmental moderators, repeatability, resistance/recovery, and SSWD/sunflower-star alternatives, but ENSO and other overlapping regional drivers cannot be fully isolated.
+- **SSWD overlap**: Sea Star Wasting Disease overlapped the first heatwave window; script 20 tests the sunflower-star pathway and finds it does not explain the SoCal kelp-resilience result, but the temporal overlap should still be handled cautiously in prose.
 - **Fishing displacement**: Potential concentration of fishing effort near MPA boundaries is not modeled.
 - **M. franciscanus mixed response**: Red urchin biomass is significantly higher inside MPAs (+82%, FDR = 0.004) but density is non-significant (-33%, FDR = 0.365). This is consistent with prior findings: Malakhoff & Miller (2021, *Proc. R. Soc. B* 288: 20203061) found red urchin biomass nearly quadrupled (+397%) inside Channel Islands reserves, driven by release from fishing pressure; Teck et al. (2017, *Biol. Conserv.* 210: 321–330) showed red urchins were larger inside MPAs with greater adult biomass and reproductive biomass density. The most parsimonious explanation is a direct fishing effect (reduced harvest → larger individuals → higher biomass per capita) overlaid on indirect cascade effects. This complicates the simple trophic cascade narrative but is ecologically coherent and well-precedented.
 

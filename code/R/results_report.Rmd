@@ -1261,20 +1261,20 @@ dt_table(mod_diag, caption = "Table S4b: Moderator model diagnostics")
 dt_table(mod_sub, caption = "Table S4c: Moderator subgroup effect sizes")
 ```
 
-## Table S5-S11: Sensitivity & Diagnostics
+## Sensitivity & Diagnostics Tables
 
 ```{r tables-s5-s11}
-dt_table(ar1, caption = "Table S5: AR1 Durbin-Watson diagnostics")
-dt_table(gam_diag, caption = "Table S6: GAM linearity diagnostics")
-dt_table(outlier_sens, caption = "Table S7: Outlier sensitivity (4 methods)")
-dt_table(kelp_loo, caption = "Table S8: Kelp leave-one-out sensitivity")
-dt_table(var_comp, caption = "Table S9: Variance components")
+dt_table(ar1, caption = "AR1 Durbin-Watson diagnostics")
+dt_table(gam_diag, caption = "GAM linearity diagnostics")
+dt_table(outlier_sens, caption = "Outlier sensitivity (4 methods)")
+dt_table(kelp_loo, caption = "Kelp leave-one-out sensitivity")
+dt_table(var_comp, caption = "Variance components")
 
 source_models <- read_table("tables/table_s_source_sensitivity_models.csv")
-dt_table(source_models, caption = "Table S10: Source RE model comparison")
+dt_table(source_models, caption = "Source RE model comparison")
 
 source_coefs <- read_table("tables/table_s_source_sensitivity_coefficients.csv")
-dt_table(source_coefs, caption = "Table S11: Source RE coefficient comparison")
+dt_table(source_coefs, caption = "Source RE coefficient comparison")
 ```
 
 ## Additional Temporal Tables

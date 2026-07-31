@@ -119,7 +119,7 @@ diag_rows <- list()
 for (tx in taxa) {
   sub <- subset(rr, y == tx & resp == resilience_resp(tx))
   mn <- suppressWarnings(lmer(lnDiff ~ period + (1 | CA_MPA_Name_Short), data = sub, REML = TRUE))
-  sim <- simulateResiduals(mn, n = 400, plot = FALSE)
+  sim <- simulateResiduals(mn, n = 400, plot = FALSE, seed = DHARMA_SEED)
   sub$r <- resid(mn)
   acf1 <- tapply(seq_len(nrow(sub)), sub$CA_MPA_Name_Short, function(i) {
     z <- sub[i, ]; z <- z[order(z$year), ]

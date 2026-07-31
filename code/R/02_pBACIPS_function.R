@@ -102,8 +102,9 @@ if (!exists("MODEL_FIT_LOG")) {
 #' @param data_summary Optional list with data characteristics
 log_model_fit <- function(mpa_name = "unknown", taxa = "unknown", model_type,
                            success, message, data_summary = NULL) {
+  event_id <- length(MODEL_FIT_LOG) + 1L
   entry <- list(
-    timestamp = Sys.time(),
+    event_id = event_id,
     mpa = mpa_name,
     taxa = taxa,
     model_type = model_type,
@@ -772,7 +773,22 @@ run_dharma_diagnostics <- function(model, plot = FALSE) {
 
     } else if (inherits(model, "lm") || inherits(model, "gam")) {
       # Standard DHARMa for linear/GAM models
-      sim_resid <- DHARMa::simulateResiduals(model, n = 250, plot = FALSE)
+      dharma_n <- if (exists("DHARMA_N_SIMULATIONS", inherits = TRUE)) {
+        DHARMA_N_SIMULATIONS
+      } else {
+        250
+      }
+      dharma_seed <- if (exists("DHARMA_SEED", inherits = TRUE)) {
+        DHARMA_SEED
+      } else {
+        424242L
+      }
+      sim_resid <- DHARMa::simulateResiduals(
+        model,
+        n = dharma_n,
+        plot = FALSE,
+        seed = dharma_seed
+      )
 
       result$uniformity_p <- DHARMa::testUniformity(sim_resid, plot = FALSE)$p.value
       result$dispersion_p <- DHARMa::testDispersion(sim_resid, plot = FALSE)$p.value
@@ -1906,12 +1922,12 @@ mySIGfun_standalone <- function(delta, time.model, time.model.of.impact, time.tr
 #' Returns a summary dataframe of all model fitting attempts recorded
 #' during the session.
 #'
-#' @return Dataframe with columns: timestamp, mpa, taxa, model_type, success, message
+#' @return Dataframe with columns: event_id, mpa, taxa, model_type, success, message
 #' @export
 get_model_fit_summary <- function() {
   if (!exists("MODEL_FIT_LOG") || length(MODEL_FIT_LOG) == 0) {
     return(data.frame(
-      timestamp = character(),
+      event_id = integer(),
       mpa = character(),
       taxa = character(),
       model_type = character(),
@@ -1923,7 +1939,7 @@ get_model_fit_summary <- function() {
 
   do.call(rbind, lapply(MODEL_FIT_LOG, function(x) {
     data.frame(
-      timestamp = as.character(x$timestamp),
+      event_id = as.integer(x$event_id),
       mpa = x$mpa,
       taxa = x$taxa,
       model_type = x$model_type,

@@ -312,9 +312,9 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 ## Documentation
 
 - **`docs/ANALYSIS_REVISIONS.md`** - Comprehensive comparison of V5 archived code vs current pipeline
-- **`docs/MPA_Kelp_MS_V5.pdf`** - Current manuscript draft
+- **`docs/MPA_Kelp_MS_V5.pdf`** - Archived V5 manuscript draft; Emily is leading the current manuscript rewrite outside this repo snapshot
 - **`docs/RESULTS_SUMMARY.md`** - Auto-generated results summary with all meta-analysis values
-- **`docs/results_report.html`** - Interactive HTML report of all pipeline outputs
+- **`docs/results_report.html`** - Ignored local HTML report; regenerate from `code/R/results_report.Rmd` when needed
 - **`docs/supporting_information.Rmd`** - Supporting Information source (R Markdown)
 - **`docs/supporting_information.html`** - Rendered Supporting Information
 - **`docs/si_style.css`** - Supporting Information custom styles
@@ -367,7 +367,7 @@ Key methodological caveats documented throughout the pipeline (see `docs/ANALYSI
 - **Cross-taxa attenuation bias**: Cross-taxa meta-regressions (Table 3) use estimated effect sizes as moderators, introducing errors-in-variables bias
 - **Proportion-based lnRR**: Response ratios are computed on proportions (standardized by site total), not raw densities -- necessary to harmonize across monitoring programs with different transect areas
 - **Cross-program biomass bootstrap**: KFM and LTER urchin biomass is estimated by bootstrapping from PISCO size-frequency distributions
-- **No climate covariates**: ENSO, marine heatwaves, and sea star wasting disease are potential confounds not formally included as covariates
+- **Climate/stressor attribution**: The core pBACIPS analysis is paired but observational; heatwave, environmental-moderator, and sea-star-wasting checks are now included in scripts 14–23, but ENSO and other overlapping regional drivers cannot be fully isolated
 - **Extreme kelp effect sizes**: Some MPA-taxa combinations reflect near-zero reference-site kelp, handled by inverse-variance weighting
 - **Reproducibility**: Package versions captured in `renv.lock`; Dryad DOI is currently a placeholder (`10.5061/dryad.XXXXXXX`)
 

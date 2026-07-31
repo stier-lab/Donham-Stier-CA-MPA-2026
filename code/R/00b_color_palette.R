@@ -290,7 +290,7 @@ col_heatmap <- c(
 
 
 # =============================================================================
-# 6g. DIAGNOSTIC RESULT COLORS (SI Fig S11: DHARMa model diagnostics)
+# 6g. DIAGNOSTIC RESULT COLORS (SI Fig S8: DHARMa model diagnostics)
 # =============================================================================
 # Used in stacked bar charts showing model diagnostic outcomes.
 # Muted, desaturated tones distinct from col_taxa to separate biological

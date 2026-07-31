@@ -24,7 +24,7 @@
 #
 # OUTPUTS (saved to plots/ as paired PDF + PNG at 600 DPI):
 #   Main text:  fig_01 through fig_04
-#   Supplemental: fig_s01, fig_s02, fig_s08 (appendix), fig_s11 through fig_s18
+#   Supplemental disk files: fig_s01, fig_s02, fig_s08 (appendix), fig_s11 through fig_s18
 #   See TABLE OF CONTENTS below for the full list.
 #
 # DESIGN PRINCIPLES:
@@ -68,14 +68,14 @@
 # Figure S10: lmer residual diagnostics           3855 - 4002      fig_s13_lmer_residuals
 # Figure S11: NLS model selection & DW stats      4004 - 4080      fig_s14_model_selection
 # Figure S12: Cook's D & outlier sensitivity      4082 - 4233      fig_s15_sensitivity_summary
+# Figure S13: Outlier removal rationale           4277 - 4506      fig_s16_outlier_rationale
+# Figure S14: Temporal outlier trajectories       4508 - 4649      fig_s17_temporal_outlier_trajectories
+# Figure S15: Raw data outlier trajectories       4651 - 4811      fig_s18_raw_trajectories_outlier_status
 #
 # --- NOT IN CURRENT MANUSCRIPT (code retained, renders on disk) ---
 # (dropped) S3:  All taxa time series             2661 - 2808      fig_s03_all_taxa_timeseries
 # (dropped) S7:  Statistical transparency         2810 - 2947      fig_s07_statistical_transparency
 # (dropped) S10: Bio + den recovery grid          2521 - 2659      fig_s10_recovery_bio_den
-# (dropped) S16: Outlier removal rationale        4277 - 4506      fig_s16_outlier_rationale
-# (dropped) S17: Temporal outlier trajectories    4508 - 4649      fig_s17_temporal_outlier_trajectories
-# (dropped) S18: Raw data outlier trajectories    4651 - 4811      fig_s18_raw_trajectories_outlier_status
 #
 # --- NON-FIGURE OUTPUT ---
 # Cascade analysis table (always runs)            1351 - 2097      outputs/table_cascade_analysis.csv
@@ -2518,7 +2518,7 @@ cat("  Figure 4 saved: plots/fig_04_recovery_curves.pdf\n")
 } # end fig04 inner block
 
 # =============================================================================
-# === FIGURE S10 (Dropped from SI): Biomass + Density Recovery (5x2 grid) ===
+# === DROPPED DISK FIGURE fig_s10: Biomass + Density Recovery (5x2 grid) ===
 # =============================================================================
 # WHAT: Companion to Figure 4 showing BOTH biomass (left column) and density
 #   (right column) recovery trajectories for all five species. Same lmer
@@ -2530,7 +2530,7 @@ cat("  Figure 4 saved: plots/fig_04_recovery_curves.pdf\n")
 # =============================================================================
 
 if (should_render("fig_s10")) {
-cat("Building Figure S10 (Supplemental): Biomass + density recovery grid...\n")
+cat("Building dropped disk figure fig_s10: Biomass + density recovery grid...\n")
 
 # Reuse data, slopes, and panel function from Fig 4 section above.
 # fig5_data_bio, fig5_data_den, fig5_bio_lmer, fig5_den_lmer already computed.
@@ -2650,7 +2650,7 @@ fig_s9_final <- cowplot::plot_grid(
 )
 
 save_fig(fig_s9_final, "fig_s10_recovery_bio_den", FIG_S10_DIMS["w"], FIG_S10_DIMS["h"])
-cat("  Figure S10 saved: plots/fig_s10_recovery_bio_den.pdf\n")
+cat("  Dropped disk figure fig_s10 saved: plots/fig_s10_recovery_bio_den.pdf\n")
 
 } # end fig_s10 inner block
 
@@ -2658,7 +2658,7 @@ cat("  Figure S10 saved: plots/fig_s10_recovery_bio_den.pdf\n")
 
 
 # =============================================================================
-# === FIGURE S3 (Dropped from SI): All Taxa Time Series at Example MPAs ===
+# === DROPPED DISK FIGURE fig_s03: All Taxa Time Series at Example MPAs ===
 # =============================================================================
 # WHAT: Density lnRR time series for four animal species (excludes M. pyrifera)
 #   at three example MPAs (Naples, Scorpion, Anacapa). Faceted grid with
@@ -2670,7 +2670,7 @@ cat("  Figure S10 saved: plots/fig_s10_recovery_bio_den.pdf\n")
 # =============================================================================
 
 if (should_render("fig_s03")) {
-cat("Building Figure S3 (Supplemental): All taxa time series at example MPAs...\n")
+cat("Building dropped disk figure fig_s03: All taxa time series at example MPAs...\n")
 
 fig_s2_mpas <- c("Naples SMCA", "Scorpion SMR", "Anacapa Island SMR 2003")
 
@@ -2802,12 +2802,12 @@ fig_s2 <- ggplot(fig_s2_data, aes(x = year, y = lnDiff,
 save_fig(fig_s2, "fig_s03_all_taxa_timeseries", FIG_S3_DIMS["w"], FIG_S3_DIMS["h"])
 } # end fig_s03
 
-# (Old Figures S3 and S4 removed. superseded by species-level versions
-#  in 10_temporal_analysis.R: fig_s03 through fig_s06)
+# Dropped disk figure fig_s03 is retained above; manuscript SI figures S3-S5
+# are produced by 10_temporal_analysis.R as fig_s04 through fig_s06.
 
 
 # =============================================================================
-# === FIGURE S7 (Dropped from SI): Statistical Transparency ===
+# === DROPPED DISK FIGURE fig_s07: Statistical Transparency ===
 # =============================================================================
 # WHAT: Two-panel overview of effect-size model selection and variance
 #   decomposition. Panel (a) shows stacked bars of NLS model type
@@ -2819,7 +2819,7 @@ save_fig(fig_s2, "fig_s03_all_taxa_timeseries", FIG_S3_DIMS["w"], FIG_S3_DIMS["h
 # =============================================================================
 
 if (should_render("fig_s07")) {
-cat("\n--- Figure S7: Statistical Transparency ---\n")
+cat("\n--- Dropped disk figure fig_s07: Statistical transparency ---\n")
 
 FIG_S7_DIMS <- c(w = 17, h = 10)  # Conservation Letters max width
 
@@ -3469,7 +3469,7 @@ cat("  Figure 2 saved: plots/fig_02_cascade_case_studies.pdf\n")
 
 
 # =============================================================================
-# === FIGURE S8 (Supplemental, disk name fig_s11): DHARMa Model Diagnostics ===
+# === SI FIGURE S8 (disk name fig_s11): DHARMa Model Diagnostics ===
 # =============================================================================
 # WHAT: Four-panel summary of residual diagnostics for all NLS/pBACIPS
 #   effect-size models (produced by 08_effect_sizes.R). Verifies that the
@@ -3484,7 +3484,7 @@ cat("  Figure 2 saved: plots/fig_02_cascade_case_studies.pdf\n")
 # =============================================================================
 
 if (should_render("fig_s11")) {
-cat("\n--- Figure S11: DHARMa model diagnostics ---\n")
+cat("\n--- SI Figure S8 (fig_s11): DHARMa model diagnostics ---\n")
 
 diag_path <- here::here("data", "model_diagnostics.csv")
 if (!file.exists(diag_path)) {
@@ -3637,7 +3637,7 @@ pc <- ggplot(diag, aes(x = Taxa, y = Shapiro_p)) +
 # Panel (d): R² distribution. Boxplot + jitter
 # -------------------------------------------------------------------------
 if (!"Pass_All" %in% names(diag)) {
-  warning("Fig S11: 'Pass_All' column not found in model_diagnostics.csv")
+  warning("fig_s11 / SI S8: 'Pass_All' column not found in model_diagnostics.csv")
   diag$Pass_All <- NA
 }
 diag$Pass_All <- as.logical(diag$Pass_All)
@@ -3722,7 +3722,7 @@ fig_s11_final <- cowplot::plot_grid(fig_s11, legend_block,
                                      ncol = 1, rel_heights = c(1, 0.15))
 
 save_fig(fig_s11_final, "fig_s11_dharma_diagnostics", w = 17, h = 15)
-cat("  Figure S11 saved: plots/fig_s11_dharma_diagnostics.pdf\n")
+cat("  SI Figure S8 saved: plots/fig_s11_dharma_diagnostics.pdf\n")
 cat("  Models:", n_models, "| Pass all:", sum(diag$Pass_All),
     "(", round(100 * mean(diag$Pass_All)), "%)\n")
 
@@ -3731,7 +3731,7 @@ cat("  Models:", n_models, "| Pass all:", sum(diag$Pass_All),
 
 
 # =============================================================================
-# === FIGURE S9 (Supplemental, disk name fig_s12): Funnel Plots ===
+# === SI FIGURE S9 (disk name fig_s12): Funnel Plots ===
 # =============================================================================
 # WHAT: Assesses publication bias in the multilevel meta-analysis (rma.mv).
 #   Two side-by-side funnel plots (effect size vs standard error):
@@ -3746,7 +3746,7 @@ cat("  Models:", n_models, "| Pass all:", sum(diag$Pass_All),
 # =============================================================================
 
 if (should_render("fig_s12")) {
-cat("\n--- Figure S12: Meta-analysis funnel plots ---\n")
+cat("\n--- SI Figure S9 (fig_s12): Meta-analysis funnel plots ---\n")
 
 if (!exists("meta_biomass_full") || !exists("meta_density_full")) {
   warning("meta_biomass_full / meta_density_full not found. skipping fig_s12")
@@ -3763,7 +3763,7 @@ if (!exists("meta_biomass_full") || !exists("meta_density_full")) {
     taxa <- taxa_names[taxa_idx]
     unrecognized <- setdiff(unique(taxa), taxa_levels)
     if (length(unrecognized) > 0) {
-      warning("Fig S12: Unrecognized taxa in funnel data: ",
+      warning("fig_s12 / SI S9: Unrecognized taxa in funnel data: ",
               paste(unrecognized, collapse = ", "))
     }
     data.frame(yi = yi, sei = sei, taxa = taxa, stringsAsFactors = FALSE)
@@ -3845,14 +3845,14 @@ if (!exists("meta_biomass_full") || !exists("meta_density_full")) {
   )
 
   save_fig(fig_s12_final, "fig_s12_funnel_plots", w = 17, h = 8)
-  cat("  Figure S12 saved.\n")
+  cat("  SI Figure S9 saved: plots/fig_s12_funnel_plots.pdf\n")
 
 } # end meta model check
 } # end fig_s12
 
 
 # =============================================================================
-# === FIGURE S10 (Supplemental, disk name fig_s13): lmer Residual Diagnostics ===
+# === SI FIGURE S10 (disk name fig_s13): lmer Residual Diagnostics ===
 # =============================================================================
 # WHAT: Standard four-panel residual diagnostics for the pooled lmer temporal
 #   meta-regression (the model behind Figure 4's recovery trajectories):
@@ -3868,7 +3868,7 @@ if (!exists("meta_biomass_full") || !exists("meta_density_full")) {
 # =============================================================================
 
 if (should_render("fig_s13")) {
-cat("\n--- Figure S13: lmer residual diagnostics ---\n")
+cat("\n--- SI Figure S10 (fig_s13): lmer residual diagnostics ---\n")
 
 resid_path  <- here::here("outputs", "lmer_residual_diagnostics.csv")
 ranef_path  <- here::here("outputs", "lmer_ranef_diagnostics.csv")
@@ -3889,14 +3889,14 @@ if (!file.exists(resid_path)) {
   )
   unmapped <- sum(!resid_df$species %in% names(sp_map))
   if (unmapped > 0) {
-    warning("Fig S13: ", unmapped, " observations have unrecognized species names: ",
+    warning("fig_s13 / SI S10: ", unmapped, " observations have unrecognized species names: ",
             paste(unique(resid_df$species[!resid_df$species %in% names(sp_map)]), collapse = ", "))
   }
   resid_df$species <- sp_map[resid_df$species]
   # Use pooled model for main diagnostics
   pooled <- resid_df[resid_df$model == "pooled", ]
   if (nrow(pooled) == 0) {
-    warning("Fig S13: No 'pooled' model data found. Available models: ",
+    warning("fig_s13 / SI S10: No 'pooled' model data found. Available models: ",
             paste(unique(resid_df$model), collapse = ", "), ". Skipping figure.")
   } else {
   pooled$species <- factor(pooled$species, levels = names(col_taxa))
@@ -3963,14 +3963,14 @@ if (!file.exists(resid_path)) {
              subtitle = "Random effects Q-Q") +
         theme_mpa()
     } else {
-      warning("Fig S13 panel (d): No intercept column found in ranef CSV. ",
+      warning("fig_s13 / SI S10 panel (d): No intercept column found in ranef CSV. ",
               "Available columns: ", paste(names(ranef_pooled), collapse = ", "))
       p_ranef <- ggplot() +
         annotate("text", x = 0.5, y = 0.5, label = "Random effects\nnot available") +
         theme_void()
     }
   } else {
-    warning("Fig S13 panel (d): ranef CSV not found at ", ranef_path)
+    warning("fig_s13 / SI S10 panel (d): ranef CSV not found at ", ranef_path)
     p_ranef <- ggplot() +
       annotate("text", x = 0.5, y = 0.5, label = "Random effects\nnot available") +
       theme_void()
@@ -3993,7 +3993,7 @@ if (!file.exists(resid_path)) {
   )
 
   save_fig(fig_s13_final, "fig_s13_lmer_residuals", w = 17, h = 15)
-  cat("  Figure S13 saved.\n")
+  cat("  SI Figure S10 saved: plots/fig_s13_lmer_residuals.pdf\n")
 
   } # end pooled nrow check
 } # end file check
@@ -4001,7 +4001,7 @@ if (!file.exists(resid_path)) {
 
 
 # =============================================================================
-# === FIGURE S11 (Supplemental, disk name fig_s14): NLS Model Selection ===
+# === SI FIGURE S11 (disk name fig_s14): NLS Model Selection ===
 # =============================================================================
 # WHAT: Two-panel overview of NLS effect-size model selection:
 #     (a) Stacked horizontal bar: how many MPAs selected each model type
@@ -4014,7 +4014,7 @@ if (!file.exists(resid_path)) {
 # =============================================================================
 
 if (should_render("fig_s14")) {
-cat("\n--- Figure S14: NLS model selection & DW autocorrelation ---\n")
+cat("\n--- SI Figure S11 (fig_s14): NLS model selection & DW autocorrelation ---\n")
 
 ms_path <- here::here("tables", "table_model_selection.csv")
 if (!file.exists(ms_path)) {
@@ -4026,7 +4026,7 @@ if (!file.exists(ms_path)) {
   expected_models <- c("Linear", "Mean", "Sigmoid")
   unexpected <- setdiff(unique(ms$Model), expected_models)
   if (length(unexpected) > 0) {
-    warning("Fig S14: Unexpected model types will be excluded: ",
+    warning("fig_s14 / SI S11: Unexpected model types will be excluded: ",
             paste(unexpected, collapse = ", "))
   }
   ms$Model <- factor(ms$Model, levels = expected_models)
@@ -4072,14 +4072,14 @@ if (!file.exists(ms_path)) {
           legend.position = "bottom")
 
   save_fig(fig_s14, "fig_s14_model_selection", w = 17, h = 10)
-  cat("  Figure S14 saved.\n")
+  cat("  SI Figure S11 saved: plots/fig_s14_model_selection.pdf\n")
 
 } # end file check
 } # end fig_s14
 
 
 # =============================================================================
-# === FIGURE S12 (Supplemental, disk name fig_s15): Sensitivity & Robustness ===
+# === SI FIGURE S12 (disk name fig_s15): Sensitivity & Robustness ===
 # =============================================================================
 # WHAT: Three-panel sensitivity analysis for the meta-analysis:
 #     (a) Cook's distance for each biomass observation. Points above 4/n
@@ -4093,7 +4093,7 @@ if (!file.exists(ms_path)) {
 # =============================================================================
 
 if (should_render("fig_s15")) {
-cat("\n--- Figure S15: Sensitivity & robustness summary ---\n")
+cat("\n--- SI Figure S12 (fig_s15): Sensitivity & robustness summary ---\n")
 
 audit_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
 outlier_path <- here::here("tables", "table_s_outlier_sensitivity.csv")
@@ -4168,7 +4168,7 @@ if (!file.exists(audit_path) || !file.exists(outlier_path)) {
   # Color by method (use col_diag for methodological distinctions)
   available_colors <- unname(col_diag[c("OK", "Non-normal", "Heteroscedastic")])
   if (length(method_lvls) > length(available_colors)) {
-    warning("Fig S15: More outlier methods (", length(method_lvls),
+    warning("fig_s15 / SI S12: More outlier methods (", length(method_lvls),
             ") than available colors (", length(available_colors), ").")
   }
   method_colors <- setNames(
@@ -4221,15 +4221,15 @@ if (!file.exists(audit_path) || !file.exists(outlier_path)) {
   )
 
   save_fig(fig_s15_final, "fig_s15_sensitivity_summary", w = 17, h = 13)
-  cat("  Figure S15 saved.\n")
+  cat("  SI Figure S12 saved: plots/fig_s15_sensitivity_summary.pdf\n")
 
 } # end file check
 } # end fig_s15
 
 # =============================================================================
-# Shared constants for outlier diagnostic figures (S16-S18)
+# Shared constants for outlier diagnostic figures (SI S13-S15; disk fig_s16-fig_s18)
 # =============================================================================
-# These name-mapping vectors are used by Figures S16, S17, and S18, which
+# These name-mapping vectors are used by SI Figures S13, S14, and S15, which
 # work with full species names. Defined once here to avoid duplication.
 
 # Abbreviated → full species name mapping
@@ -4274,7 +4274,7 @@ outlier_facet_order <- outlier_facet_order[
 ]
 
 # =============================================================================
-# === FIGURE S16 (Dropped): Outlier Removal Rationale ===
+# === SI FIGURE S13 (disk name fig_s16): Outlier Removal Rationale ===
 # =============================================================================
 # WHAT: Four-panel argument for WHY we chose NOT to remove Cook's D outliers:
 #     (a) Effect sizes by taxon: "outliers" are normal members of their
@@ -4291,7 +4291,7 @@ outlier_facet_order <- outlier_facet_order[
 # =============================================================================
 
 if (should_render("fig_s16")) {
-cat("\n--- Figure S16: Outlier removal rationale ---\n")
+cat("\n--- SI Figure S13 (fig_s16): Outlier removal rationale ---\n")
 
 audit_global_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
 audit_pertaxa_path <- here::here("outputs", "filter_audit_pertaxa_meta.csv")
@@ -4499,15 +4499,15 @@ if (!file.exists(audit_global_path) || !file.exists(audit_pertaxa_path) ||
 
   save_fig(fig_s16, "fig_s16_outlier_rationale",
            w = FIG_S16_DIMS["w"], h = FIG_S16_DIMS["h"])
-  cat("  Figure S16 saved.\n")
+  cat("  SI Figure S13 saved: plots/fig_s16_outlier_rationale.pdf\n")
 
 } # end file check
 } # end fig_s16
 
 # =============================================================================
-# === FIGURE S17 (Dropped): Temporal Trajectories by Outlier Status ===
+# === SI FIGURE S14 (disk name fig_s17): Temporal Trajectories by Outlier Status ===
 # =============================================================================
-# WHAT: Companion to S16. For each species x response type (faceted 5x2),
+# WHAT: Companion to SI Figure S13. For each species x response type (faceted 5x2),
 #   shows lnRR time series (after-period, t <= 15) for every MPA. MPAs that
 #   would be removed by global Cook's D are shown as colored lines; retained
 #   MPAs are grey. A GAM smooth across ALL data demonstrates that "outlier"
@@ -4517,7 +4517,7 @@ if (!file.exists(audit_global_path) || !file.exists(audit_pertaxa_path) ||
 # =============================================================================
 
 if (should_render("fig_s17")) {
-cat("\n--- Figure S17: Temporal trajectories by outlier status ---\n")
+cat("\n--- SI Figure S14 (fig_s17): Temporal trajectories by outlier status ---\n")
 
 audit_global_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
 
@@ -4641,16 +4641,16 @@ if (!file.exists(audit_global_path)) {
 
   save_fig(fig_s17_final, "fig_s17_temporal_outlier_trajectories",
            w = FIG_S17_DIMS["w"], h = FIG_S17_DIMS["h"])
-  cat("  Figure S17 saved.\n")
+  cat("  SI Figure S14 saved: plots/fig_s17_temporal_outlier_trajectories.pdf\n")
 
 } # end data checks
 } # end fig_s17
 
 
 # =============================================================================
-# === FIGURE S18 (Dropped): Raw Data Trajectories by Outlier Status ===
+# === SI FIGURE S15 (disk name fig_s18): Raw Data Trajectories by Outlier Status ===
 # =============================================================================
-# WHAT: Complement to S17 showing raw observed values (not response ratios)
+# WHAT: Complement to SI Figure S14 showing raw observed values (not response ratios)
 #   for both MPA (solid lines) and reference (dashed lines) sites through
 #   time. MPA-taxa combos flagged by global Cook's D are colored; retained
 #   combos are grey. Demonstrates that flagged combos don't have erratic
@@ -4661,7 +4661,7 @@ if (!file.exists(audit_global_path)) {
 # =============================================================================
 
 if (should_render("fig_s18")) {
-cat("\n--- Figure S18: Raw data trajectories by outlier status ---\n")
+cat("\n--- SI Figure S15 (fig_s18): Raw data trajectories by outlier status ---\n")
 
 audit_global_path <- here::here("outputs", "filter_audit_meta_analysis.csv")
 
@@ -4803,7 +4803,7 @@ if (!file.exists(audit_global_path)) {
 
   save_fig(fig_s18_final, "fig_s18_raw_trajectories_outlier_status",
            w = FIG_S18_DIMS["w"], h = FIG_S18_DIMS["h"])
-  cat("  Figure S18 saved.\n")
+  cat("  SI Figure S15 saved: plots/fig_s18_raw_trajectories_outlier_status.pdf\n")
 
 } # end data checks
 } # end fig_s18
@@ -4817,7 +4817,7 @@ cat("========================================================================\n"
 if (identical(RENDER_FIGURES, "all")) {
   cat("  ALL MANUSCRIPT FIGURES GENERATED SUCCESSFULLY\n")
   cat("  Main text: Fig 1-4\n")
-  cat("  Supplemental: Fig S1, S2, S7a-e (appendix), S8-S12 (diagnostics)\n")
+  cat("  Supplemental: Fig S1-S15 (disk stems retain historical gaps)\n")
 } else {
   cat("  SELECTED FIGURES GENERATED:", paste(RENDER_FIGURES, collapse = ", "), "\n")
 }

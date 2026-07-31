@@ -52,7 +52,7 @@
 #     table_s_temporal_meta_regression_den.csv   : density-only lmer fixed effects
 #     table_s_lmer_model_fit.csv                 : model fit stats (AIC, BIC, R2, variance)
 #     table_s_species_slopes.csv                 : per-species slopes with SE & 95% CI
-#     table_s_lmer_prediction_params.csv         : prediction parameters for Fig 4/S10 CI ribbons
+#     table_s_lmer_prediction_params.csv         : prediction parameters for Fig 4 and fig_s10 CI ribbons
 #     table_s_gam_linearity_diagnostics.csv      : SI Table S7, GAM EDF & linearity test
 #     table_s_ar1_sensitivity.csv                : SI Table S7, AR1 vs lmer SE comparison
 #     table_s_temporal_meta_regression_ar1.csv   : AR1 fixed effects (when AR1 converges)
@@ -1196,7 +1196,7 @@ cat("\n=== Response-specific meta-regression complete ===\n")
 
 
 # ---------------------------------------------------------------------------
-# Export lmer residual diagnostics for SI Fig S10 (disk: fig_s13)
+# Export lmer residual diagnostics for SI Fig S10 (disk file: fig_s13)
 # ---------------------------------------------------------------------------
 # WHAT: Save residuals, fitted values, and random effects (BLUPs) from all
 #   three lmer models (pooled, biomass, density) to CSV files.
@@ -1245,7 +1245,7 @@ if (nrow(resid_diag_all) == 0) {
   warning("All lmer models are NULL. lmer_residual_diagnostics.csv will be empty. ",
           "Check model fitting above.")
 }
-# -> Used by 11_figures.R for SI Fig S10 (disk: fig_s13_lmer_residuals)
+# -> Used by 11_figures.R for SI Fig S10 (disk file: fig_s13_lmer_residuals)
 write.csv(resid_diag_all,
           here::here("outputs", "lmer_residual_diagnostics.csv"),
           row.names = FALSE)
