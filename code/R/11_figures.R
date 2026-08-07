@@ -796,6 +796,8 @@ sim_raw <- data.frame(
 # Standardized to one maximum across the paired MPA/reference time series.
 # This matches calculate_proportions(), which normalizes by MPA x taxon before
 # the MPA/reference values are spread into separate columns.
+# Do not group by status here: that would give MPA and reference separate
+# denominators, changing panel (b) from a simple 0-1 rescale of panel (a).
 sim_pair_max <- max(sim_raw$value, na.rm = TRUE)
 sim_prop <- sim_raw %>%
   dplyr::mutate(prop = value / sim_pair_max)
