@@ -744,7 +744,7 @@ if (has_ggrepel) library(ggrepel)
 # WHAT: Three-panel conceptual diagram illustrating how raw kelp biomass
 #   data is transformed into log response ratios (lnRR) for causal inference.
 #   Panel (a) = raw biomass inside vs outside MPA
-#   Panel (b) = standardized (proportion of site maximum)
+#   Panel (b) = standardized (proportion of paired MPA/reference maximum)
 #   Panel (c) = lnRR (estimated MPA effect) with post-MPA linear trend
 #   Uses SIMULATED data modeled on real M. pyrifera patterns at Scorpion SMR.
 # DATA: Simulated data (not real observations). Seed set for reproducibility
@@ -793,11 +793,12 @@ sim_raw <- data.frame(
   value = c(inside_bio, outside_bio)
 )
 
-# Standardized (proportion of max within each status)
+# Standardized to one maximum across the paired MPA/reference time series.
+# This matches calculate_proportions(), which normalizes by MPA x taxon before
+# the MPA/reference values are spread into separate columns.
+sim_pair_max <- max(sim_raw$value, na.rm = TRUE)
 sim_prop <- sim_raw %>%
-  dplyr::group_by(status) %>%
-  dplyr::mutate(prop = value / max(value, na.rm = TRUE)) %>%
-  dplyr::ungroup()
+  dplyr::mutate(prop = value / sim_pair_max)
 
 # Log response ratio: ln(Inside / Outside)
 sim_lnrr <- data.frame(year = sim_years) %>%
@@ -900,9 +901,9 @@ p2b <- ggplot(sim_prop, aes(x = year, y = prop, color = status, linetype = statu
   scale_linetype_manual(values = c("Inside" = "solid", "Outside" = "32"),
                         guide = "none") +
   labs(title = expression(bold("(b)") ~ "Standardized"),
-       subtitle = "Example: M. pyrifera at Scorpion SMR, proportion of site maximum",
+       subtitle = "Example: M. pyrifera at Scorpion SMR, proportion of paired maximum",
        x = NULL,
-       y = "Proportion of max") +
+       y = "Proportion of paired max") +
   scale_x_continuous(breaks = sim_x_breaks, limits = sim_x_limits) +
   scale_y_continuous(breaks = seq(0, 1, by = 0.5)) +
   fig2_theme_step +
@@ -953,7 +954,7 @@ p2c <- ggplot(sim_lnrr, aes(x = year, y = lnRR, shape = BA)) +
   annotate("text",
            x = max(sim_years) - 0.5, y = Inf,
            label = paste0("Positive lnRR after MPA establishment\n",
-                          "\u2192 higher kelp biomass inside MPAs"),
+                          "higher kelp biomass inside MPAs"),
            hjust = 1, vjust = 1.5,
            size = 2.8, color = "grey25", lineheight = 1.1,
            fontface = "italic") +
