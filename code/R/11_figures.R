@@ -3,7 +3,7 @@
 # =============================================================================
 #
 # PURPOSE:
-#   Generate all publication-quality figures for the Conservation Letters
+#   Generate all publication-quality figures for the Journal of Applied Ecology
 #   manuscript on MPA effects on kelp forest trophic cascades. This is the
 #   largest script in the pipeline (~4600 lines). Each figure is wrapped in a
 #   should_render() guard so you can regenerate a single figure without
@@ -29,7 +29,7 @@
 #
 # DESIGN PRINCIPLES:
 #   - Colorblind-safe palette (Okabe-Ito-based) from 00b_color_palette.R
-#   - Conservation Letters sizing: 80-180mm width, min 8pt text, 600 DPI
+#   - Journal of Applied Ecology sizing: 80-180mm width, min 8pt text, 600 DPI
 #   - Consistent theme_mpa() styling across all figures
 #   - All y-axes showing MPA effects use RR-scaled labels (scale_y_rr)
 #     where RR = 1 (lnRR = 0) means no MPA effect
@@ -104,12 +104,12 @@ taxa_levels  <- c("P. interruptus", "S. pulcher",
 source_levels <- c("KFM", "LTER", "PISCO", "Landsat")
 
 # =============================================================================
-# Figure dimension constants (Conservation Letters specifications)
+# Figure dimension constants (Journal of Applied Ecology specifications)
 # =============================================================================
 # Wiley standard widths: single column = 80mm, double column = 180mm
 # Figures must be 80-180mm wide; line art at 600 DPI preferred
 #
-# FONT SIZE NOTE (Conservation Letters requirement):
+# FONT SIZE NOTE (Journal of Applied Ecology requirement):
 #   Minimum 8pt at final printed size. All figures in this script are
 #   double-column (170-180mm) and use base_size = 9 or 10 in theme_mpa(),
 #   with the smallest axis text at 7pt (forest plot MPA names). At 170mm
@@ -119,7 +119,7 @@ source_levels <- c("KFM", "LTER", "PISCO", "Landsat")
 FIG_WIDTH_SINGLE <- 8    # cm (80mm), for single-column figures
 FIG_WIDTH_DOUBLE <- 17   # cm (170mm), for double-column figures
 FIG_WIDTH_WIDE   <- 18   # cm (180mm), Wiley max width
-FIG_WIDTH_SUPP   <- 17.8 # cm, Conservation Letters max width for supplemental figures
+FIG_WIDTH_SUPP   <- 17.8 # cm, Journal of Applied Ecology max width for supplemental figures
 
 # Figure-specific dimensions (width, height in cm)
 # Note: Figure 1 dimensions are defined inside the should_render("fig01") block below
@@ -185,7 +185,7 @@ has_ggrepel <- require_pkgs("ggrepel", optional = TRUE)
 
 # Figure 1 (map) packages - optional but needed for Figure 1
 has_fig1_pkgs <- require_pkgs(c("sf", "ggspatial", "marmap", "ggnewscale",
-                                 "terra", "tidyterra", "elevatr", "rnaturalearth"),
+                                 "terra", "tidyterra", "elevatr", "rnaturalearth", "ggrepel"),
                                optional = TRUE)
 if (!has_fig1_pkgs) {
   cat("  NOTE: Figure 1 packages not available - Figure 1 will be skipped\n")
@@ -353,11 +353,11 @@ theme_legend_right <- function(title_size = 9, text_size = 8.5, italic = TRUE) {
 # =============================================================================
 # === FIGURE 1 (Main Text): MPA Map with Bathymetry ===
 # =============================================================================
-# WHAT: Map of Southern California showing all monitoring sites used in
-#   this study, overlaid on ocean bathymetry and MPA boundaries. Sites are
-#   labeled (b)-(n) matching the figure caption; shapes indicate which
-#   monitoring program collected data at each site (KFM, LTER, or PISCO).
-# DATA: Site metadata (Site_List_All.csv), MPA shapefiles, NOAA bathymetry
+# WHAT: Map of Southern California showing the final retained MPA/source
+#   combinations used in the effect-size synthesis, overlaid on ocean
+#   bathymetry and MPA boundaries. Shapes indicate data source, including
+#   Landsat-only kelp-biomass series.
+# DATA: SumStats.Final, MPA shapefiles, NOAA bathymetry
 # SAVES: plots/fig_01_mpa_map.pdf, plots/fig_01_mpa_map.png
 # =============================================================================
 
@@ -365,7 +365,7 @@ theme_legend_right <- function(title_size = 9, text_size = 8.5, italic = TRUE) {
 library(patchwork)
 
 if (should_render("fig01")) {
-cat("Building Figure 1: MPA Map with Bathymetry + Time Series...\n")
+cat("Building Figure 1: MPA map with bathymetry + final MPA/source sites...\n")
 
 if (has_fig1_pkgs) {
   library(sf)
@@ -378,11 +378,11 @@ if (has_fig1_pkgs) {
 
   # Figure 1 specific constants
   FIG1_PLOT_MARGIN <- ggplot2::margin(2, 2, 2, 2)
-  # Reduce overall height to avoid unused vertical whitespace (esp. with square bottom panels).
-  FIG1_DIMS <- c(w = 17, h = 10)  # cm. Map only (time series moved to Fig 2)
+  # Expanded crop includes the full retained network from San Diego to Santa Barbara.
+  FIG1_DIMS <- c(w = 18, h = 12.5)  # cm. Map only (time series moved to Fig 2)
 
   # --- 1. Define Study Region ---
-  BBOX_LONLAT <- c(xmin = -120.75, ymin = 33.28, xmax = -117.65, ymax = 34.50)
+  BBOX_LONLAT <- c(xmin = -120.75, ymin = 32.55, xmax = -117.05, ymax = 34.55)
 
   # --- 2. Load Bathymetry Data ---
   bathy_cache <- here::here("data", "cache", "socal_bathy_hires.rds")
@@ -476,109 +476,85 @@ if (has_fig1_pkgs) {
   # Classify MPA types: no-take vs. partial protection (most meaningful distinction)
   mpa <- mpa %>%
     dplyr::mutate(mpa_group = dplyr::case_when(
-      Type %in% c("SMR", "FMR", "SMCA (No-Take)")  ~ "No-Take MPA",
-      TRUE                                           ~ "Partial Protection"
+      Type %in% c("SMR", "FMR", "SMCA (No-Take)")  ~ "No-take",
+      TRUE                                           ~ "Partial"
     ),
-    mpa_group = factor(mpa_group, levels = c("No-Take MPA", "Partial Protection")))
+    mpa_group = factor(mpa_group, levels = c("No-take", "Partial")))
 
   # Distinct fills: darker for no-take, lighter for partial
   mpa_fill_colors <- c(
-    "No-Take MPA"         = "#3A5A6C",
-    "Partial Protection"  = "#D4DFE8"
+    "No-take" = "#3A5A6C",
+    "Partial" = "#D4DFE8"
   )
 
   # --- 4. Load Coastline ---
   coast <- rnaturalearth::ne_states(country = "united states of america", returnclass = "sf") %>%
     filter(name == "California")
 
-  # --- 5. Load Monitoring Sites ---
-  site_csv <- here::here("data", "Site_List_All.csv")
-  if (!file.exists(site_csv)) {
-    warning("data/Site_List_All.csv not found. Skipping Fig 1 site overlay")
-    sites_base <- data.frame(Lon = numeric(0), Lat = numeric(0), program = character(0),
-                             CA_MPA_Name_Short = character(0))
-    sites_labels <- data.frame(Lon = numeric(0), Lat = numeric(0),
-                               label_x = numeric(0), label_y = numeric(0),
-                               site_abbrev = character(0))
-    PANEL_SITES <- c("b" = "Campus Point SMCA", "c" = "Harris Point SMR",
-                     "d" = "South Point SMR", "e" = "Santa Barbara Island SMR")
-    MPA_YEARS <- c("Campus Point SMCA" = 2012, "Harris Point SMR" = 2003,
-                   "South Point SMR" = 2003, "Santa Barbara Island SMR" = 2003)
-  } else {
-  sites_raw <- read.csv(site_csv)
+  # --- 5. Final retained MPA/source sites ---
+  # Build the map layer from the analysis output used downstream by the
+  # meta-analysis. This prevents Figure 1 from drifting away from the final
+  # retained dataset and adds Landsat-only sites such as Point Dume.
+  sites_source <- SumStats.Final %>%
+    dplyr::mutate(Source = as.character(Source)) %>%
+    dplyr::filter(!is.na(Lon), !is.na(Lat), !is.na(Source), Source %in% source_levels) %>%
+    dplyr::distinct(CA_MPA_Name_Short = MPA, Source, Lon, Lat, type, Location) %>%
+    dplyr::arrange(Location, Lon, Lat, CA_MPA_Name_Short, Source)
 
-  kfm_sites <- c("Harris Point SMR", "South Point SMR", "Gull Island SMR",
-                 "Scorpion SMR", "Santa Barbara Island SMR", "Anacapa Island SMR 2003")
-  lter_sites <- c("Campus Point SMCA", "Naples SMCA")
-  pisco_sites <- c("Point Vicente SMCA", "Carrington Pt SMR", "Painted Cave SMCA",
-                   "Skunk Pt SMR", "Anacapa Island SMCA")
+  if (nrow(sites_source) == 0) {
+    stop("Figure 1 has no retained MPA/source sites in SumStats.Final.")
+  }
 
-  PANEL_SITES <- c("b" = "Campus Point SMCA", "c" = "Harris Point SMR",
-                   "d" = "South Point SMR", "e" = "Santa Barbara Island SMR")
-  MPA_YEARS <- c("Campus Point SMCA" = 2012, "Harris Point SMR" = 2003,
-                 "South Point SMR" = 2003, "Santa Barbara Island SMR" = 2003)
-
-  sites_base <- sites_raw %>%
-    filter(!is.na(Lon) & !is.na(Lat)) %>%
-    mutate(program = case_when(
-      CA_MPA_Name_Short %in% kfm_sites ~ "KFM",
-      CA_MPA_Name_Short %in% lter_sites ~ "LTER",
-      CA_MPA_Name_Short %in% pisco_sites ~ "PISCO",
-      TRUE ~ NA_character_
-    )) %>%
-    filter(!is.na(program)) %>%
-    # Jitter Santa Barbara Island marker so the island is visible
-    mutate(Lon = ifelse(CA_MPA_Name_Short == "Santa Barbara Island SMR", Lon + 0.08, Lon),
-           Lat = ifelse(CA_MPA_Name_Short == "Santa Barbara Island SMR", Lat - 0.06, Lat))
-
-  # Letter labels for ALL monitoring sites on the map.
-  # (b)-(e) have time series panels; (f)-(n) are map-only (defined in caption).
-  site_abbrev <- c(
-    "Campus Point SMCA"       = "b",
-    "Harris Point SMR"        = "c",
-    "South Point SMR"         = "d",
-    "Santa Barbara Island SMR" = "e",
-    "Carrington Pt SMR"       = "f",
-    "Skunk Pt SMR"            = "g",
-    "Painted Cave SMCA"       = "h",
-    "Gull Island SMR"         = "i",
-    "Scorpion SMR"            = "j",
-    "Anacapa Island SMR 2003" = "k",
-    "Anacapa Island SMCA"     = "l",
-    "Naples SMCA"             = "m",
-    "Point Vicente SMCA"      = "n"
+  source_offsets <- tibble::tibble(
+    Source = source_levels,
+    source_dx = c(-0.030, -0.010, 0.010, 0.030),
+    source_dy = c(0.000, 0.000, 0.000, 0.000)
   )
 
-  # Manual nudge offsets (lon, lat) for label readability in dense areas
-  label_nudge <- list(
-    "b" = c( 0.08, -0.05),   # Campus Point: right-below
-    "c" = c(-0.14, -0.02),   # Harris Point: left
-    "d" = c(-0.14, -0.04),   # South Point: far left-below
-    "e" = c(-0.10, -0.07),   # Santa Barbara Is.: left-below
-    "f" = c( 0.12,  0.07),   # Carrington Pt: right-above (separated from h)
-    "g" = c(-0.12,  0.03),   # Skunk Pt: left-above, scooted
-    "h" = c(-0.05,  0.08),   # Painted Cave: left-above (separated from f)
-    "i" = c(-0.12, -0.05),   # Gull Island: further left-below
-    "j" = c( 0.10,  0.05),   # Scorpion: right-above
-    "k" = c( 0.12,  0.08),   # Anacapa SMR: right-above (separated from j)
-    "l" = c(-0.13, -0.04),   # Anacapa SMCA: further left-below
-    "m" = c(-0.10,  0.00),   # Naples: left, scooted down
-    "n" = c( 0.08, -0.05)    # Point Vicente: right-below
-  )
-
-  all_label_df <- tibble::tibble(
-    CA_MPA_Name_Short = names(site_abbrev),
-    site_abbrev = unname(site_abbrev)
-  )
-  sites_labels <- sites_base %>%
-    inner_join(all_label_df, by = "CA_MPA_Name_Short") %>%
-    mutate(
-      nudge_lon = sapply(site_abbrev, function(s) label_nudge[[s]][1]),
-      nudge_lat = sapply(site_abbrev, function(s) label_nudge[[s]][2]),
-      label_x = Lon + nudge_lon,
-      label_y = Lat + nudge_lat
+  sites_base <- sites_source %>%
+    dplyr::left_join(source_offsets, by = "Source") %>%
+    dplyr::mutate(
+      plot_lon = Lon + source_dx,
+      plot_lat = Lat + source_dy,
+      program = factor(Source, levels = source_levels)
     )
-  } # end Site_List_All.csv else block
+
+  sites_labels <- sites_source %>%
+    dplyr::distinct(CA_MPA_Name_Short, Lon, Lat, type, Location) %>%
+    dplyr::mutate(
+      site_label = dplyr::case_when(
+        CA_MPA_Name_Short == "Point Dume SMCA" ~ "Pt. Dume SMCA",
+        CA_MPA_Name_Short == "Point Dume SMR"  ~ "Pt. Dume SMR",
+        TRUE ~ shorten_mpa_name(CA_MPA_Name_Short)
+      ),
+      site_label = stringr::str_replace_all(
+        site_label,
+        c("Blue Cavern Onshore" = "Blue Cavern",
+          "Farnsworth Onshore" = "Farnsworth")
+      )
+    ) %>%
+    dplyr::arrange(dplyr::desc(Lat), Lon, CA_MPA_Name_Short)
+
+  fig1_site_key <- sites_source %>%
+    dplyr::group_by(CA_MPA_Name_Short, type, Location, Lat, Lon) %>%
+    dplyr::summarise(
+      Data_Sources = paste(sort(unique(as.character(Source))), collapse = ", "),
+      .groups = "drop"
+    ) %>%
+    dplyr::left_join(
+      sites_labels %>% dplyr::select(CA_MPA_Name_Short, Map_Label = site_label),
+      by = "CA_MPA_Name_Short"
+    ) %>%
+    dplyr::select(Map_Label, MPA = CA_MPA_Name_Short, type, Location, Lat, Lon, Data_Sources) %>%
+    dplyr::arrange(Location, Lon, Lat, MPA)
+
+  dir.create(here::here("tables"), showWarnings = FALSE)
+  utils::write.csv(
+    fig1_site_key,
+    here::here("tables", "table_fig1_site_key.csv"),
+    row.names = FALSE
+  )
+  cat("  Figure 1 site key written: tables/table_fig1_site_key.csv\n")
 
   # --- 6. Load Time Series Data ---
   ts_cache <- here::here("data", "cache", "figure_data.rds")
@@ -594,7 +570,7 @@ if (has_fig1_pkgs) {
     "Inside MPA" = if (exists("col_site")) unname(col_site["Inside"]) else "#2A7B8E",
     "Outside MPA" = if (exists("col_site")) unname(col_site["Outside"]) else "#8C7B6A"
   )
-  program_shapes <- c("KFM" = 22, "LTER" = 21, "PISCO" = 24)
+  program_shapes <- c("KFM" = 22, "LTER" = 21, "PISCO" = 24, "Landsat" = 23)
   fig1_map_colors <- list(
     land = if (exists("col_map")) unname(col_map["land"]) else "#F2EBE1",
     coastline = if (exists("col_map")) unname(col_map["coastline"]) else "#3D3D3D",
@@ -619,18 +595,18 @@ if (has_fig1_pkgs) {
 		      oob = scales::squish,
 		      guide = guide_colorbar(
 		        direction = "horizontal",
-		        barwidth = unit(2.5, "cm"),
+		        barwidth = unit(1.7, "cm"),
 		        barheight = unit(0.3, "cm"),
 		        title.position = "left",
 		        title.hjust = 0.5,
-		        title.theme = element_text(size = 8, face = "plain"),
+		        title.theme = element_text(size = 7, face = "plain"),
 		        frame.colour = "grey60",
 		        frame.linewidth = 0.25,
 	        ticks = TRUE,
 	        ticks.colour = "grey40",
 		        ticks.linewidth = 0.35,
 		        label.position = "bottom",
-		        label.theme = element_text(size = 8, color = "grey25"),
+		        label.theme = element_text(size = 7, color = "grey25"),
 		        order = 3
 		      )
 		    ) +
@@ -656,26 +632,30 @@ if (has_fig1_pkgs) {
     # Layer 6: Coastline outline (drawn on top of hillshade)
     geom_sf(data = coast, fill = NA, color = fig1_map_colors$coastline,
             linewidth = 0.4, inherit.aes = FALSE) +
-    # Layer 7: Monitoring site markers (shape = KFM/LTER/PISCO)
-    geom_point(data = sites_base, aes(x = Lon, y = Lat, shape = program),
-               size = 2.8, fill = "grey40", color = "white", stroke = 0.7) +
+    # Layer 7: Retained MPA/source markers. Multiple source markers at the
+    # same MPA are offset slightly so no data source is hidden.
+    geom_point(data = sites_base, aes(x = plot_lon, y = plot_lat, shape = program),
+               size = 2.35, fill = "grey35", color = "white", stroke = 0.55) +
     scale_shape_manual(name = NULL, values = program_shapes,
                        guide = guide_legend(order = 1, nrow = 1, byrow = TRUE,
-                                            override.aes = list(fill = "grey40", size = 2.5))) +
-    # Layer 8: Leader lines from site markers to letter labels
-    geom_segment(data = sites_labels,
-                 aes(x = Lon, y = Lat, xend = label_x, yend = label_y),
-                 color = "grey30", linewidth = 0.5, alpha = 1.0) +
-    # Layer 9: Letter labels (b)-(n) corresponding to figure caption
-    geom_label(
+                                            override.aes = list(fill = "grey35", size = 2.5))) +
+    # Layer 8: Retained MPA labels
+    ggrepel::geom_label_repel(
       data = sites_labels,
-      aes(x = label_x, y = label_y, label = site_abbrev),
-      size = 3.5,
+      aes(x = Lon, y = Lat, label = site_label),
+      size = 2.25,
       fontface = "bold",
       color = "grey15",
-      fill = scales::alpha("white", 0.75),
+      fill = scales::alpha("white", 0.78),
       label.size = 0,
-      label.padding = unit(1.5, "pt"),
+      label.padding = unit(1.0, "pt"),
+      box.padding = 0.28,
+      point.padding = 0.18,
+      min.segment.length = 0,
+      segment.color = "grey35",
+      segment.size = 0.22,
+      seed = 42,
+      max.overlaps = Inf,
       show.legend = FALSE
     ) +
     coord_sf(xlim = c(BBOX_LONLAT["xmin"], BBOX_LONLAT["xmax"]),
@@ -687,7 +667,6 @@ if (has_fig1_pkgs) {
                            pad_y = unit(0.4, "in"), style = north_arrow_fancy_orienteering,
                            height = unit(0.7, "cm"), width = unit(0.7, "cm")) +
     theme_mpa(base_size = 9) +
-    labs(tag = "(a)") +
     theme(
       panel.background = element_rect(fill = "#C6DBEF", color = NA),
       panel.border = element_rect(fill = NA, color = "grey35", linewidth = 0.4),
@@ -699,10 +678,10 @@ if (has_fig1_pkgs) {
       legend.position = "top",
       legend.direction = "horizontal",
       legend.box = "horizontal",
-      legend.title = element_text(size = 8, face = "plain"),
-      legend.text = element_text(size = 8),
+      legend.title = element_text(size = 7.5, face = "plain"),
+      legend.text = element_text(size = 7.5),
       legend.key.size = unit(0.3, "cm"),
-      legend.spacing.x = unit(6, "mm"),
+      legend.spacing.x = unit(3, "mm"),
       legend.spacing.y = unit(0, "mm"),
       legend.key.width = unit(0.5, "cm"),
       legend.key.height = unit(0.3, "cm"),
@@ -1142,7 +1121,7 @@ fig_s1 <- ggplot(
   theme(
     strip.text = element_text(face = "bold.italic", size = 10, margin = margin(3, 0, 3, 0)),
     strip.background = element_blank(),
-    # 8pt minimum per Conservation Letters guidelines; height increased to compensate
+    # 8pt minimum per Journal of Applied Ecology guidelines; height increased to compensate
     axis.text.y = element_text(size = 8, color = "grey15"),
     axis.text.x = element_text(size = 8),
     axis.title.x = element_text(size = 9, margin = margin(t = 6)),
@@ -2824,7 +2803,7 @@ save_fig(fig_s2, "fig_s03_all_taxa_timeseries", FIG_S3_DIMS["w"], FIG_S3_DIMS["h
 if (should_render("fig_s07")) {
 cat("\n--- Dropped disk figure fig_s07: Statistical transparency ---\n")
 
-FIG_S7_DIMS <- c(w = 17, h = 10)  # Conservation Letters max width
+FIG_S7_DIMS <- c(w = 17, h = 10)  # Journal of Applied Ecology max width
 
 # Panel A: Model selection distribution by taxa
 model_dist <- SumStats.Final %>%
@@ -3097,7 +3076,7 @@ for (taxa_i in taxa_plot_order) {
     # MPA implementation year (vertical line)
     geom_vline(aes(xintercept = MPA_Start),
                linetype = "dotted", color = "grey40", linewidth = 0.4) +
-    # 95% CI (Conservation Letters requirement)
+    # 95% CI for transparent effect-size reporting
     geom_ribbon(aes(ymin = mean_lnRR - 1.96 * se_lnRR,
                     ymax = mean_lnRR + 1.96 * se_lnRR),
                 fill = taxa_color, alpha = 0.22) +
@@ -3151,8 +3130,8 @@ for (taxa_i in taxa_plot_order) {
                  labeller = labeller(CA_MPA_Name_Short = wrap_fn))
   }
 
-  # Dimensions scale with number of MPAs (capped at Conservation Letters max)
-  fig_w <- min(17, n_cols * 4)  # Conservation Letters max width: 17cm
+  # Dimensions scale with number of MPAs (capped at Journal of Applied Ecology max)
+  fig_w <- min(17, n_cols * 4)  # Journal of Applied Ecology max width: 17cm
   fig_h <- max(10, n_rows * 4)
 
   # Create clean filename from taxa name
