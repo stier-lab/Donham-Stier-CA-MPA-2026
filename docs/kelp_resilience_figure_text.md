@@ -1,6 +1,6 @@
 # Proposed main-text addition: giant-kelp resilience to the marine heatwave
 
-*Conservative, robust addition for Donham & Stier (Conservation Letters). Figure:
+*Conservative, robust addition for Donham & Stier (Journal of Applied Ecology). Figure:
 `plots/fig_kelp_resilience.{pdf,png}` (single column, 80 mm). Analysis:
 `code/R/22_resistance_recovery.R`; statistics from `tables/table_resistance_recovery.csv`.
 All numbers are from the giant-kelp (biomass) row, paired Wilcoxon signed-rank across

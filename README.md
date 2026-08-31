@@ -1,7 +1,6 @@
 # Restoration of Trophic Cascades in California MPA Kelp Forests
 
 [![R](https://img.shields.io/badge/R-%3E%3D4.0-blue.svg)](https://www.r-project.org/)
-[![Target Journal](https://img.shields.io/badge/Target-Conservation%20Letters-green.svg)](https://conbio.onlinelibrary.wiley.com/journal/1755263x)
 [![Status](https://img.shields.io/badge/Status-In%20Preparation-yellow.svg)]()
 
 > **Manuscript Title:** Restoration of trophic cascades within kelp forests following the establishment of a network of marine protected areas
@@ -312,7 +311,7 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 ## Documentation
 
 - **`docs/ANALYSIS_REVISIONS.md`** - Comprehensive comparison of V5 archived code vs current pipeline
-- **`docs/MPA_Kelp_MS_V5.pdf`** - Archived V5 manuscript draft; Emily is leading the current manuscript rewrite outside this repo snapshot
+- **`docs/MPA_Kelp_MS_V5.pdf`** - Archived V5 manuscript draft; active manuscript construction now lives outside this analysis repo
 - **`docs/RESULTS_SUMMARY.md`** - Auto-generated results summary with all meta-analysis values
 - **`docs/results_report.html`** - Ignored local HTML report; regenerate from `code/R/results_report.Rmd` when needed
 - **`docs/supporting_information.Rmd`** - Supporting Information source (R Markdown)
@@ -376,7 +375,7 @@ Key methodological caveats documented throughout the pipeline (see `docs/ANALYSI
 
 If you use this code or data, please cite:
 
-> Donham, E. & Stier, A. (2026). Restoration of trophic cascades within kelp forests following the establishment of a network of marine protected areas. *Conservation Letters* (in preparation).
+> Donham, E. & Stier, A. (2026). Restoration of trophic cascades within kelp forests following the establishment of a network of marine protected areas. Manuscript in preparation.
 
 ---
 

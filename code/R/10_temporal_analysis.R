@@ -90,7 +90,7 @@ if (!exists("RENDER_FIGURES", envir = .GlobalEnv)) {
   RENDER_FIGURES <- "all"
 }
 
-# --- Figure dimension constants (Conservation Letters supplemental, in cm) ---
+# --- Figure dimension constants (Journal of Applied Ecology supplemental, in cm) ---
 FIG_S04_DIMS <- c(w = 17.8, h = 25)    # Recovery curves: 5 species x 2 response types
 FIG_S05_DIMS <- c(w = 17, h = 16)      # Phase portrait: 4-panel (2x2)
 # FIG_S06_DIMS <- c(w = 17.8, h = 28)  # Triptych heatmap: 5 species panels [DROPPED]

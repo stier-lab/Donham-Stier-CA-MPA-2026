@@ -601,10 +601,11 @@ if (file.exists(filter_audit_file) && file.exists(meta_audit_file)) {
 }
 
 # =============================================================================
-# 5. SAMPLE SIZE & DATA PROVENANCE TABLES (Conservation Letters requirements)
+# 5. SAMPLE SIZE & DATA PROVENANCE TABLES (JAE/BES transparency support)
 # =============================================================================
-# Conservation Letters requires transparent reporting of sample sizes and data
-# provenance. This section builds four publication-ready tables documenting:
+# Journal of Applied Ecology/BES review benefits from transparent sample-size
+# and data-provenance reporting. This section builds four publication-ready
+# tables documenting:
 #   - Which MPAs were analyzed and their characteristics (Table S1a)
 #   - Sample sizes by species x response type x data source (Table S1b)
 #   - High-level summary statistics for the Methods section

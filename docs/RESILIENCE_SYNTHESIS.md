@@ -1,7 +1,7 @@
 # MPA resilience: synthesis of the analysis suite (scripts 14–23)
 
 > **PAPER STATUS (decided).** Exactly **one** result from this suite goes into the
-> Conservation Letters main text: the **giant-kelp resilience figure**
+> Journal of Applied Ecology main text: the **giant-kelp resilience figure**
 > (`plots/fig_kelp_resilience.pdf`, script 22) + a short results paragraph + a few
 > "we also checked X" robustness one-liners for the Discussion. **Everything else in
 > scripts 14–23 is internal / SI-supporting robustness — not a numbered manuscript

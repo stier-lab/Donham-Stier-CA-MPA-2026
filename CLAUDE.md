@@ -8,14 +8,19 @@
 
 This project analyzes the effects of California Marine Protected Areas (MPAs) on kelp forest ecosystems using the progressive-change Before-After-Control-Impact-Pairs (pBACIPS) methodology. The analysis combines data from multiple monitoring programs (PISCO, KFM/MBON, LTER) and produces publication-quality figures and statistical summaries.
 
-**Target Journal:** Conservation Letters
+**Target Journal:** Journal of Applied Ecology
 **Manuscript Title:** Restoration of trophic cascades within kelp forests following the establishment of a network of marine protected areas
 **Authors:** Emily Donham (lead) & Adrian Stier
 **Status:** Analysis pipeline complete; manuscript revision in progress (Emily leading rewrite)
+**Manuscript construction workspace:** `/Users/adrianstier/Donham-Stier-CA-MPA-MS-2026`
 
-## Conservation Letters Figure & Design Specifications
+Keep manuscript drafts, prose TODOs, journal checks, appendix construction, and
+writing-build machinery in the separate manuscript repo. This repository remains
+the analysis source of truth for code, data products, figures, and result tables.
 
-Sourced from [Wiley Electronic Artwork Guidelines](https://authorservices.wiley.com/asset/photos/electronic_artwork_guidelines.pdf) and [Conservation Letters Author Guidelines](https://conbio.onlinelibrary.wiley.com/hub/journal/1755263x/homepage/forauthors.html).
+## Journal of Applied Ecology Figure & Design Specifications
+
+Sourced from [Wiley Electronic Artwork Guidelines](https://authorservices.wiley.com/asset/photos/electronic_artwork_guidelines.pdf) and [Journal of Applied Ecology Author Guidelines](https://besjournals.onlinelibrary.wiley.com/hub/journal/13652664/about/author-guidelines).
 
 ### Dimensions
 - **Single-column (small):** 80 mm width (quarter-page figures)
@@ -54,12 +59,14 @@ Sourced from [Wiley Electronic Artwork Guidelines](https://authorservices.wiley.
 - Legends should succinctly describe content and explain all abbreviations/symbols
 - All figures must be cited in main text in the order they appear
 
-### Conservation Letters-Specific Requirements
+### Journal of Applied Ecology-Specific Requirements
 - **Error bars required:** All figures showing statistical data must display error bars (95% CIs preferred); authors must state what error bars represent
 - **95% CIs in text and figures:** Any article reporting p-values must also report 95% CIs
-- **Max figures+tables:** ~8 combined in main text (additional in Supporting Information)
+- **Research Article limits:** <=7,000 counted words including title page, Summary, main text, acknowledgements, and figure/table legends; references and Supporting Information excluded
+- **Summary:** <=350 words, numbered points, final point headed `Synthesis and applications` or `Policy implications`
+- **Double-anonymous review:** Prepare an anonymized main manuscript file and keep author-identifying details out of the review file
 - **Supporting Information:** Submit in separate files
-- **Cover/social media image:** Provide an image for social media promotion; if selected for cover, 300 DPI at reproduction size in CMYK required
+- **Applied framing:** Management, policy, restoration, monitoring, or practice implications must be explicit in the Summary and Discussion
 
 ### Submission Checklist (from Wiley)
 - [ ] All figures included as separate files or in a single PDF/Word document
@@ -602,7 +609,7 @@ These limitations are documented in code comments throughout the pipeline and sh
 ## Contact
 
 Authors: Emily Donham & Adrian Stier
-Project: Conservation Letters manuscript on MPA effects on kelp forest trophic cascades
+Project: Journal of Applied Ecology manuscript on MPA effects on kelp forest trophic cascades
 
 ---
 

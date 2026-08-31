@@ -77,7 +77,7 @@ write.csv(rr_tab, here::here("tables", "table_resistance_recovery.csv"), row.nam
 # Robustness of the HEADLINE giant-kelp result (writes a separate table; the
 # primary result above is unchanged). Attacks the three soft spots of an n~10
 # paired test: (a) baseline-window choice, (b) test choice + a 95% CI on the
-# inside/outside ratio (Conservation Letters requires CIs), (c) leave-one-
+# inside/outside ratio (JAE/BES reporting standard), (c) leave-one-
 # reserve-out influence. The primary spec is the paired Wilcoxon on log-ratios
 # at the 2010-13 baseline (row "2010-2013*"), matching table_resistance_recovery.
 # ---------------------------------------------------------------------------
@@ -141,7 +141,7 @@ p <- ggplot(tr, aes(year, abund, color = Site, fill = Site)) +
 ggsave(here::here("plots", "fig_resistance_recovery.pdf"), p, width = 170, height = 85, units = "mm", device = cairo_pdf)
 ggsave(here::here("plots", "fig_resistance_recovery.png"), p, width = 170, height = 85, units = "mm", dpi = 600)
 
-# Main-text single-panel: giant-kelp resistance & recovery (Conservation Letters, single column 80 mm)
+# Main-text single-panel: giant-kelp resistance & recovery (Journal of Applied Ecology, single column 80 mm)
 trk <- tr[taxon_name == "Macrocystis pyrifera"]
 lab_pos <- trk[, .SD[which.max(year)], by = Site]
 p_kelp <- ggplot(trk, aes(year, abund, color = Site, fill = Site)) +

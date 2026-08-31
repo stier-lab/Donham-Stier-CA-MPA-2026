@@ -7,7 +7,7 @@ subtitle: |
   Donham, Bell, Caselle, DiFiore, Gabara, Hamilton, Kui, Miller, Pondella,
   Raimondi, Reed, Stier
 
-  *Conservation Letters*
+  *Journal of Applied Ecology*
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   html_document:
@@ -94,6 +94,10 @@ fmt_tbl <- function(df, caption = NULL, digits = 3, scroll = FALSE) {
   if (is.null(df)) return(kable(data.frame(Status = "FILE NOT FOUND"), caption = caption))
   num_cols <- sapply(df, is.numeric)
   df[num_cols] <- lapply(df[num_cols], function(x) round(x, digits))
+  if (!knitr::is_html_output()) {
+    return(kable(df, caption = caption, row.names = FALSE,
+                 col.names = clean_colnames(names(df))))
+  }
   out <- kable(df, caption = caption, row.names = FALSE,
                col.names = clean_colnames(names(df))) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
@@ -900,8 +904,6 @@ cat("**Figure S15.** Raw observed values (proportional density or biomass) for M
 ```{r fig-s15, fig.cap="**Figure S15.** Raw data trajectories by outlier status.", out.width="100%"}
 knitr::include_graphics(here::here("plots", "fig_s18_raw_trajectories_outlier_status.png"))
 ```
-
----
 
 # References
 

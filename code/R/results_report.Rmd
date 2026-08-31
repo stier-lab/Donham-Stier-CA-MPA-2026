@@ -1,6 +1,6 @@
 ---
 title: "CA MPA Kelp Forest Analysis — Results for Manuscript"
-subtitle: "Donham & Stier, Conservation Letters"
+subtitle: "Donham & Stier, Journal of Applied Ecology"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   html_document:

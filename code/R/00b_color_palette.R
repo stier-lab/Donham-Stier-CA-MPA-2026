@@ -2,7 +2,7 @@
 #' title: "Unified Color Palette and Theme for MPA Kelp Forest Analysis"
 #' description: "Self-contained, colorblind-friendly, publication-quality color system"
 #' author: "Emily Donham & Adrian Stier"
-#' target_journal: "Conservation Letters"
+#' target_journal: "Journal of Applied Ecology"
 #' ---
 #'
 #' This file defines all colors, shapes, and theme elements used across the
@@ -185,7 +185,7 @@ alpha_ba <- c(
 # =============================================================================
 # Shape encodes monitoring program, keeping color channels available for
 # biological variables. Shapes are chosen for legibility at small sizes
-# (8-10 pt in Conservation Letters figures).
+# (8-10 pt in Journal of Applied Ecology figures).
 
 shape_source <- c(
   "KFM"     = 15,   # filled square. NPS Channel Islands program
@@ -307,13 +307,13 @@ col_diag <- c(
 # =============================================================================
 # 7. GGPLOT2 THEME: theme_mpa()
 # =============================================================================
-#' Publication-ready ggplot2 theme for Conservation Letters
+#' Publication-ready ggplot2 theme for Journal of Applied Ecology
 #'
 #' A minimal, clean theme with appropriate font sizes for a two-column journal
 #' layout. Designed for figures that are 80-170 mm wide.
 #'
 #' @param base_size Base font size in points (default 9, suitable for
-#'   Conservation Letters single-column figures).
+#'   Journal of Applied Ecology single-column figures).
 #' @param base_family Font family (default "Helvetica"; falls back to
 #'   "sans" if unavailable).
 #' @return A ggplot2 theme object.
