@@ -42,7 +42,7 @@ The analysis examines:
 
 ## Repository Structure
 
-This is the **analysis repo**. It consumes harmonized CSVs produced by the sibling data-processing repo ([Donham-Stier-CA-MPA-Data-2026](https://github.com/stier-lab/Donham-Stier-CA-MPA-Data-2026)). The harmonized CSVs (~1 MB) are tracked in git, so no raw data is needed to run the analysis.
+This is the **analysis repo**. It consumes harmonized CSVs produced by the sibling data-processing repo ([Donham-Stier-CA-MPA-Data-2026](https://github.com/stier-lab/Donham-Stier-CA-MPA-Data-2026)). The harmonized CSVs (~1 MB) are tracked in git, so no raw monitoring data is needed to run the main analysis.
 
 ```
 Donham-Stier-CA-MPA-2026/
@@ -61,7 +61,10 @@ Donham-Stier-CA-MPA-2026/
 │       ├── 11_figures.R              # Publication figures (Figs 1-4, S1-S2, S7a-e)
 │       ├── 12_results_summary.R      # Generate results summaries
 │       ├── 13_additional_analyses.R  # Moderator analyses (SI Fig S6)
+│       ├── 14-23_*.R                 # Resilience / heatwave robustness suite
+│       ├── resilience_modules.R      # Shared 14-23 module membership
 │       ├── run_all.R                 # Pipeline orchestration
+│       ├── run_resilience.R          # Full resilience suite
 │       └── run_figures_only.R        # Fast figure regeneration (~17s)
 │
 ├── data/
@@ -104,7 +107,7 @@ This analysis integrates long-term monitoring data from three major programs:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/stier-lab/Donham-Stier-CA-MPA-2026.git
+git clone https://github.com/stier-lab/sbc-2026-donham-kelp-mpa-cascade.git Donham-Stier-CA-MPA-2026
 cd Donham-Stier-CA-MPA-2026
 ```
 
@@ -124,14 +127,14 @@ Package versions are captured in `renv.lock` for reproducibility. Key packages i
 ### 3. Run the Analysis
 
 ```r
-# Full pipeline (~0.6 min)
+# Full pipeline (~2.3 min in the latest complete run)
 source(here::here("code", "R", "run_all.R"))
 
 # Or just regenerate figures (~17s)
 source(here::here("code", "R", "run_figures_only.R"))
 ```
 
-No symlinks or raw data setup required.
+No raw monitoring data setup is required for the main pipeline. The full resilience suite can also use the sibling raw-data repo and the local Kumagai mirror when they are available.
 
 ---
 
@@ -140,11 +143,11 @@ No symlinks or raw data setup required.
 ### Full Pipeline
 
 ```r
-# Run complete analysis (~0.6 min)
+# Run complete analysis (~2.3 min in the latest complete run)
 source(here::here("code", "R", "run_all.R"))
 ```
 
-The pipeline loads harmonized CSVs, calculates effect sizes, runs meta-analysis, generates figures, and produces results summaries. Progress is logged to the console.
+The pipeline loads harmonized CSVs, calculates effect sizes, runs meta-analysis, generates figures, runs the in-pipeline resilience subset, and produces results summaries. Progress is logged to the console and a timestamped file in `logs/`.
 
 ### Individual Scripts
 
@@ -202,6 +205,11 @@ source(here::here("code", "R", "run_figures_only.R"))
   └───────────────┬─────────────────┘
                   ▼
   ┌─────────────────────────────────┐
+  │ 14/15/16/19/21/22/23            │
+  │ Resilience + heatwave robustness│
+  └───────────────┬─────────────────┘
+                  ▼
+  ┌─────────────────────────────────┐
   │ 12_results_summary.R            │
   │ Auto-generate results CSVs      │
   └─────────────────────────────────┘
@@ -219,6 +227,7 @@ source(here::here("code", "R", "run_figures_only.R"))
 | **Figure 2** | Trophic cascade case studies: 3×3 grid (predators/urchins/kelp × 3 sites), before/after MPA | `plots/fig_02_cascade_case_studies.pdf` |
 | **Figure 3** | Meta-analytic mean effect sizes by taxa, RR-scaled axis | `plots/fig_03_mean_effects.pdf` |
 | **Figure 4** | Recovery trajectories: 3×2 trophic grid (biomass), lmer predictions with 95% CI | `plots/fig_04_recovery_curves.pdf` |
+| **Figure 5** | Giant-kelp resistance and recovery through the 2014-16 marine heatwave | `plots/fig_kelp_resilience.pdf` |
 
 ### Supplemental Figures
 
@@ -241,6 +250,10 @@ source(here::here("code", "R", "run_figures_only.R"))
 | **Figure S15** | Raw data trajectories by outlier status | `plots/fig_s18_raw_trajectories_outlier_status.pdf` |
 
 Note: SI renumbered figures but disk filenames retain original numbering.
+
+### Resilience / Robustness Figures
+
+The resilience suite produces additional candidate SI and internal robustness figures: `fig_heatwave_cascade`, `fig_heatwave_cascade_regression`, `fig_heatwave_replication`, `fig_resistance_recovery`, `fig_kelp_resilience_paired`, `fig_ecological_memory`, `fig_resilience_stability`, `fig_compound_disturbance`, `fig_s_methods_multiverse`, `fig_s_env_moderators`, `fig_s_effectiveness_predictors`, and the Eisaguirre reproduction panels. See `docs/RESILIENCE_SYNTHESIS.md` for their manuscript status.
 
 ### Tables
 

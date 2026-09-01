@@ -1569,7 +1569,7 @@ ProgressiveChangeBACIPS <- function(control, impact, time.true, time.model) {
 #   exist solely so 08_effect_sizes.R can extract A predicted value at t=11
 #   for the few MPA x taxa cells where every NLS attempt fails. We track
 #   which cells use fallbacks in outputs/model_fallback_audit.csv (currently
-#   ~3-5 of 146 effect sizes).
+#   ~3-5 of 142 effect sizes in the latest run).
 # =============================================================================
 
 #' Fit asymptotic model standalone

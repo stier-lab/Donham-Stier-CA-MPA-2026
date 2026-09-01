@@ -25,11 +25,11 @@ Compared to V5: sheephead biomass, lobster density, and red urchin biomass **gai
 | | MS V5 | Current Pipeline |
 |---|---|---|
 | Significant effects | 2 of 9 | **6 of 9** |
-| Main text figures | 4 (map, pipeline diagram, mean effects, urchin-kelp scatter) | 4 (map, cascade case studies, mean effects, recovery curves) |
+| Main text figures | 4 (map, pipeline diagram, mean effects, urchin-kelp scatter) | 5 (map, cascade case studies, mean effects, recovery curves, kelp resilience) |
 | Supplemental figures | ~6 | 15 (S1-S15) |
 | Main tables | 2 | 3 |
 | Supplemental tables | ~3 | 9 (S1-S9) |
-| Effect sizes (k) | ~144 | 132 |
+| Effect sizes (k) | ~144 | 142 |
 | MPAs analyzed | 19 | 23 |
 | Meta-analysis approach | Joint multi-taxa model | Joint multi-taxa model (same structure, improved random effects) |
 | Outlier detection | Joint Cook's D (flagged 62% of data) | No removal (primary); Cook's D as sensitivity (Figs S12-S15) |
@@ -273,7 +273,7 @@ We should hit these in the Discussion:
 
 1. **Bio/Den non-independence:** Biomass and density come from the same individuals. The 9 tests aren't fully independent. FDR helps but doesn't fully fix this.
 2. **Cross-taxa attenuation bias:** Using estimated effect sizes as predictors introduces errors-in-variables bias. Table 3 regressions are conservative (biased toward the null).
-3. **No climate covariates:** ENSO, heatwaves, and sea star wasting are confounds we didn't model. pBACIPS partially controls for them through paired reference sites, but only when events hit MPA and reference equally.
+3. **Climate/stressor attribution:** The core pBACIPS analysis is paired but observational. Scripts 14-23 now add marine-heatwave timing/intensity, environmental-moderator, repeatability, resistance/recovery, and SSWD/sunflower-star checks; ENSO and other overlapping regional drivers still cannot be fully isolated.
 4. **Cross-program biomass bootstrap:** KFM and LTER urchin biomass comes from applying PISCO size-frequency distributions to density counts. That assumes similar size structure across programs.
 5. **Proportion-based lnRR:** Effect sizes are on proportions (species % of community), not raw densities. Non-standard. We need a clear justification in Methods.
 6. **M. franciscanus biomass-density split:** Red urchin *biomass* is up +84% (p=0.026) inside MPAs but density is down -33% (p=0.365, non-sig). This pattern is consistent with prior work: Malakhoff & Miller (2021) found red urchin biomass nearly quadrupled inside Channel Islands reserves due to release from fishing pressure, and Teck et al. (2017) showed red urchins were larger inside MPAs with greater adult and reproductive biomass density. The most parsimonious explanation is a direct fishing effect — reduced harvest allows individuals to grow larger (more biomass per capita) even as density may decline from predation. This complicates the simple cascade narrative but is ecologically coherent. Only significant under the joint model; we should discuss as a direct fishery effect overlaid on the indirect cascade.
@@ -297,7 +297,7 @@ We should hit these in the Discussion:
 | **3** | **Rewrite Discussion** | V5 says "we did not detect an increase in density or biomass of key predatory species." Now 2 of 4 predator metrics are significant. Purple urchin density and biomass both decline, but red urchin biomass *increases* and density is non-sig. We need to discuss the size-density tradeoff idea. |
 | **4** | **Update Methods** | Describe joint multilevel meta-analysis, FDR correction, Source RE, delta method SEs. Draft text below. |
 | **5** | **Update figure/table refs** | V5 figure numbers are completely different. See mapping above. |
-| **6** | **Add Limitations paragraph** | Cover bio/den non-independence, cross-taxa attenuation, no climate covariates, red urchin heterogeneity. |
+| **6** | **Add Limitations paragraph** | Cover bio/den non-independence, cross-taxa attenuation, climate/stressor attribution, and red urchin heterogeneity. |
 | **7** | **Fill reference placeholders** | V5 has "REF", "REFS", "CITE" on pages 5, 6, 7, 12. |
 | **8** | **Check SI document** | Browse `docs/supporting_information.html`. Make sure figure/table refs match and update SI refs in the manuscript. |
 | **9** | **Upload Dryad data** | Upload `dryad_staging/donham_stier_mpa_kelp_data.zip`, then update the DOI placeholder in `code/R/00_download_data.R` and Data Availability. |
@@ -386,14 +386,14 @@ The harmonized CSVs (~1 MB) are tracked in git under `data/harmonized/`. You don
 ### Running the pipeline
 
 ```r
-# Full pipeline (~0.6 min)
+# Full pipeline (~2.3 min in the latest complete run)
 source(here::here("code", "R", "run_all.R"))
 
-# Figures only (~6 sec, uses cached snapshot)
+# Figures only (~17 sec, uses cached snapshot)
 source(here::here("code", "R", "run_figures_only.R"))
 ```
 
-`run_all.R` runs everything in order: loads data, calculates effect sizes, runs meta-analysis, fits temporal models, makes all figures, and writes all tables. `run_figures_only.R` skips the computation and just regenerates plots from a cached snapshot, which is useful when you only need to tweak figure styling.
+`run_all.R` runs everything in order: loads data, calculates effect sizes, runs meta-analysis, fits temporal models, makes all figures, runs the in-pipeline resilience subset, and writes all tables. `run_figures_only.R` skips the computation and just regenerates plots from a cached snapshot, which is useful when you only need to tweak figure styling.
 
 ### Directory layout
 
@@ -404,7 +404,7 @@ Here's what lives where. The most important folders for you are `plots/`, `table
 | `plots/` | All figures as PDF + PNG (600 DPI) | Reviewing figures, grabbing files for manuscript submission |
 | `tables/` | All manuscript tables as CSV | Checking numbers, copying into manuscript |
 | `docs/` | Manuscript draft (V5), this revisions doc, SI source, interactive reports | Reading and reviewing |
-| `code/R/` | All analysis scripts (numbered 00-13) | Understanding methodology, modifying analyses |
+| `code/R/` | All analysis scripts (numbered 00-23 plus orchestrators) | Understanding methodology, modifying analyses |
 | `data/harmonized/` | The 4 input CSVs from the data repo | Checking raw input data |
 | `data/cache/` | Intermediate results (bootstrap, map data, figure snapshot) | Don't need to touch these |
 | `outputs/` | Audit trails, filter logs, replicate-level effect sizes | Checking data flow and individual MPA results |
@@ -421,11 +421,13 @@ Scripts run in numerical order. Here's what each one does and what it produces.
 | `01_utils.R` | Utility functions (effect size helpers, figure rendering, RR axis scales) | — |
 | `02_pBACIPS_function.R` | Core pBACIPS statistical methodology | — |
 | `03_load_harmonized_data.R` | Loads the 4 harmonized CSVs into R objects | `All.RR.sub.trans`, `All.Resp.sub`, `Landsat.RR`, `Site` |
-| `08_effect_sizes.R` | Fits NLS models per MPA/taxa, extracts effect sizes at t=11 | `SumStats.Final` (132 effect sizes), Table S1b, model diagnostics |
+| `08_effect_sizes.R` | Fits NLS models per MPA/taxa, extracts effect sizes at t=11 | `SumStats.Final` (142 effect sizes), Table S1b, model diagnostics |
 | `09_meta_analysis.R` | Joint multilevel meta-analysis, per-taxa sensitivity, cross-taxa regressions | **Table 2**, **Table 3**, Tables S2-S3, S8-S9, variance components |
 | `10_temporal_analysis.R` | lmer recovery models, GAMs, phase portraits, cascade consistency | SI Figs S3-S5, Tables S4-S5, S7, species slopes |
-| `11_figures.R` | All main text figures + most SI figures | **Figs 1-4**, SI Figs S1-S2, S7a-e, S8-S12 |
+| `11_figures.R` | Core main text figures + most SI figures | **Figs 1-4**, SI Figs S1-S2, S7a-e, S8-S12 |
 | `13_additional_analyses.R` | Moderator analyses (SMR vs SMCA, Islands vs mainland) | SI Fig S6, Table S6 |
+| `14/15/16/19/21/22/23` | In-pipeline resilience / heatwave robustness subset | Heatwave, multiverse, environmental-moderator, replication, stability, resistance/recovery including Fig 5, and memory outputs |
+| `17/18/20` | Full resilience-suite modules needing external raw-data or comparison inputs | Eisaguirre reproduction, effectiveness prediction, and SSWD/sunflower-star checks |
 | `12_results_summary.R` | Writes all summary CSVs and `RESULTS_SUMMARY.md` | Data flow audit, replicate effects, model results |
 | `run_all.R` | Runs everything above in order | Pipeline log in `logs/` |
 

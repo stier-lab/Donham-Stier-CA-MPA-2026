@@ -83,7 +83,7 @@ Sourced from [Wiley Electronic Artwork Guidelines](https://authorservices.wiley.
 ```
 Donham-Stier-CA-MPA-2026/
 ├── code/
-│   └── R/                    # R scripts (numbered 00-13)
+│   └── R/                    # R scripts (numbered 00-23 plus orchestrators)
 ├── data/
 │   ├── harmonized/           # Analysis-ready CSVs from data-processing repo (~1 MB, tracked in git)
 │   ├── cache/                # Bootstrap and intermediate results (.rds)
@@ -110,8 +110,8 @@ Raw data processing (scripts 03-07) lives in a separate repo:
 
 ~/Donham-Stier-CA-MPA-2026/          (this repo — analysis)
   data/harmonized/ (4 CSVs, tracked in git)
-    → scripts 08-13
-    → figures, tables, meta-analysis
+    → scripts 08-13 plus in-pipeline resilience modules 14/15/16/19/21/22/23
+    → figures, tables, meta-analysis, resilience checks
 ```
 
 ## Manuscript Figure Mapping
@@ -226,7 +226,7 @@ Additional outputs (not numbered as manuscript tables):
 | `tables/table_data_provenance_raw.csv` | Raw data provenance (observations per source/taxon) | data-processing repo (07) |
 | `tables/table_sample_sizes_per_taxa.csv` | Sample size breakdown per taxa (input counts) | 08_effect_sizes.R |
 | `tables/table_model_selection.csv` | NLS model type selection per MPA/taxa | 08_effect_sizes.R |
-| `data/sumstats_final.csv` | Full SumStats.Final export (all 146 effect sizes) | 08_effect_sizes.R |
+| `data/sumstats_final.csv` | Full SumStats.Final export (142 effect sizes in the latest run) | 08_effect_sizes.R |
 | `outputs/table_cascade_analysis.csv` | Cascade meta-regression results | 11_figures.R |
 | `outputs/model_results_summary.csv` | Meta-analysis results in machine-readable format | 12_results_summary.R |
 | `outputs/replicate_effects.csv` | All MPA-taxa-response replicate effect sizes | 12_results_summary.R |
@@ -308,13 +308,13 @@ Pipeline order:
 13_additional_analyses.R - Moderator analyses (SI Fig S6, moderator tables)
 14_heatwave_analysis.R   - MPA cascade x 2014-16 marine heatwave (Southern CA; Kumagai 2024 comparison)
 15_methods_comparison.R  - Analytical multiverse: how method of analysis drives effect-size variation vs Kumagai (SI supplement)
-16_environmental_moderators.R - Env covariates (Kumagai PCA: MHW/cold-spell/latitude/MPA size) as meta-regression moderators (SI)
+16_environmental_moderators.R - Env covariates (full Kumagai PCA set plus wave/nitrate/gravity) as meta-regression moderators (SI)
 17_eisaguirre_reproduction.R - Reproduce Eisaguirre 2020 (paired NCI cascade) from raw PISCO (SI; standalone)
 18_mpa_effectiveness_predictors.R - Predict among-MPA variation in effectiveness (env+design+trophic; LOO-CV) (SI; standalone)
 19_heatwave_replication.R - Does MPA resilience repeat across TWO marine heatwaves (2014-16 & 2018-20)? (SI)
 20_compound_disturbance.R - SSWD test: was the cascade response driven by sunflower-star loss? (patchy in SoCal; answer = no) (SI; standalone)
 21_resilience_stability.R - Temporal stability facet: does protection reduce year-to-year variability (CV)? (SI)
-22_resistance_recovery.R  - Resistance/recovery on the state variable (kelp grew inside, declined outside) (SI)
+22_resistance_recovery.R  - Resistance/recovery on the state variable (accepted main-text kelp figure plus SI checks)
 23_ecological_memory.R    - Do the same reserves respond in both heatwaves? (consistency) (SI)
 resilience_modules.R      - Single source of truth for resilience-module membership (RESILIENCE_MODULES_IN_PIPELINE / _FULL_SUITE), sourced by both run_all.R and run_resilience.R
 run_resilience.R          - Runs the full resilience suite (14,19,20,22,23,21,15,16,18,17); see docs/RESILIENCE_SYNTHESIS.md
@@ -460,7 +460,7 @@ source(here::here("code", "R", "run_all.R"))
 
 ### Option 1: Symlink MPA shapefiles from Google Drive (for Fig 1 map)
 
-Only `data/MPA/` is needed from raw data (for the map figure). Other raw data directories are no longer needed.
+Only `data/MPA/` is needed from raw data (for the map figure); in this checkout it is a symlink to the Google Drive MPA shapefiles. Other raw monitoring-data directories are no longer needed for `run_all.R`.
 
 ```bash
 GDRIVE="/Users/$(whoami)/Library/CloudStorage/GoogleDrive-astier@ucsb.edu/My Drive/Stier Lab/People/Emily Donham/Projects/Kelp MPA/data"
@@ -556,7 +556,7 @@ Goals of the comparison: (1) confirm our PISCO numbers match theirs at shared si
 
 **Environmental-covariate gap (DONE — full Kumagai PCA set):** `16_environmental_moderators.R` tests EVERY environmental predictor Kumagai mapped in their PCA but never modeled — MHW & cold-spell intensity, latitude, MPA size, **wave exposure**, **nitrate/nutrients**, and **human gravity** — as meta-regression moderators of our per-MPA effect sizes (Knapp-Hartung). Clean null: 35 tests (7 moderators × 5 taxa), 3 nominal p<0.05, **none survive FDR**; giant-kelp resilience is not modulated by any gradient; omitting these covariates does not appear to bias the headline conclusions. ENV DATA (island-inclusive): per-MPA HSMAX (wave), nitrate, temperature, npp, depth from **Bell (2023), EDI knb-lter-sbc.162** (per-pixel NetCDF behind Kumagai's hsmax & Wanner et al. 2024's island analysis; CDIP MOP v1.1 waves, SST-derived nitrate); plus **human gravity** (Cinner et al. 2018-style population-pressure index) from Kumagai's per-kelp-patch grid. All extracted by `code/R/extract_kelp_env_covariates.R` → `data/per_mpa_kelp_env.csv` (ALL 34 MPAs incl. islands; raw NetCDF + provenance in `~/sbc-kelp-env/`). Gradients sensible: wave 0.65 m (Catalina lee) → 4.9 m (San Miguel Is.); nitrate 0.39 µM (warm San Diego) → 3.0 µM (cold upwelling); gravity 0 (remote NW islands) → 22,000 (Campus Pt / urban mainland). Nitrate collinear with temperature/MHW (SST-derived). The mainland-only sbc.144 product is superseded. The full Kumagai PCA covariate set is now obtained and tested. See the "Environmental-moderator supplement" note above.
 
-**RESILIENCE ANALYSIS SUITE — read `docs/RESILIENCE_SYNTHESIS.md` first.** Scripts 14-23 form an integrated resilience module (run with `code/R/run_resilience.R`; harmonized-only 14/19/21/22/23 also in run_all). Facets: core response (14), repeatability across two heatwaves (19), resistance/recovery on the state variable (22), ecological memory/reserve-consistency (23), generality across stressor types / SSWD (20), temporal stability (21), robustness & attribution via multiverse (15), environmental moderators (16), predictability of effectiveness (18), cross-study reproduction of Eisaguirre (17). THEME: robust + repeatable giant-kelp resilience to heatwaves (kelp grows inside / declines outside; method-invariant; not modulated by env gradients; not driven by SSWD; same reserves repeat); fragile/unresolved urchin-mediation, predator diversity, and among-reserve PREDICTION (consistent but unexplained). The notes below detail each.
+**RESILIENCE ANALYSIS SUITE — read `docs/RESILIENCE_SYNTHESIS.md` first.** Scripts 14-23 form an integrated resilience module (run with `code/R/run_resilience.R`; 14/15/16/19/21/22/23 also run inside `run_all.R`; 17/18/20 are full-suite external-input modules). Facets: core response (14), repeatability across two heatwaves (19), resistance/recovery on the state variable (22), ecological memory/reserve-consistency (23), generality across stressor types / SSWD (20), temporal stability (21), robustness & attribution via multiverse (15), environmental moderators (16), predictability of effectiveness (18), cross-study reproduction of Eisaguirre (17). THEME: robust + repeatable giant-kelp resilience to heatwaves (kelp grows inside / declines outside; method-invariant; not modulated by env gradients; not driven by SSWD; same reserves repeat); fragile/unresolved urchin-mediation, predator diversity, and among-reserve PREDICTION (consistent but unexplained). The notes below detail each.
 
 **Resistance & recovery (done):** `22_resistance_recovery.R` decomposes resilience on the STATE variable (abundance ratio to a 2010-13 baseline), inside vs outside, paired Wilcoxon — the Kumagai-comparable framing that the lnRR ratio hides. KEY: **giant kelp grew inside reserves during the MHW (resistance 2.18× baseline) while it declined outside (0.94×, p=0.010); recovered to 2.38× inside vs 0.83× outside (p=0.014); and by 2020-23 held 2.10× inside vs 0.64× outside (p=0.014)** — significant resistance AND recovery, with incomplete outside recovery (degradation). Recent urchin suppression inside (purple 0.11× vs 0.53×, p=0.02; red 0.16× vs 0.40×, p=0.014). This is the most communicable resilience result and stronger than the lnRR analyses because it captures the outside decline. Table `table_resistance_recovery.csv`; fig `fig_resistance_recovery`. **Headline robustness** (`table_resistance_recovery_sensitivity.csv`, same script): the kelp result holds across 6 baseline windows (2008-2013 through 2013; paired Wilcoxon all p≤0.047), across test choice (Wilcoxon/t/sign) with inside/outside ratio 4.2x/5.2x/4.9x (95% CIs 1.3-13.0 / 1.3-20.0 / 1.5-16.0, all excluding 1), and leave-one-reserve-out (worst-case p≤0.027, ratio never <2.9x, direction never flips). Sole caveat: the 2020-23 window is carried by magnitude, not a unanimous count (8/10 reserves; sign test p=0.11) — report it as magnitude. SI paragraph in `docs/kelp_resilience_figure_text.md`.
 

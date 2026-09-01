@@ -3,8 +3,8 @@
 # =============================================================================
 #
 # PURPOSE:
-#   Shared utility functions and constants used across all analysis scripts
-#   (08-13) in the MPA kelp forest pipeline.
+#   Shared utility functions and constants used across the MPA kelp forest
+#   analysis pipeline, including core pBACIPS scripts and resilience modules.
 #
 # CONTENTS:
 #   Section 4: EXCLUDED_MPAS, EXCLUDED_KFM_SITES, SHEEPHEAD_ONLY_MPAS
