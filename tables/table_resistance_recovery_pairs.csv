@@ -1,0 +1,31 @@
+"reserve","metric","period","inside","outside","inside_gt_reference"
+"Abalone Cove SMCA","resistance","2014-2016",1.82,1.005,TRUE
+"Anacapa Island SMR 2003","resistance","2014-2016",1.566,2.542,FALSE
+"Campus Point SMCA","resistance","2014-2016",1.785,1.201,TRUE
+"Gull Island SMR","resistance","2014-2016",2.538,0.329,TRUE
+"Harris Point SMR","resistance","2014-2016",2.732,0.713,TRUE
+"Naples SMCA","resistance","2014-2016",5.413,1.386,TRUE
+"Point Vicente SMCA","resistance","2014-2016",0.912,0.879,TRUE
+"Santa Barbara Island SMR","resistance","2014-2016",238.652,2.158,TRUE
+"Scorpion SMR","resistance","2014-2016",2.971,0.095,TRUE
+"South Point SMR","resistance","2014-2016",1.533,0.668,TRUE
+"Abalone Cove SMCA","recovery","2017-2019",1.97,0.604,TRUE
+"Anacapa Island SMR 2003","recovery","2017-2019",3.588,6.99,FALSE
+"Campus Point SMCA","recovery","2017-2019",1.928,1.32,TRUE
+"Gull Island SMR","recovery","2017-2019",2.784,0.097,TRUE
+"Matlahuayl SMR","recovery","2017-2019",1.048,0.718,TRUE
+"Naples SMCA","recovery","2017-2019",4.537,1.208,TRUE
+"Point Vicente SMCA","recovery","2017-2019",1.089,0.949,TRUE
+"Santa Barbara Island SMR","recovery","2017-2019",393.254,22.904,TRUE
+"Scorpion SMR","recovery","2017-2019",13.835,0.044,TRUE
+"South Point SMR","recovery","2017-2019",1.012,0.18,TRUE
+"Abalone Cove SMCA","recovery_recent","2020-2023",1.081,0.896,TRUE
+"Anacapa Island SMR 2003","recovery_recent","2020-2023",4.116,7.661,FALSE
+"Campus Point SMCA","recovery_recent","2020-2023",1.923,0.617,TRUE
+"Gull Island SMR","recovery_recent","2020-2023",2.527,0.241,TRUE
+"Matlahuayl SMR","recovery_recent","2020-2023",0.648,0.036,TRUE
+"Naples SMCA","recovery_recent","2020-2023",2.282,0.655,TRUE
+"Point Vicente SMCA","recovery_recent","2020-2023",0.724,0.843,FALSE
+"Santa Barbara Island SMR","recovery_recent","2020-2023",504.221,5.179,TRUE
+"Scorpion SMR","recovery_recent","2020-2023",4.609,0.18,TRUE
+"South Point SMR","recovery_recent","2020-2023",0.781,0.268,TRUE

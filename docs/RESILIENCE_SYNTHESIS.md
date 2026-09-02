@@ -6,11 +6,14 @@
 > "we also checked X" robustness one-liners for the Discussion. **Everything else in
 > scripts 14–23 is internal / SI-supporting robustness — not a numbered manuscript
 > figure unless later promoted.** The paste-ready paragraph/caption + SI robustness
-> text are in `docs/kelp_resilience_figure_text.md`. This doc below is the full internal map.
+> text are in `docs/kelp_resilience_figure_text.md`. The claim-to-output audit trail is
+> `docs/RESILIENCE_PIPELINE_INTEGRATION.md`; `code/R/24_resilience_pipeline_check.R`
+> fails the main pipeline if the manuscript/SI resilience values drift.
 
 *Integrating the resilience analyses for Donham & Stier. Each section links to the
-script that produces it and its standalone doc. Run the whole suite with
-`source(here::here("code","R","run_resilience.R"))`.*
+script that produces it and its standalone doc. The main pipeline runs
+`14/15/16/19/21/22/23`, then `24_resilience_pipeline_check.R`. Run the broader
+standalone suite with `source(here::here("code","R","run_resilience.R"))`.*
 
 ---
 
@@ -115,9 +118,12 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
 
 ## Outputs and reproducibility
 
-Run `code/R/run_resilience.R` for the whole suite. Harmonized-data scripts (14, 19,
-21) also run inside `run_all.R`; scripts that read the Kumagai mirror (15, 16, 18) or
-raw PISCO (17, 20) skip gracefully if that external data is absent. Per-analysis docs:
+Run `code/R/run_all.R` for the manuscript pipeline. It sources
+`14/15/16/19/21/22/23` through `resilience_modules.R`, then runs
+`24_resilience_pipeline_check.R` to confirm that the Figure 5 values, pair-count
+claims, and SI-supporting resilience outputs still match the manuscript. Run
+`code/R/run_resilience.R` for the broader standalone suite; it also tries
+`17/18/20` when raw PISCO or comparison inputs are available. Per-analysis docs:
 `heatwave_section_draft.md`, `heatwave_replication.md`, `compound_disturbance.md`,
 `methods_comparison_supplement.md`, `eisaguirre_reproduction.md`,
 `mpa_effectiveness_predictors.md`; tables in `tables/`, figures in `plots/`.

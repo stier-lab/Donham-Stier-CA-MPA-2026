@@ -8,14 +8,15 @@
 #   the list, so adding/removing a resilience analysis is a one-line edit here.
 #
 #   - run_all.R sources RESILIENCE_MODULES_IN_PIPELINE (the subset that is part of
-#     the main pBACIPS pipeline; external-data scripts skip gracefully if their
-#     inputs are absent).
+#     the main pBACIPS pipeline), then runs 24_resilience_pipeline_check.R as the
+#     manuscript/SI concordance gate.
 #   - run_resilience.R sources RESILIENCE_MODULES_FULL_SUITE (all ten, grouped by
 #     resilience facet; see docs/RESILIENCE_SYNTHESIS.md).
 #
 #   Data needs (documented in run_resilience.R): 14/19/21/22/23 use only the
-#   tracked harmonized CSVs; 15/16/18 also read data/sumstats_final.csv + the
-#   Kumagai mirror; 17/20 read raw PISCO from the sibling data repo.
+#   tracked harmonized CSVs; 15/16 run in the main pipeline but add comparison
+#   detail when the local Kumagai mirror is present; 17/18/20 read raw PISCO or
+#   other external comparison inputs and remain full-suite-only.
 #
 # AUTHORS: Emily Donham & Adrian Stier
 # =============================================================================

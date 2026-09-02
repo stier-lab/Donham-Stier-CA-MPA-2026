@@ -30,11 +30,14 @@
 #'     17_eisaguirre_reproduction.R  - rebuild Eisaguirre 2020 from raw PISCO
 #'
 #'   Synthesis of all of the above: docs/RESILIENCE_SYNTHESIS.md
+#'   Pipeline concordance gate: 24_resilience_pipeline_check.R
 #'
 #' DATA NEEDS
-#'   14, 19, 21 use only the tracked harmonized CSVs (always run; also in run_all.R).
-#'   16, 18 additionally read data/sumstats_final.csv (tracked) and the Kumagai
-#'     mirror (~/kumagai2024-comparison) for cold-spell/cross-substrate parts.
+#'   14, 19, 21, 22, 23 use only the tracked harmonized CSVs (always run; also in run_all.R).
+#'   15, 16 additionally read data/sumstats_final.csv (tracked) and the Kumagai
+#'     mirror (~/kumagai2024-comparison) for cross-substrate/cold-spell parts.
+#'     The paper-grade concordance gate expects those comparison inputs.
+#'   18 also reads data/sumstats_final.csv and comparison covariates.
 #'   17, 20 read raw PISCO from the sibling data repo (~/Donham-Stier-CA-MPA-Data-2026).
 #'   Scripts skip gracefully (with a message) if their external inputs are absent.
 #'
@@ -55,6 +58,8 @@ for (m in modules) {
                  error = function(e) { cat("  ****", m, "FAILED:", conditionMessage(e), "\n"); FALSE })
   if (ok) cat("   ", m, "done (", round(difftime(Sys.time(), t0, units = "secs"), 1), "s)\n\n")
 }
+cat("---- Running 24_resilience_pipeline_check.R ----\n")
+source(here::here("code", "R", "24_resilience_pipeline_check.R"), local = new.env())
 cat("==============================================================\n")
 cat("  Resilience suite complete. See docs/RESILIENCE_SYNTHESIS.md\n")
 cat("==============================================================\n")

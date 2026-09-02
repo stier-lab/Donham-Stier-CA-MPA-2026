@@ -24,6 +24,8 @@
 #   table_resistance_recovery.csv   - per taxon: resistance/recovery inside vs outside, paired p
 #   table_resistance_recovery_sensitivity.csv - giant-kelp headline robustness:
 #                                     baseline-window + test-choice (+95% CI) + leave-one-reserve-out
+#   table_resistance_recovery_pairs.csv - paired giant-kelp period ratios by reserve
+#   table_resistance_recovery_pair_counts.csv - counts supporting "9/10 during, 8/10 after" text
 #   fig_resistance_recovery.{pdf,png} - abundance trajectories inside vs outside (kelp + urchins)
 #
 # AUTHORS: Emily Donham & Adrian Stier
@@ -163,12 +165,34 @@ ggsave(here::here("plots", "fig_kelp_resilience.png"), p_kelp, width = 80, heigh
 kb <- d[taxon_name == "Macrocystis pyrifera" & resp == "Bio", .(value = mean(value)),
         by = .(CA_MPA_Name_Short, status, year)]
 agb <- kb[, .(base = window_mean(value, year, BASE), dur = window_mean(value, year, DUR),
-              rec = window_mean(value, year, REC)),
+              aft = window_mean(value, year, AFT), rec = window_mean(value, year, REC)),
           by = .(CA_MPA_Name_Short, status)][is.finite(base) & base > 0]
-wb <- dcast(agb, CA_MPA_Name_Short ~ status, value.var = c("base", "dur", "rec"))
+wb <- dcast(agb, CA_MPA_Name_Short ~ status, value.var = c("base", "dur", "aft", "rec"))
 wb <- wb[is.finite(base_mpa) & is.finite(base_reference)]
 wb[, `:=`(Res_in = dur_mpa / base_mpa, Res_out = dur_reference / base_reference,
+          Early_in = aft_mpa / base_mpa, Early_out = aft_reference / base_reference,
           Rec_in = rec_mpa / base_mpa, Rec_out = rec_reference / base_reference)]
+pair_tab <- rbind(
+  wb[, .(reserve = CA_MPA_Name_Short, metric = "resistance",
+         period = "2014-2016", inside = Res_in, outside = Res_out)],
+  wb[, .(reserve = CA_MPA_Name_Short, metric = "recovery",
+         period = "2017-2019", inside = Early_in, outside = Early_out)],
+  wb[, .(reserve = CA_MPA_Name_Short, metric = "recovery_recent",
+         period = "2020-2023", inside = Rec_in, outside = Rec_out)]
+)
+pair_tab <- pair_tab[is.finite(inside) & is.finite(outside) & inside > 0 & outside > 0]
+pair_tab[, inside_gt_reference := inside > outside]
+pair_out <- as.data.frame(pair_tab)
+pair_out$inside <- round(pair_out$inside, 3)
+pair_out$outside <- round(pair_out$outside, 3)
+write.csv(pair_out, here::here("tables", "table_resistance_recovery_pairs.csv"), row.names = FALSE)
+pair_count_tab <- pair_tab[, .(
+  n_mpa = .N,
+  n_inside_gt_reference = sum(inside_gt_reference),
+  pct_inside_gt_reference = round(100 * mean(inside_gt_reference))
+), by = .(metric, period)]
+write.csv(as.data.frame(pair_count_tab),
+          here::here("tables", "table_resistance_recovery_pair_counts.csv"), row.names = FALSE)
 ordb <- wb[order(Res_in), CA_MPA_Name_Short]
 segb <- rbind(wb[, .(reserve = CA_MPA_Name_Short, metric = "Resistance (during)", out = Res_out, ins = Res_in)],
               wb[, .(reserve = CA_MPA_Name_Short, metric = "Recovery (2020-23)", out = Rec_out, ins = Rec_in)])

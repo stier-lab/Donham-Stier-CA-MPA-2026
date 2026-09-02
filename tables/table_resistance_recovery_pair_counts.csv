@@ -1,0 +1,4 @@
+"metric","period","n_mpa","n_inside_gt_reference","pct_inside_gt_reference"
+"resistance","2014-2016",10,9,90
+"recovery","2017-2019",10,9,90
+"recovery_recent","2020-2023",10,8,80

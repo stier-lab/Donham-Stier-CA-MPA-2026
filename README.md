@@ -9,11 +9,12 @@
 
 > **For co-authors — the short version.** You don't need to run anything to write the
 > paper. Figures are in `plots/`, tables in `tables/`, and plain-language results
-> summaries in `docs/` (start with `docs/RESULTS_SUMMARY.md`). The core paper analyses
-> are scripts `08`–`13`. The resilience / marine-heatwave analyses (`14`–`23`) are
-> newer and **optional** — supporting material we can draw on for the discussion or
-> supplement, not required for the main result; a plain tour is in
-> `docs/RESILIENCE_SYNTHESIS.md`. The `CLAUDE.md` file in the root is a technical config
+> summaries in `docs/` (start with `docs/RESULTS_SUMMARY.md`). The main paper analyses
+> are scripts `08`–`13` plus the in-pipeline resilience modules `14/15/16/19/21/22/23`;
+> Figure 5 comes from script `22`. Script `24` checks that the resilience tables,
+> figures, and headline values still match the manuscript and supplement. A plain tour
+> is in `docs/RESILIENCE_SYNTHESIS.md`, and the audit trail is in
+> `docs/RESILIENCE_PIPELINE_INTEGRATION.md`. The `CLAUDE.md` file in the root is a technical config
 > for an AI coding assistant — you can ignore it. Questions on any of it — just ask Adrian.
 
 ---
@@ -63,6 +64,7 @@ Donham-Stier-CA-MPA-2026/
 │       ├── 13_additional_analyses.R  # Moderator analyses (SI Fig S6)
 │       ├── 14-23_*.R                 # Resilience / heatwave robustness suite
 │       ├── resilience_modules.R      # Shared 14-23 module membership
+│       ├── 24_resilience_pipeline_check.R # Paper/SI resilience concordance gate
 │       ├── run_all.R                 # Pipeline orchestration
 │       ├── run_resilience.R          # Full resilience suite
 │       └── run_figures_only.R        # Fast figure regeneration (~17s)
@@ -134,7 +136,7 @@ source(here::here("code", "R", "run_all.R"))
 source(here::here("code", "R", "run_figures_only.R"))
 ```
 
-No raw monitoring data setup is required for the main pipeline. The full resilience suite can also use the sibling raw-data repo and the local Kumagai mirror when they are available.
+No raw monitoring data setup is required for the main pipeline. The paper-grade resilience concordance check expects the local Kumagai mirror at `~/kumagai2024-comparison` so scripts `15` and `16` can regenerate the method-vs-data comparison and cold-spell moderator rows used in the manuscript/SI audit trail. The full resilience suite can also use the sibling raw-data repo for the standalone Eisaguirre and SSWD modules.
 
 ---
 
@@ -147,7 +149,7 @@ No raw monitoring data setup is required for the main pipeline. The full resilie
 source(here::here("code", "R", "run_all.R"))
 ```
 
-The pipeline loads harmonized CSVs, calculates effect sizes, runs meta-analysis, generates figures, runs the in-pipeline resilience subset, and produces results summaries. Progress is logged to the console and a timestamped file in `logs/`.
+The pipeline loads harmonized CSVs, calculates effect sizes, runs meta-analysis, generates figures, runs the in-pipeline resilience subset, checks resilience concordance against the manuscript/SI claims, and produces results summaries. Progress is logged to the console and a timestamped file in `logs/`.
 
 ### Individual Scripts
 
@@ -210,6 +212,11 @@ source(here::here("code", "R", "run_figures_only.R"))
   └───────────────┬─────────────────┘
                   ▼
   ┌─────────────────────────────────┐
+  │ 24_resilience_pipeline_check.R  │
+  │ Figure 5 + SI concordance gate  │
+  └───────────────┬─────────────────┘
+                  ▼
+  ┌─────────────────────────────────┐
   │ 12_results_summary.R            │
   │ Auto-generate results CSVs      │
   └─────────────────────────────────┘
@@ -253,7 +260,7 @@ Note: SI renumbered figures but disk filenames retain original numbering.
 
 ### Resilience / Robustness Figures
 
-The resilience suite produces additional candidate SI and internal robustness figures: `fig_heatwave_cascade`, `fig_heatwave_cascade_regression`, `fig_heatwave_replication`, `fig_resistance_recovery`, `fig_kelp_resilience_paired`, `fig_ecological_memory`, `fig_resilience_stability`, `fig_compound_disturbance`, `fig_s_methods_multiverse`, `fig_s_env_moderators`, `fig_s_effectiveness_predictors`, and the Eisaguirre reproduction panels. See `docs/RESILIENCE_SYNTHESIS.md` for their manuscript status.
+The in-pipeline resilience suite also produces SI and internal robustness figures: `fig_heatwave_cascade`, `fig_heatwave_cascade_regression`, `fig_heatwave_replication`, `fig_resistance_recovery`, `fig_kelp_resilience_paired`, `fig_ecological_memory`, `fig_resilience_stability`, `fig_s_methods_multiverse`, and `fig_s_env_moderators`. The full standalone suite can additionally produce `fig_compound_disturbance`, `fig_s_effectiveness_predictors`, and the Eisaguirre reproduction panels when external raw-data/comparison inputs are available. See `docs/RESILIENCE_SYNTHESIS.md` for manuscript status.
 
 ### Tables
 
@@ -272,6 +279,18 @@ The resilience suite produces additional candidate SI and internal robustness fi
 | **Table S7** | Temporal diagnostics: GAM linearity + AR1 | `tables/table_s_gam_linearity_diagnostics.csv` |
 | **Table S8** | Kelp leave-one-out sensitivity | `tables/table_s_kelp_leave1out.csv` |
 | **Table S9** | Outlier sensitivity (4 methods) | `tables/table_s_outlier_sensitivity.csv` |
+
+Resilience outputs checked by `code/R/24_resilience_pipeline_check.R`:
+
+| Output | Description | Script |
+|--------|-------------|--------|
+| `tables/table_resistance_recovery.csv` | Main Figure 5 resistance/recovery values for kelp and cascade taxa | 22 |
+| `tables/table_resistance_recovery_pairs.csv` + `tables/table_resistance_recovery_pair_counts.csv` | Pair-level support for the 9/10 and 8/10 reserve-count statements | 22 |
+| `tables/table_resistance_recovery_sensitivity.csv` | Baseline-window, paired-test, CI, and leave-one-reserve-out checks for the kelp headline | 22 |
+| `tables/table_heatwave_replication.csv` | Two-heatwave repeatability support | 19 |
+| `tables/table_s_methods_multiverse.csv` + `tables/table_s_methods_decomposition.csv` | Kumagai-style-to-ours method bridge and data-effect support | 15 |
+| `tables/table_s_env_moderators.csv` | Tests of environmental covariates mapped by Kumagai et al. | 16 |
+| `tables/table_resilience_stability.csv` + `tables/table_ecological_memory.csv` | Stability and reserve-level memory support | 21, 23 |
 
 ---
 
@@ -326,6 +345,8 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 - **`docs/ANALYSIS_REVISIONS.md`** - Comprehensive comparison of V5 archived code vs current pipeline
 - **`docs/MPA_Kelp_MS_V5.pdf`** - Archived V5 manuscript draft; active manuscript construction now lives outside this analysis repo
 - **`docs/RESULTS_SUMMARY.md`** - Auto-generated results summary with all meta-analysis values
+- **`docs/RESILIENCE_SYNTHESIS.md`** - Plain-language synthesis of scripts 14-23
+- **`docs/RESILIENCE_PIPELINE_INTEGRATION.md`** - Paper/SI resilience claim-to-output audit trail
 - **`docs/results_report.html`** - Ignored local HTML report; regenerate from `code/R/results_report.Rmd` when needed
 - **`docs/supporting_information.Rmd`** - Supporting Information source (R Markdown)
 - **`docs/supporting_information.html`** - Rendered Supporting Information
@@ -334,16 +355,20 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 
 ### Resilience analysis suite
 
-Scripts 14–23 form an integrated **resilience module** (run with
-`code/R/run_resilience.R`; synthesis in **`docs/RESILIENCE_SYNTHESIS.md`**). It tests
-resilience across facets: core heatwave response (14), repeatability across two
-heatwaves (19), resistance/recovery on the state variable (22), ecological
-memory/reserve-consistency (23), generality across stressor types / sea-star wasting
-(20), temporal stability (21), method-vs-data robustness (15), environmental
-moderators (16), predictability of effectiveness (18), and cross-study reproduction
-of Eisaguirre 2020 (17). **Theme:** robust, repeatable giant-kelp resilience to marine
-heatwaves — kelp *grows* inside reserves while it declines outside (resistance 2.18×
-vs 0.94×, recovery to 2.38× vs 0.83×), the *same* reserves respond in both heatwaves,
+Scripts 14–23 form an integrated **resilience module**. The main pipeline runs
+`14/15/16/19/21/22/23`, then `24_resilience_pipeline_check.R` verifies that the
+generated tables and figures still match the manuscript and Supporting Information.
+Run `code/R/run_resilience.R` for the broader standalone suite; it adds the external
+input modules `17/18/20` when the raw PISCO or comparison inputs are available.
+
+The suite tests resilience across facets: core heatwave response (14), repeatability
+across two heatwaves (19), resistance/recovery on the state variable (22), ecological
+memory/reserve-consistency (23), temporal stability (21), method-vs-data robustness
+(15), environmental moderators (16), generality across stressor types / sea-star
+wasting (20), predictability of effectiveness (18), and cross-study reproduction of
+Eisaguirre 2020 (17). **Theme:** robust, repeatable giant-kelp resilience to marine
+heatwaves — kelp *grows* inside reserves while it declines outside (resistance 2.18x
+vs 0.94x, recovery to 2.38x vs 0.83x), the *same* reserves respond in both heatwaves,
 and the result is method-invariant, not modulated by environmental gradients, and not
 driven by sea-star wasting. The less-resolved questions are consistent across the suite:
 the urchin-mediated mechanism, predator diversity, and *predicting which reserves are
@@ -353,7 +378,7 @@ have), and protection does not clearly reduce year-to-year variability (the resi
 shows up in the mean state, not the variance). These are honest limitations to note,
 not problems with the core result.
 
-### Related work (compare & contrast — in progress)
+### Related work (compare & contrast)
 
 We are comparing this analysis against **Kumagai et al. 2024** (*Global Change Biology*, [doi:10.1111/gcb.17620](https://doi.org/10.1111/gcb.17620)) — *"Marine Protected Areas That Preserve Trophic Cascades Promote Resilience of Kelp Forests to Marine Heatwaves."* It is a parallel study on an overlapping system/dataset (same PISCO/MLPA subtidal + T. Bell SBC LTER Landsat) with a convergent conclusion. We are using it to (1) cross-check our PISCO numbers, (2) contrast their GLMM/permutation, heatwave-resilience approach with our pBACIPS + meta-analysis, and (3) scope our own marine-heatwave (MHW) analysis. Their code + data are mirrored locally (GitHub clone + Zenodo CC-BY-4.0 snapshot); see `CLAUDE.md` → "Related Work / External Comparison" for details.
 

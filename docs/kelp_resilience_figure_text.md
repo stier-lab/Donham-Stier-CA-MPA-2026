@@ -61,7 +61,10 @@ heatwaves — evidence the resilience is not a one-off.)*
 
 *Source: `table_resistance_recovery_sensitivity.csv` (giant kelp, `22_resistance_recovery.R`).
 Reports the inside/outside geometric-mean ratio with 95% CI, three paired tests, and
-leave-one-reserve-out, across six pre-heatwave baseline windows.*
+leave-one-reserve-out, across six pre-heatwave baseline windows. Pair-level reserve
+counts used in the Results sentence are exported by the same script to
+`table_resistance_recovery_pairs.csv` and `table_resistance_recovery_pair_counts.csv`;
+`24_resilience_pipeline_check.R` checks both the values and the counts.*
 
 The MPA advantage in giant kelp was robust to the choices underlying the paired test.
 Across six pre-heatwave baseline windows (2008–2013 through 2013 alone), giant kelp was

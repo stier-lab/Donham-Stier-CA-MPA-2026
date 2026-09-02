@@ -35,6 +35,7 @@
 #'       21_resilience_stability.R     - Temporal stability (CV) inside vs outside (SI)
 #'       22_resistance_recovery.R      - Resistance/recovery on the state variable (main-text kelp fig)
 #'       23_ecological_memory.R        - Do the same reserves respond in both heatwaves? (SI)
+#'       24_resilience_pipeline_check.R - Concordance gate for paper/SI resilience claims
 #'     (17/18/20 need raw PISCO / the Kumagai mirror; run via run_resilience.R only.)
 #'   12_results_summary.R   - Summary CSVs, RESULTS_SUMMARY.md, data flow audit
 #'
@@ -218,13 +219,14 @@ source_module("13_additional_analyses.R", "13")
 
 # --- RESILIENCE MODULE (scripts 14-23) -----------------------------------------------------------
 # Heatwave resilience + robustness suite. Module membership is defined once in
-# resilience_modules.R (shared with run_resilience.R). The in-pipeline subset runs here; the
-# full suite (adding 17/18/20, which need raw PISCO / the Kumagai mirror) runs via
-# run_resilience.R. External-data scripts skip gracefully when their inputs are absent.
+# resilience_modules.R (shared with run_resilience.R). The in-pipeline subset runs here;
+# scripts 15/16 use the local Kumagai mirror for the full comparator/cold-spell checks.
+# The full suite adds 17/18/20, which need raw PISCO or other external comparison inputs.
 source(here::here("code", "R", "resilience_modules.R"))
 for (resil_module in RESILIENCE_MODULES_IN_PIPELINE) {
   source_module(resil_module, sub("_.*", "", resil_module))
 }
+source_module("24_resilience_pipeline_check.R", "24")
 
 # --- 12: Results Summary --------------------------------------------------------------------------
 source_module("12_results_summary.R", "12")
