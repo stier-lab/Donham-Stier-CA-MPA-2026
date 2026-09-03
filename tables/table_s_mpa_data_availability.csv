@@ -1,6 +1,7 @@
 "MPA","Data_Sources","Taxa_Biomass","Taxa_Density","n_taxa_bio","n_taxa_den","n_effects_bio","n_effects_den","n_effects_total","type","Location","MPA_Start","Lat","Lon","year_min","year_max","n_years_total","n_years_before","n_years_after","n_obs_rr","n_reference_site_years"
 "Anacapa Island SMR 2003","KFM, PISCO","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,5,8,13,"SMR","C",2003,34.008,-119.3983,2004,2023,20,0,20,270,254
 "Blue Cavern Onshore SMCA","PISCO","S. pulcher","S. pulcher",1,1,1,1,2,"SMCA","C",2012,33.4466,-118.4764,2011,2023,8,2,6,16,16
+"Carrington Pt SMR","Landsat","M. pyrifera","",1,0,1,0,1,"SMR","C",2003,34.027,-120.0473,NA,NA,NA,NA,NA,NA,NA
 "Farnsworth Onshore SMCA","PISCO, Landsat","S. pulcher; M. pyrifera","S. pulcher",2,1,2,1,3,"SMCA","C",2012,33.3339,-118.473,2011,2023,6,2,4,12,12
 "Gull Island SMR","KFM, PISCO, Landsat","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,7,6,13,"SMR","C",2003,33.9562,-119.8234,1986,2023,38,18,20,450,414
 "Harris Point SMR","KFM, PISCO, Landsat","S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",4,4,6,6,12,"SMR","C",2003,34.053,-120.3424,1982,2023,42,22,20,470,427
@@ -17,4 +18,5 @@
 "Point Dume SMCA","Landsat","M. pyrifera","",1,0,1,0,1,"SMCA","ML",2012,34.0344,-118.872,NA,NA,NA,NA,NA,NA,NA
 "Point Dume SMR","Landsat","M. pyrifera","",1,0,1,0,1,"SMR","ML",2012,34.0079,-118.7917,NA,NA,NA,NA,NA,NA,NA
 "Point Vicente SMCA","PISCO, Landsat","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus; M. pyrifera","P. interruptus; S. pulcher; S. purpuratus; M. franciscanus",5,4,6,4,10,"SMCA","ML",2012,33.7403,-118.4087,2004,2023,18,7,11,151,151
+"South La Jolla SMR","Landsat","M. pyrifera","",1,0,1,0,1,"SMR","ML",2012,32.8121,-117.288,NA,NA,NA,NA,NA,NA,NA
 "Swamis SMCA","PISCO, Landsat","S. pulcher; M. pyrifera","S. pulcher",2,1,2,1,3,"SMCA","ML",2012,33.0212,-117.2936,2011,2023,7,2,5,14,14

@@ -29,7 +29,7 @@ Compared to V5: sheephead biomass, lobster density, and red urchin biomass **gai
 | Supplemental figures | ~6 | 15 (S1-S15) |
 | Main tables | 2 | 3 |
 | Supplemental tables | ~3 | 9 (S1-S9) |
-| Effect sizes (k) | ~144 | 142 |
+| Effect sizes (k) | ~144 | 144 |
 | MPAs analyzed | 19 | 23 |
 | Meta-analysis approach | Joint multi-taxa model | Joint multi-taxa model (same structure, improved random effects) |
 | Outlier detection | Joint Cook's D (flagged 62% of data) | No removal (primary); Cook's D as sensitivity (Figs S12-S15) |
@@ -421,7 +421,7 @@ Scripts run in numerical order. Here's what each one does and what it produces.
 | `01_utils.R` | Utility functions (effect size helpers, figure rendering, RR axis scales) | — |
 | `02_pBACIPS_function.R` | Core pBACIPS statistical methodology | — |
 | `03_load_harmonized_data.R` | Loads the 4 harmonized CSVs into R objects | `All.RR.sub.trans`, `All.Resp.sub`, `Landsat.RR`, `Site` |
-| `08_effect_sizes.R` | Fits NLS models per MPA/taxa, extracts effect sizes at t=11 | `SumStats.Final` (142 effect sizes), Table S1b, model diagnostics |
+| `08_effect_sizes.R` | Fits NLS models per MPA/taxa, extracts effect sizes at t=11 | `SumStats.Final` (144 effect sizes), Table S1b, model diagnostics |
 | `09_meta_analysis.R` | Joint multilevel meta-analysis, per-taxa sensitivity, cross-taxa regressions | **Table 2**, **Table 3**, Tables S2-S3, S8-S9, variance components |
 | `10_temporal_analysis.R` | lmer recovery models, GAMs, phase portraits, cascade consistency | SI Figs S3-S5, Tables S4-S5, S7, species slopes |
 | `11_figures.R` | Core main text figures + most SI figures | **Figs 1-4**, SI Figs S1-S2, S7a-e, S8-S12 |

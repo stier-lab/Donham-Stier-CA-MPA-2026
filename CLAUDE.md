@@ -226,7 +226,7 @@ Additional outputs (not numbered as manuscript tables):
 | `tables/table_data_provenance_raw.csv` | Raw data provenance (observations per source/taxon) | data-processing repo (07) |
 | `tables/table_sample_sizes_per_taxa.csv` | Sample size breakdown per taxa (input counts) | 08_effect_sizes.R |
 | `tables/table_model_selection.csv` | NLS model type selection per MPA/taxa | 08_effect_sizes.R |
-| `data/sumstats_final.csv` | Full SumStats.Final export (142 effect sizes in the latest run) | 08_effect_sizes.R |
+| `data/sumstats_final.csv` | Full SumStats.Final export (144 effect sizes in the latest run) | 08_effect_sizes.R |
 | `outputs/table_cascade_analysis.csv` | Cascade meta-regression results | 11_figures.R |
 | `outputs/model_results_summary.csv` | Meta-analysis results in machine-readable format | 12_results_summary.R |
 | `outputs/replicate_effects.csv` | All MPA-taxa-response replicate effect sizes | 12_results_summary.R |

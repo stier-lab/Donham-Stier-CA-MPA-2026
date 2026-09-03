@@ -62,14 +62,12 @@ EXCLUDED_REFERENCE_SITES <- c(
 EXCLUDED_MPAS <- c(
   # NOTE: names match the spelling in THIS repo's inputs, including the Landsat
   # product (e.g. "Carrington Pt SMR", "San Miguel Island SC", "Judith Rk SMR").
-  # The data-processing repo excludes the in-water spelling ("Carrington Point
-  # SMR"); both refer to the same excluded MPAs (verified excluded from final results).
-  "Carrington Pt SMR",
+  # Emily Donham confirmed on 2026-08-31 that the Landsat-only Carrington Pt SMR
+  # and South La Jolla SMR effect sizes should be included in the final set.
   "N/A",
   "Arrow Point to Lion Head Point SMCA",
   "Crystal Cove SMCA",
   "Laguna Beach SMR",
-  "South La Jolla SMR",
   "Vandenberg SMR",
   "Point Conception SMR",
   "Anacapa Island SMR 1978",

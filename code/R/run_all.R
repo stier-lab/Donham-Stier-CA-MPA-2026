@@ -21,7 +21,7 @@
 #'   02_pBACIPS_function.R  - The core pBACIPS method (step/linear/asymptotic/sigmoid)
 #'   03_load_harmonized_data.R - Load the 4 harmonized CSVs into R objects
 #'   08_effect_sizes.R      - Calculate effect sizes for each MPA x taxa x response
-#'                            -> produces SumStats.Final (142 effect sizes in the latest run)
+#'                            -> produces SumStats.Final (144 effect sizes in the latest run)
 #'   09_meta_analysis.R     - Multilevel meta-analysis: Table 2, Table 3, variance components
 #'   10_temporal_analysis.R - Recovery trajectories, phase portraits, cascade consistency
 #'   11_figures.R           - All main text (Figs 1-4) and most SI figures
@@ -42,7 +42,7 @@
 #' KEY OUTPUTS:
 #'   plots/          - All figures as PDF + PNG
 #'   tables/         - All manuscript tables as CSV
-#'   data/sumstats_final.csv - The 142 effect sizes used in meta-analysis
+#'   data/sumstats_final.csv - The 144 effect sizes used in meta-analysis
 #'   docs/RESULTS_SUMMARY.md - Auto-generated plain-English results summary
 
 ####################################################################################################
