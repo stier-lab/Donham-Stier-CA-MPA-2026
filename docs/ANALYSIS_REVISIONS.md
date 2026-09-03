@@ -299,9 +299,9 @@ We should hit these in the Discussion:
 | **5** | **Update figure/table refs** | V5 figure numbers are completely different. See mapping above. |
 | **6** | **Add Limitations paragraph** | Cover bio/den non-independence, cross-taxa attenuation, climate/stressor attribution, and red urchin heterogeneity. |
 | **7** | **Fill reference placeholders** | V5 has "REF", "REFS", "CITE" on pages 5, 6, 7, 12. |
-| **8** | **Check SI document** | Browse `docs/supporting_information.html`. Make sure figure/table refs match and update SI refs in the manuscript. |
+| **8** | **Check SI document** | Use the current Supporting Information source/render in the private manuscript repo (`../Donham-Stier-CA-MPA-MS-2026/supplement/`). Make sure figure/table refs match the analysis outputs here. |
 | **9** | **Upload Dryad data** | Upload `dryad_staging/donham_stier_mpa_kelp_data.zip`, then update the DOI placeholder in `code/R/00_download_data.R` and Data Availability. |
-| **10** | **Browse results report** | Open `docs/results_report.html`. Every pipeline output on one page. Good for sanity checking. |
+| **10** | **Browse optional results report** | Render `code/R/results_report.Rmd` to `docs/results_report.html` when needed. Generated HTML is ignored and not part of the public tracked tree. |
 
 ### Line-by-line revision guide
 
@@ -379,7 +379,7 @@ We should hit these in the Discussion:
 I split the analysis into two repos so the raw monitoring data (~1.3 GB) doesn't bog down the analysis code.
 
 - **[`Donham-Stier-CA-MPA-Data-2026`](https://github.com/stier-lab/Donham-Stier-CA-MPA-Data-2026)** — raw data processing (PISCO, KFM, LTER, Landsat). Takes the original monitoring files and produces 4 harmonized CSVs.
-- **[`Donham-Stier-CA-MPA-2026`](https://github.com/stier-lab/Donham-Stier-CA-MPA-2026)** (this repo) — loads those CSVs, runs the full meta-analysis, and produces every figure, table, and summary in the manuscript.
+- **[`sbc-2026-donham-kelp-mpa-cascade`](https://github.com/stier-lab/sbc-2026-donham-kelp-mpa-cascade)** (this repo) — loads those CSVs, runs the full meta-analysis, and produces every figure, table, and summary used by the manuscript.
 
 The harmonized CSVs (~1 MB) are tracked in git under `data/harmonized/`. You don't need the raw data to run anything in this repo.
 
@@ -435,7 +435,7 @@ Scripts run in numerical order. Here's what each one does and what it produces.
 
 ## 12. Supporting Information: V5 vs. Current
 
-The current pipeline produces a complete, auto-generated SI document (`docs/supporting_information.html`, source in `docs/supporting_information.Rmd`) with two main sections: Supplementary Methods (S1) and Supplementary Results (S2). Every table and figure is data-driven — the numbers, significance statements, and narrative text all pull directly from the pipeline output CSVs, so they stay in sync with the analysis automatically.
+The earlier analysis repo workflow produced an auto-generated SI HTML document. The current reviewer-facing Supporting Information source and Word/HTML renders live in the private manuscript repo (`../Donham-Stier-CA-MPA-MS-2026/supplement/`). This public analysis repo now supplies the data-driven tables, figures, diagnostics, and summaries that those SI files cite, while manuscript/SI prose and journal formatting stay out of the public code tree.
 
 ### What's new in the SI
 

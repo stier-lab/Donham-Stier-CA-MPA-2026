@@ -11,8 +11,8 @@ This project analyzes the effects of California Marine Protected Areas (MPAs) on
 **Target Journal:** Journal of Applied Ecology
 **Manuscript Title:** Restoration of trophic cascades within kelp forests following the establishment of a network of marine protected areas
 **Authors:** Emily Donham (lead) & Adrian Stier
-**Status:** Analysis pipeline complete; manuscript revision in progress (Emily leading rewrite)
-**Manuscript construction workspace:** `/Users/adrianstier/Donham-Stier-CA-MPA-MS-2026`
+**Status:** Analysis pipeline complete; manuscript revision in progress
+**Manuscript construction workspace:** sibling private repo `Donham-Stier-CA-MPA-MS-2026`
 
 Keep manuscript drafts, prose TODOs, journal checks, appendix construction, and
 writing-build machinery in the separate manuscript repo. This repository remains
@@ -89,7 +89,7 @@ Donham-Stier-CA-MPA-2026/
 │   ├── cache/                # Bootstrap and intermediate results (.rds)
 │   ├── MPA/                  # MPA boundary shapefiles (for Fig 1 map only)
 │   └── (PISCO/, MBON/, LTER/, LANDSAT/ no longer needed — raw data lives in data repo)
-├── docs/                     # Documentation and manuscript
+├── docs/                     # Public analysis documentation
 ├── tables/                   # Generated manuscript tables (CSV)
 ├── plots/                    # Generated figures (PDF + PNG at 600 DPI)
 ├── outputs/                  # Filter audits, data flow summaries, replicate effects
@@ -537,18 +537,16 @@ When adding new figures or outputs:
 
 ## Documentation
 
-- `docs/MPA_Kelp_MS_V5.pdf` - Archived original manuscript draft (reference for revision)
-- `docs/ANALYSIS_REVISIONS.md` - Comprehensive comparison of original archived code vs current pipeline (12 sections)
-- `docs/analysis_revisions.html` - Styled HTML rendering of ANALYSIS_REVISIONS.md (with sidebar TOC)
-- `docs/RESULTS_SUMMARY.md` - Auto-generated results summary from 12_results_summary.R
-- `docs/results_report.html` - Ignored local HTML report (generate by knitting `code/R/results_report.Rmd`)
-- `docs/supporting_information.Rmd` - Supporting Information R Markdown source
-- `docs/supporting_information.html` - Rendered Supporting Information HTML
-- `docs/si_style.css` - Supporting Information custom CSS
-- `docs/si_script.html` - Supporting Information JavaScript (lightbox, progress bar)
-- `docs/revisions_style.css` - Analysis revisions HTML styling
-- `docs/revisions_script.html` - Analysis revisions HTML JavaScript (scroll spy, progress bar)
-- This file (`CLAUDE.md`) - Project conventions for AI assistants
+- `docs/README.md` - Public documentation map and code-review notes.
+- `docs/ANALYSIS_REVISIONS.md` - Historical comparison of original archived code vs current pipeline.
+- `docs/RESULTS_SUMMARY.md` - Auto-generated results summary from `12_results_summary.R`.
+- `docs/RESILIENCE_SYNTHESIS.md` - Plain-language synthesis of the integrated resilience suite.
+- `docs/RESILIENCE_PIPELINE_INTEGRATION.md` - Figure 5 / SI resilience claim-to-output audit trail.
+- This file (`CLAUDE.md`) - Project conventions for AI assistants.
+
+Do not add Word manuscripts, generated manuscript/SI HTML, cover letters, or
+publisher PDF libraries to this public analysis repo. Those belong in the
+private manuscript repo.
 
 ## Related Work / External Comparison (in progress)
 
@@ -578,7 +576,9 @@ Goals of the comparison: (1) confirm our PISCO numbers match theirs at shared si
 
 - Their code + data: cloned to `~/kumagai2024-comparison/` (full GitHub clone + Zenodo CC-BY-4.0 snapshot). See `~/kumagai2024-comparison/PROVENANCE.md` for sources/integrity. Key file: `repo/Processed_data/MLPA_data_summarized_wo_siteblocks.csv` (their processed subtidal data) + `repo/Processed_data/SST/MHW_cummulative_intensity_1km.tif` (their MHW-intensity raster).
 - MHW definitions / SBC LTER temperature context: `~/sbc-oceanography/` (`R/31_marine_heatwaves.R`, OISST-based MHW figure, mooring/satellite/reanalysis temperature data).
-- Kumagai PDF: `literature/pdfs/Kumagai_2024_GCB.pdf` (single consolidated library; see `literature/LITERATURE.md`).
+- Kumagai and Ortiz-Villa source PDFs are maintained in the private manuscript
+  repo source library; this public repo keeps only `literature/LITERATURE.md` as
+  a citation-library pointer.
 
 ## Known Limitations & Methodological Notes
 

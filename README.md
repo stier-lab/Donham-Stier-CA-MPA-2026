@@ -23,6 +23,11 @@
 
 This repository contains the complete analysis pipeline for evaluating the effects of California's Marine Protected Area (MPA) network on kelp forest ecosystems. Using the **progressive-change Before-After-Control-Impact-Pairs (pBACIPS)** methodology, we quantify how MPA protection has influenced trophic cascades—from predator recovery through urchin suppression to kelp restoration.
 
+This is the public analysis/code repository. Current Word manuscripts, cover
+letters, Supporting Information construction, citation-audit working files, and
+publisher PDF source copies live in the private sibling manuscript repository,
+`Donham-Stier-CA-MPA-MS-2026`.
+
 ### Key Findings
 
 The analysis examines:
@@ -343,15 +348,14 @@ Effect sizes are synthesized using multilevel meta-analysis (`metafor::rma.mv`) 
 ## Documentation
 
 - **`docs/ANALYSIS_REVISIONS.md`** - Comprehensive comparison of V5 archived code vs current pipeline
-- **`docs/MPA_Kelp_MS_V5.pdf`** - Archived V5 manuscript draft; active manuscript construction now lives outside this analysis repo
 - **`docs/RESULTS_SUMMARY.md`** - Auto-generated results summary with all meta-analysis values
 - **`docs/RESILIENCE_SYNTHESIS.md`** - Plain-language synthesis of scripts 14-23
 - **`docs/RESILIENCE_PIPELINE_INTEGRATION.md`** - Paper/SI resilience claim-to-output audit trail
-- **`docs/results_report.html`** - Ignored local HTML report; regenerate from `code/R/results_report.Rmd` when needed
-- **`docs/supporting_information.Rmd`** - Supporting Information source (R Markdown)
-- **`docs/supporting_information.html`** - Rendered Supporting Information
-- **`docs/si_style.css`** - Supporting Information custom styles
-- **`docs/si_script.html`** - Supporting Information JavaScript (lightbox, progress bar)
+- **`docs/README.md`** - Public documentation map and notes on removed manuscript/PDF artifacts
+
+Generated browser HTML, manuscript drafts, and source-PDF libraries are
+intentionally not tracked in this public analysis repo. Regenerate paper-facing
+manuscript products from the private manuscript repo.
 
 ### Resilience analysis suite
 
@@ -414,6 +418,10 @@ Key methodological caveats documented throughout the pipeline (see `docs/ANALYSI
 If you use this code or data, please cite:
 
 > Donham, E. & Stier, A. (2026). Restoration of trophic cascades within kelp forests following the establishment of a network of marine protected areas. Manuscript in preparation.
+
+Working title for the current Journal of Applied Ecology draft: *Partial
+trophic-cascade recovery and kelp resilience in a southern California marine
+protected-area network*.
 
 ---
 

@@ -11,8 +11,6 @@ output:
     theme: flatly
     code_folding: hide
     df_print: kable
-    includes:
-      before_body: ../../docs/nav_bar.html
 ---
 
 ```{r setup, include=FALSE}
@@ -709,8 +707,8 @@ if (!is.null(table3)) {
 
   for (i in seq_len(nrow(table3))) {
     row <- table3[i, ]
-    sig <- if (row$Slope_pval < 0.05) "significant" else "non-significant"
-    direction <- if (row$Slope_Est < 0) "negative" else "positive"
+    sig <- if (isTRUE(row$Slope_pval < 0.05)) "significant" else "non-significant"
+    direction <- if (isTRUE(row$Slope_Est < 0)) "negative" else "positive"
 
     cat(sprintf('%s: %s %s relationship (slope = %s, 95%% CI: %s to %s; %s; <em>R</em>&sup2; = %s%%; <em>k</em> = %d).&nbsp; ',
                 row$Relationship, sig, direction,
@@ -739,8 +737,8 @@ if (!is.null(sp_slopes)) {
   for (tx in trophic_order) {
     row <- pooled %>% filter(Species_abbrev == tx)
     if (nrow(row) == 0) next
-    direction <- if (row$slope > 0) "increase" else "decline"
-    sig <- if (row$p_value < 0.05) "" else " (n.s.)"
+    direction <- if (isTRUE(row$slope > 0)) "increase" else if (isTRUE(row$slope < 0)) "decline" else "change"
+    sig <- if (isTRUE(row$p_value < 0.05)) "" else " (n.s.)"
     cat(sprintf('<em>%s</em>: %s lnRR units yr<sup>&minus;1</sup> (%s; 95%% CI: %s to %s; %s%s).&nbsp; ',
                 tx,
                 formatC(row$slope, format = "f", digits = 3),
@@ -764,7 +762,7 @@ if (!is.null(sp_slopes)) {
     for (tx in trophic_order) {
       row <- sub %>% filter(Species_abbrev == tx)
       if (nrow(row) == 0) next
-      sig <- if (row$p_value < 0.05) "" else " (n.s.)"
+      sig <- if (isTRUE(row$p_value < 0.05)) "" else " (n.s.)"
       cat(sprintf('<em>%s</em>: %s lnRR yr<sup>&minus;1</sup> (95%% CI: %s to %s; %s%s).&nbsp; ',
                   tx,
                   formatC(row$slope, format = "f", digits = 3),
