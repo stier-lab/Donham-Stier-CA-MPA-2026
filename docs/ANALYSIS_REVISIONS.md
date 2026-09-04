@@ -368,7 +368,7 @@ We should hit these in the Discussion:
 
 ### Cross-taxa meta-regression
 
-> To test for trophic cascade effects across MPAs, we used Knapp-Hartung meta-regression (metafor::rma, method = "REML", test = "knha") relating each prey's log response ratio to the corresponding predator's log response ratio across MPAs. Six predator-prey relationships were tested: lobster and sheephead effects on purple and red urchin (biomass and density), and purple and red urchin density effects on kelp biomass.
+> To test for trophic cascade effects across MPAs, we used Knapp-Hartung meta-regression (metafor::rma, method = "REML", test = "knha") relating each response species' log response ratio to the corresponding predictor species' log response ratio across MPAs. Six relationships were tested: purple and red urchin density effects on kelp biomass; lobster and sheephead density effects on purple urchin density; and lobster and sheephead biomass effects on purple urchin biomass.
 
 ---
 

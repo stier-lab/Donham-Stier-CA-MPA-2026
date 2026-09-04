@@ -1,6 +1,6 @@
 # Results Summary: CA MPA Kelp Forest Analysis
 
-**Generated:** 2026-09-03 18:23:18
+**Generated:** 2026-09-04 06:48:11
 **Pipeline version:** Modular pBACIPS v2.0
 
 ---
@@ -86,12 +86,12 @@ Knapp-Hartung meta-regressions testing whether predator MPA effects predict prey
 
 | Relationship | k | Slope | SE | p | Significant? |
 |-------------|---|-------|----|---|-------------|
-| S. purpuratus density -> M. pyrifera biomass | 11 | 0.009 | 0.179 | 0.961 | no |
-| M. franciscanus density -> M. pyrifera biomass | 10 | -0.167 | 0.108 | 0.122 | no |
-| P. interruptus density -> S. purpuratus density | 11 | 0.154 | 0.41 | 0.707 | no |
-| S. pulcher density -> S. purpuratus density | 11 | -0.125 | 0.688 | 0.856 | no |
-| P. interruptus biomass -> S. purpuratus biomass | 4 | -0.422 | 0.188 | 0.025 | **yes** |
-| S. pulcher biomass -> S. purpuratus biomass | 9 | 0.29 | 0.183 | 0.114 | no |
+| S. purpuratus density -> M. pyrifera biomass | 11 | 0.009 | 0.19 | 0.965 | no |
+| M. franciscanus density -> M. pyrifera biomass | 10 | -0.167 | 0.122 | 0.209 | no |
+| P. interruptus density -> S. purpuratus density | 11 | 0.154 | 0.408 | 0.715 | no |
+| S. pulcher density -> S. purpuratus density | 11 | -0.125 | 0.685 | 0.860 | no |
+| P. interruptus biomass -> S. purpuratus biomass | 4 | -0.422 | 0.102 | 0.054 | no |
+| S. pulcher biomass -> S. purpuratus biomass | 9 | 0.29 | 0.205 | 0.201 | no |
 
 ---
 

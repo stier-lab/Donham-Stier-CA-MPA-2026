@@ -59,12 +59,12 @@ expect_true <- function(ok, label) {
   if (!isTRUE(ok)) fail(label)
 }
 
-external_file <- function(envvar, repo_rel, fallback) {
+external_file <- function(envvar, repo_rel) {
   override <- Sys.getenv(envvar, unset = "")
   if (nzchar(override)) return(path.expand(override))
   local <- repo_file(repo_rel)
   if (file.exists(local)) return(local)
-  path.expand(fallback)
+  ""
 }
 
 # The manuscript/SI resilience products that are expected from run_all.R.
@@ -234,8 +234,7 @@ expect_true(any(grepl("temporal autocorrelation", decomp$contribution)),
             "Methods decomposition is missing the AR1/autocorrelation row.")
 kumagai_subtidal <- external_file(
   "KUMAGAI_SUBTIDAL_CSV",
-  file.path("data", "external", "kumagai2024", "MLPA_data_summarized_wo_siteblocks.csv"),
-  "~/kumagai2024-comparison/repo/Processed_data/MLPA_data_summarized_wo_siteblocks.csv"
+  file.path("data", "external", "kumagai2024", "MLPA_data_summarized_wo_siteblocks.csv")
 )
 expect_true(file.exists(kumagai_subtidal),
             paste0("Kumagai processed subtidal data missing at ", kumagai_subtidal,
@@ -245,8 +244,7 @@ expect_true(any(grepl("^DATA:", decomp$contribution)),
 
 kumagai_cold_spell <- external_file(
   "KUMAGAI_CS_GRID",
-  file.path("data", "external", "kumagai2024", "CS_cummulative_intensity_1km.rds"),
-  "~/kumagai2024-comparison/repo/Processed_data/SST/CS_cummulative_intensity_1km.rds"
+  file.path("data", "external", "kumagai2024", "CS_cummulative_intensity_1km.rds")
 )
 expect_true(file.exists(kumagai_cold_spell),
             paste0("Kumagai cold-spell grid missing at ", kumagai_cold_spell,

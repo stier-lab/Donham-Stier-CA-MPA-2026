@@ -51,12 +51,12 @@ suppressMessages({library(ncdf4); library(data.table)})
 
 NC <- path.expand(Sys.getenv(
   "SBC_KELP_ENV_NETCDF",
-  unset = "~/sbc-kelp-env/CAkelpCanopyEnv_sbc162.nc"
+  unset = ""
 ))
 if (!file.exists(NC)) {
-  message("  [env] Source NetCDF not found at ", NC,
+  message("  [env] Source NetCDF not found. ",
           "\n        Download EDI knb-lter-sbc.162.1 entity 5fbcb7b9780ad84157e3d4bbb0ab0947",
-          "\n        to that path or set SBC_KELP_ENV_NETCDF. Skipping; the tracked",
+          "\n        and set SBC_KELP_ENV_NETCDF. Skipping; the tracked",
           "\n        data/per_mpa_kelp_env.csv is used by the analyses as-is.")
 } else {
   RADIUS_KM <- 3
@@ -93,8 +93,7 @@ if (!file.exists(NC)) {
   GRAV <- {
     override <- Sys.getenv("KUMAGAI_HUMAN_GRAVITY", unset = "")
     local <- here::here("data", "external", "kumagai2024", "human_gravity_for_kelp_patches.csv")
-    if (nzchar(override)) path.expand(override) else if (file.exists(local)) local else
-      path.expand("~/kumagai2024-comparison/repo/Data/Population/human_gravity_for_kelp_patches.csv")
+    if (nzchar(override)) path.expand(override) else if (file.exists(local)) local else ""
   }
   if (file.exists(GRAV)) {
     g <- as.data.table(read.csv(GRAV, stringsAsFactors = FALSE))

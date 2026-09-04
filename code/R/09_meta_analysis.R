@@ -1331,8 +1331,9 @@ Table2$RR_lower  <- round(exp(Table2$CI_lower), 3)
 Table2$RR_upper  <- round(exp(Table2$CI_upper), 3)
 Table2$Pct_Change <- round((exp(Table2$Estimate) - 1) * 100, 1)
 
-# Correct for multiple testing: we run 10 tests (5 taxa x 2 response types),
-# so apply Benjamini-Hochberg FDR correction to control the false discovery rate.
+# Correct for multiple testing across all observed taxon-response coefficients
+# (currently 9), using Benjamini-Hochberg FDR correction to control the false
+# discovery rate.
 # Use pval_fdr (not raw pval) for significance statements in the manuscript.
 Table2$pval_fdr <- p.adjust(Table2$pval, method = "fdr")
 
@@ -1661,7 +1662,8 @@ if (all(c("S_purpuratus_Den", "M_pyrifera_Bio") %in% names(es_wide))) {
       meta_purp_macro <- rma(yi = es_purp_macro$M_pyrifera_Bio,
                              vi = es_purp_macro[[w_col]],
                              mods = ~ S_purpuratus_Den,
-                             data = es_purp_macro, method = "REML")
+                             data = es_purp_macro, method = "REML",
+                             test = "knha")
       table3_rows[[length(table3_rows) + 1]] <- extract_meta_reg(
         meta_purp_macro,
         "S. purpuratus density -> M. pyrifera biomass",
@@ -1681,7 +1683,8 @@ if (all(c("M_franciscanus_Den", "M_pyrifera_Bio") %in% names(es_wide))) {
       meta_reds_macro <- rma(yi = es_reds_macro$M_pyrifera_Bio,
                              vi = es_reds_macro[[w_col]],
                              mods = ~ M_franciscanus_Den,
-                             data = es_reds_macro, method = "REML")
+                             data = es_reds_macro, method = "REML",
+                             test = "knha")
       table3_rows[[length(table3_rows) + 1]] <- extract_meta_reg(
         meta_reds_macro,
         "M. franciscanus density -> M. pyrifera biomass",
@@ -1701,7 +1704,8 @@ if (all(c("P_interruptus_Den", "S_purpuratus_Den") %in% names(es_wide))) {
       meta_lob_purp <- rma(yi = es_lob_purp$S_purpuratus_Den,
                            vi = es_lob_purp[[w_col]],
                            mods = ~ P_interruptus_Den,
-                           data = es_lob_purp, method = "REML")
+                           data = es_lob_purp, method = "REML",
+                           test = "knha")
       table3_rows[[length(table3_rows) + 1]] <- extract_meta_reg(
         meta_lob_purp,
         "P. interruptus density -> S. purpuratus density",
@@ -1721,7 +1725,8 @@ if (all(c("S_pulcher_Den", "S_purpuratus_Den") %in% names(es_wide))) {
       meta_sheep_purp <- rma(yi = es_sheep_purp$S_purpuratus_Den,
                              vi = es_sheep_purp[[w_col]],
                              mods = ~ S_pulcher_Den,
-                             data = es_sheep_purp, method = "REML")
+                             data = es_sheep_purp, method = "REML",
+                             test = "knha")
       table3_rows[[length(table3_rows) + 1]] <- extract_meta_reg(
         meta_sheep_purp,
         "S. pulcher density -> S. purpuratus density",
@@ -1741,7 +1746,8 @@ if (all(c("P_interruptus_Bio", "S_purpuratus_Bio") %in% names(es_wide))) {
       meta_lob_purp_bio <- rma(yi = es_lob_purp_bio$S_purpuratus_Bio,
                                vi = es_lob_purp_bio[[w_col]],
                                mods = ~ P_interruptus_Bio,
-                               data = es_lob_purp_bio, method = "REML")
+                               data = es_lob_purp_bio, method = "REML",
+                               test = "knha")
       table3_rows[[length(table3_rows) + 1]] <- extract_meta_reg(
         meta_lob_purp_bio,
         "P. interruptus biomass -> S. purpuratus biomass",
@@ -1761,7 +1767,8 @@ if (all(c("S_pulcher_Bio", "S_purpuratus_Bio") %in% names(es_wide))) {
       meta_sheep_purp_bio <- rma(yi = es_sheep_purp_bio$S_purpuratus_Bio,
                                  vi = es_sheep_purp_bio[[w_col]],
                                  mods = ~ S_pulcher_Bio,
-                                 data = es_sheep_purp_bio, method = "REML")
+                                 data = es_sheep_purp_bio, method = "REML",
+                                 test = "knha")
       table3_rows[[length(table3_rows) + 1]] <- extract_meta_reg(
         meta_sheep_purp_bio,
         "S. pulcher biomass -> S. purpuratus biomass",

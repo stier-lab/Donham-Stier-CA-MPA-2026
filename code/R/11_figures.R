@@ -464,9 +464,30 @@ if (has_fig1_pkgs) {
 
   # --- 3. Load MPA Boundaries ---
   mpa_shp <- here::here("data", "MPA", "California_Marine_Protected_Areas_[ds582].shp")
-  mpa <- st_read(mpa_shp, quiet = TRUE) %>%
-    st_transform(4326) %>%
-    st_make_valid()
+  mpa_cache_socal <- here::here("data", "cache", "ca_mpa_boundaries_socal.rds")
+  mpa_cache_all <- here::here("data", "cache", "ca_mpa_boundaries.rds")
+
+  if (file.exists(mpa_shp)) {
+    mpa <- st_read(mpa_shp, quiet = TRUE) %>%
+      st_transform(4326) %>%
+      st_make_valid()
+    cat("  Loaded MPA boundaries from source shapefile\n")
+  } else if (file.exists(mpa_cache_socal)) {
+    mpa <- readRDS(mpa_cache_socal) %>%
+      st_transform(4326) %>%
+      st_make_valid()
+    cat("  Loaded cached Southern California MPA boundaries\n")
+  } else if (file.exists(mpa_cache_all)) {
+    mpa <- readRDS(mpa_cache_all) %>%
+      st_transform(4326) %>%
+      st_make_valid()
+    cat("  Loaded cached California MPA boundaries\n")
+  } else {
+    stop(
+      "Figure 1 requires MPA boundaries. Expected either ",
+      mpa_shp, " or tracked cache files under data/cache/."
+    )
+  }
 
   centroids <- st_coordinates(st_centroid(st_geometry(mpa)))
   in_bbox <- centroids[, 1] >= BBOX_LONLAT["xmin"] & centroids[, 1] <= BBOX_LONLAT["xmax"] &

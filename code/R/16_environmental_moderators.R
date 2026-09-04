@@ -56,12 +56,12 @@ suppressMessages(library(metafor))
 taxa <- unname(RESILIENCE_TAXA_SHORT)
 role <- setNames(RESILIENCE_TAXA_ROLE, RESILIENCE_TAXA_SHORT)
 safe <- function(expr) tryCatch(suppressWarnings(suppressMessages(expr)), error = function(e) NULL)
-external_file <- function(envvar, repo_rel, fallback) {
+external_file <- function(envvar, repo_rel) {
   override <- Sys.getenv(envvar, unset = "")
   if (nzchar(override)) return(path.expand(override))
   local <- here::here(repo_rel)
   if (file.exists(local)) return(local)
-  path.expand(fallback)
+  ""
 }
 
 # ---------------------------------------------------------------------------
@@ -92,8 +92,7 @@ names(mhw_during) <- c("MPA", "mhw_during")
 # Cold-spell climatology (per-MPA nearest cell of Kumagai's 1-km cold-spell grid)
 cs_path <- external_file(
   "KUMAGAI_CS_GRID",
-  file.path("data", "external", "kumagai2024", "CS_cummulative_intensity_1km.rds"),
-  "~/kumagai2024-comparison/repo/Processed_data/SST/CS_cummulative_intensity_1km.rds"
+  file.path("data", "external", "kumagai2024", "CS_cummulative_intensity_1km.rds")
 )
 mpa_ll <- unique(ss[, c("MPA", "Lat", "Lon")])
 if (file.exists(cs_path)) {

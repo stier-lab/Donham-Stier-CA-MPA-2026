@@ -47,12 +47,12 @@ source(here::here("code", "R", "01_utils.R"))
 suppressMessages({library(metafor); library(data.table)})
 have_rf <- requireNamespace("randomForest", quietly = TRUE)
 safe <- function(e) tryCatch(suppressWarnings(suppressMessages(e)), error = function(x) NULL)
-external_file <- function(envvar, repo_rel, fallback) {
+external_file <- function(envvar, repo_rel) {
   override <- Sys.getenv(envvar, unset = "")
   if (nzchar(override)) return(path.expand(override))
   local <- here::here(repo_rel)
   if (file.exists(local)) return(local)
-  path.expand(fallback)
+  ""
 }
 
 # ---------------------------------------------------------------------------
@@ -84,8 +84,7 @@ mhw_d <- mhw[year %in% MHW1_YEARS, .(mhw_during = mean(mhw_icum_mpa)), by = .(MP
 # cold-spell climatology (nearest 1-km cell), if Kumagai grid present
 cs_path <- external_file(
   "KUMAGAI_CS_GRID",
-  file.path("data", "external", "kumagai2024", "CS_cummulative_intensity_1km.rds"),
-  "~/kumagai2024-comparison/repo/Processed_data/SST/CS_cummulative_intensity_1km.rds"
+  file.path("data", "external", "kumagai2024", "CS_cummulative_intensity_1km.rds")
 )
 meta[, lon := ss[!duplicated(MPA)]$Lon]   # lon for cs nearest-cell match
 if (file.exists(cs_path)) {

@@ -61,7 +61,7 @@ if (exists("Table2") && nrow(Table2) > 0) {
   #   - RR_lower/RR_upper: back-transformed CIs on the response-ratio scale
   #   - pct_change: percentage change inside MPA relative to reference
   #   - direction/qualitative_effect: plain-English interpretation
-  #   - pval_fdr: Benjamini-Hochberg adjusted p-values (corrects for 10 tests)
+  #   - pval_fdr: Benjamini-Hochberg adjusted p-values across observed tests
   model_results <- data.frame(
     model = Table2$model_type,
     response = Table2$Response,

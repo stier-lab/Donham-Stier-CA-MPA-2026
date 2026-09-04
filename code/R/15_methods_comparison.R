@@ -102,12 +102,12 @@ tidy_paired <- function(cmat, est = 1, se = 2, p = ncol(cmat)) {
     dAB = g("periodafter",  est), dAB_se = g("periodafter",  se), dAB_p = g("periodafter",  p))
 }
 safe <- function(expr) tryCatch(suppressWarnings(suppressMessages(expr)), error = function(e) NULL)
-external_file <- function(envvar, repo_rel, fallback) {
+external_file <- function(envvar, repo_rel) {
   override <- Sys.getenv(envvar, unset = "")
   if (nzchar(override)) return(path.expand(override))
   local <- here::here(repo_rel)
   if (file.exists(local)) return(local)
-  path.expand(fallback)
+  ""
 }
 
 # ===========================================================================
@@ -145,8 +145,7 @@ ours_paired <- subset(ours_paired, is.finite(lnRR))
 # --- THEIRS (Kumagai South Coast; Full vs Reference) -----------------------
 theirs_path <- external_file(
   "KUMAGAI_SUBTIDAL_CSV",
-  file.path("data", "external", "kumagai2024", "MLPA_data_summarized_wo_siteblocks.csv"),
-  "~/kumagai2024-comparison/repo/Processed_data/MLPA_data_summarized_wo_siteblocks.csv"
+  file.path("data", "external", "kumagai2024", "MLPA_data_summarized_wo_siteblocks.csv")
 )
 theirs_cols <- c("Panulirus interruptus" = "PANINT_d", "Semicossyphus pulcher" = "SPUL_d",
                  "Strongylocentrotus purpuratus" = "STRPURAD_d",
