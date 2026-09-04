@@ -25,8 +25,8 @@ This repository contains the complete analysis pipeline for evaluating the effec
 
 This is the public analysis/code repository. Current Word manuscripts, cover
 letters, Supporting Information construction, citation-audit working files, and
-publisher PDF source copies live in the private sibling manuscript repository,
-`Donham-Stier-CA-MPA-MS-2026`.
+publisher PDF source copies live outside this public repo in the private
+manuscript workspace.
 
 ### Key Findings
 
@@ -72,7 +72,7 @@ Donham-Stier-CA-MPA-2026/
 │       ├── 24_resilience_pipeline_check.R # Paper/SI resilience concordance gate
 │       ├── run_all.R                 # Pipeline orchestration
 │       ├── run_resilience.R          # Full resilience suite
-│       └── run_figures_only.R        # Fast figure regeneration (~17s)
+│       └── run_figures_only.R        # Fast figure regeneration (~1 min all figures)
 │
 ├── data/
 │   ├── harmonized/                   # Analysis-ready CSVs (tracked in git)
@@ -134,14 +134,19 @@ Package versions are captured in `renv.lock` for reproducibility. Key packages i
 ### 3. Run the Analysis
 
 ```r
-# Full pipeline (~2.3 min in the latest complete run)
+# Full pipeline (~5 min in the latest complete run)
 source(here::here("code", "R", "run_all.R"))
 
-# Or just regenerate figures (~17s)
+# Or just regenerate figures (~1 min for all figures; selected figures are faster)
 source(here::here("code", "R", "run_figures_only.R"))
 ```
 
-No raw monitoring data setup is required for the main pipeline. The paper-grade resilience concordance check expects the local Kumagai mirror at `~/kumagai2024-comparison` so scripts `15` and `16` can regenerate the method-vs-data comparison and cold-spell moderator rows used in the manuscript/SI audit trail. The full resilience suite can also use the sibling raw-data repo for the standalone Eisaguirre and SSWD modules.
+No raw monitoring data setup is required for the main pipeline. The small public
+Kumagai comparator inputs needed by scripts `15`, `16`, `18`, and `24` are
+tracked under `data/external/kumagai2024/` with provenance. The full resilience
+suite can also use optional raw PISCO inputs for the standalone Eisaguirre and
+SSWD modules; set `DONHAM_DATA_REPO_PISCO` if those files are not in the default
+local development location.
 
 ---
 
@@ -150,7 +155,7 @@ No raw monitoring data setup is required for the main pipeline. The paper-grade 
 ### Full Pipeline
 
 ```r
-# Run complete analysis (~2.3 min in the latest complete run)
+# Run complete analysis (~5 min in the latest complete run)
 source(here::here("code", "R", "run_all.R"))
 ```
 
@@ -159,7 +164,7 @@ The pipeline loads harmonized CSVs, calculates effect sizes, runs meta-analysis,
 ### Individual Scripts
 
 ```r
-# Fast figure regeneration (~17s all figures, ~4s single figure)
+# Fast figure regeneration (~1 min all figures; selected figures are faster)
 source(here::here("code", "R", "run_figures_only.R"))
 
 # Render only specific figures
@@ -384,7 +389,7 @@ not problems with the core result.
 
 ### Related work (compare & contrast)
 
-We are comparing this analysis against **Kumagai et al. 2024** (*Global Change Biology*, [doi:10.1111/gcb.17620](https://doi.org/10.1111/gcb.17620)) — *"Marine Protected Areas That Preserve Trophic Cascades Promote Resilience of Kelp Forests to Marine Heatwaves."* It is a parallel study on an overlapping system/dataset (same PISCO/MLPA subtidal + T. Bell SBC LTER Landsat) with a convergent conclusion. We are using it to (1) cross-check our PISCO numbers, (2) contrast their GLMM/permutation, heatwave-resilience approach with our pBACIPS + meta-analysis, and (3) scope our own marine-heatwave (MHW) analysis. Their code + data are mirrored locally (GitHub clone + Zenodo CC-BY-4.0 snapshot); see `CLAUDE.md` → "Related Work / External Comparison" for details.
+We are comparing this analysis against **Kumagai et al. 2024** (*Global Change Biology*, [doi:10.1111/gcb.17620](https://doi.org/10.1111/gcb.17620)) — *"Marine Protected Areas That Preserve Trophic Cascades Promote Resilience of Kelp Forests to Marine Heatwaves."* It is a parallel study on an overlapping system/dataset (same PISCO/MLPA subtidal + T. Bell SBC LTER Landsat) with a convergent conclusion. We are using it to (1) cross-check our PISCO numbers, (2) contrast their GLMM/permutation, heatwave-resilience approach with our pBACIPS + meta-analysis, and (3) scope our own marine-heatwave (MHW) analysis. The small comparator files needed for those checks are vendored in `data/external/kumagai2024/`; see `docs/CONCORDANCE_AUDIT.md` for the manuscript-code ledger.
 
 A formal **method-vs-data decomposition** (`code/R/15_methods_comparison.R`, SI supplement `docs/methods_comparison_supplement.md`) runs an analytical multiverse — a 6-waypoint method bridge that flips one analytical choice at a time from the Kumagai-style endpoint to ours on a common dataset, plus the pooled waypoints run on both datasets — to measure how much of the between-study variation in MPA × heatwave effect sizes is driven by method versus data. Headline: giant-kelp resilience is method-invariant; the urchin inference hinges on whether temporal autocorrelation is modelled; and the dataset itself is the single largest lever.
 
@@ -396,7 +401,7 @@ We also test whether a **different stressor type** — the 2013–14 sea-star wa
 
 Because our series runs to 2023, we can also test whether the resilience **repeats across two marine heatwaves** (`code/R/19_heatwave_replication.R`, doc `docs/heatwave_replication.md`) — the 2014–16 event and a second 2018–20 event ("Blob 2.0") that the single-event analysis had folded into a flat "after" baseline. Giant-kelp resilience repeats: it is strongly elevated inside reserves in *both* heatwaves (even more so in the second) and tracks heatwave intensity beyond ongoing recovery — the first demonstration that the response is not a one-off, which a single-event design cannot establish. Predator and urchin components remain recovery-driven or marginal, as in the single-event analysis.
 
-Finally, we test whether the among-MPA variation in **effectiveness** is *predictable* (`code/R/18_mpa_effectiveness_predictors.R`, doc `docs/mpa_effectiveness_predictors.md`): assembling environmental, reserve-design, and trophic predictors per MPA and validating with leave-one-out CV. It is not — no predictor survives FDR, and out-of-sample R² is negative (kelp LOO-CV R² = −0.40), so the variation is real but idiosyncratic and not captured by available covariates at this sample size. The defensible statement is the robust *average* MPA effect plus its meta-analytic heterogeneity, not a prediction of which reserves are most effective.
+Finally, we test whether the among-MPA variation in **effectiveness** is *predictable* (`code/R/18_mpa_effectiveness_predictors.R`, doc `docs/mpa_effectiveness_predictors.md`): assembling environmental, reserve-design, and trophic predictors per MPA and validating with out-of-sample checks. The current result is weak and method-dependent: no univariate predictor survives FDR, random-forest out-of-bag R² is negative for kelp and purple urchin, purple-urchin LOO-CV R² is strongly negative, but a small-k top-three linear LOO model gives kelp LOO-CV R² = 0.401. The defensible statement is therefore the robust *average* MPA effect plus its meta-analytic heterogeneity, with cautious language about any attempt to predict which reserves are most effective.
 
 ---
 
@@ -410,7 +415,7 @@ Key methodological caveats documented throughout the pipeline (see `docs/ANALYSI
 - **Cross-program biomass bootstrap**: KFM and LTER urchin biomass is estimated by bootstrapping from PISCO size-frequency distributions
 - **Climate/stressor attribution**: The core pBACIPS analysis is paired but observational; heatwave, environmental-moderator, and sea-star-wasting checks are now included in scripts 14–23, but ENSO and other overlapping regional drivers cannot be fully isolated
 - **Extreme kelp effect sizes**: Some MPA-taxa combinations reflect near-zero reference-site kelp, handled by inverse-variance weighting
-- **Reproducibility**: Package versions captured in `renv.lock`; Dryad DOI is currently a placeholder (`10.5061/dryad.XXXXXXX`)
+- **Reproducibility**: Package versions captured in `renv.lock`; tracked harmonized CSVs are the public analysis inputs; raw-data archiving is separate from this analysis repo
 
 ---
 ## Citation
@@ -427,7 +432,9 @@ protected-area network*.
 
 ## License
 
-This project is shared for academic collaboration. Please contact the authors before using for other purposes.
+This project is shared for academic collaboration and code review. No formal
+open-source reuse license has been assigned yet; please contact the authors
+before reusing code, data products, or figures for other purposes.
 
 ---
 

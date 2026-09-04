@@ -89,9 +89,10 @@ attribution*, which is exactly where observational cascade inference is weakest.
 
 ## Reproducibility
 
-`code/R/17_eisaguirre_reproduction.R` reads raw PISCO from the sibling data-processing
-repo (`~/Donham-Stier-CA-MPA-Data-2026/data/PISCO/`); it is **standalone** (not in
-`run_all.R`) and skips gracefully if that raw data is absent. Outputs:
+`code/R/17_eisaguirre_reproduction.R` reads optional raw PISCO files from
+`DONHAM_DATA_REPO_PISCO` or the default local data-repo path; it is
+**standalone** (not in `run_all.R`) and skips gracefully if that raw data is
+absent. Outputs:
 `tables/table_s_eisaguirre_reproduction.csv` (reproduced vs published),
 `tables/table_s_eisaguirre_models.csv` (AICc model selection, pre/post),
 `plots/fig_s_eisaguirre_fig3_urchin_seastar.{pdf,png}` (pre-disease urchin~sea-star),

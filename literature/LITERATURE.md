@@ -4,11 +4,8 @@ This public analysis repo does not track publisher PDF or saved-webpage source
 copies. Those files are not required to run the analysis pipeline and should not
 be distributed through the public code repository.
 
-Current citation/source-copy management lives in the private manuscript repo:
-
-```text
-../Donham-Stier-CA-MPA-MS-2026/literature/
-```
+Current citation/source-copy management lives in the private manuscript
+workspace, not in this public analysis repository.
 
 Use the manuscript repo's `literature/LITERATURE_LIBRARY.md` and
 `literature/index/project_library_sources.csv` as the project-controlled source

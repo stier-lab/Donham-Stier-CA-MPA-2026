@@ -60,7 +60,10 @@ source(here::here("code", "R", "00b_color_palette.R"))
 source(here::here("code", "R", "01_utils.R"))
 suppressMessages({library(data.table); library(lme4)})
 
-DATA_REPO <- path.expand("~/Donham-Stier-CA-MPA-Data-2026/data/PISCO")
+DATA_REPO <- path.expand(Sys.getenv(
+  "DONHAM_DATA_REPO_PISCO",
+  unset = "~/Donham-Stier-CA-MPA-Data-2026/data/PISCO"
+))
 if (!dir.exists(DATA_REPO)) { message("  [17] Raw PISCO data not found at ", DATA_REPO, "; skipping."); }
 
 if (dir.exists(DATA_REPO)) {

@@ -8,7 +8,7 @@
 #' run to create the snapshot.
 #'
 #' Usage:
-#'   # Render all figures (~17 seconds vs ~2.3 minutes for full pipeline)
+#'   # Render all figures (~1 minute vs ~5 minutes for full pipeline)
 #'   source(here::here("code", "R", "run_figures_only.R"))
 #'
 #'   # Render only specific figures

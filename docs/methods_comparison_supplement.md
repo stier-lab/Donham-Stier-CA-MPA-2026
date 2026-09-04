@@ -2,10 +2,9 @@
 
 *Draft for the Supporting Information of Donham & Stier. All numbers verified from
 `code/R/15_methods_comparison.R` and `tables/table_s_methods_*.csv`. Companion to
-the heatwave analysis (`docs/heatwave_section_draft.md`) and the direct
-data cross-check against Kumagai et al. (2024). Needs a `stier-writing-voice`
-polish. Scope: Southern California Bight, density responses, heatwave-window
-contrasts (before ≤2013 / during 2014–16 / after ≥2017).*
+the resilience integration docs and the direct data cross-check against Kumagai
+et al. (2024). Scope: Southern California Bight, density responses,
+heatwave-window contrasts (before ≤2013 / during 2014–16 / after ≥2017).*
 
 ---
 
@@ -171,7 +170,7 @@ quarterly 1984–2021; CDIP MOP v1.1 waves, SST-derived nitrate) that underlies 
 et al.'s `hsmax` and Wanner et al. (2024)'s Channel-Islands kelp-synchrony analysis.
 Per-MPA values = mean climatological covariate over kelp-pixel stations within 3 km of
 each MPA (`code/R/extract_kelp_env_covariates.R` → `data/per_mpa_kelp_env.csv`, which
-also holds temperature/npp/depth; provenance in `~/sbc-kelp-env/`); all 34 MPAs are
+also holds temperature/npp/depth); all 34 MPAs are
 covered (median 0.03 km to the nearest station) and the values recover the expected
 gradients (wave: San Miguel Island 4.9 m → Catalina-lee Blue Cavern 0.65 m; nitrate:
 cold upwelling 3.0 µM at Pt Conception / NW islands → warm 0.39 µM at San Diego).
@@ -213,11 +212,10 @@ headline conclusions.
 ### Reproducibility
 
 `code/R/15_methods_comparison.R` and `code/R/16_environmental_moderators.R` (both
-wired into `run_all.R` after the heatwave module). Script 15 requires the Kumagai
-mirror at `~/kumagai2024-comparison/repo/` for the cross-substrate panel (if absent,
-the method bridge on our data still runs and the data-effect panel is skipped);
-script 16 requires the cold-spell grid in that mirror for the `cs_mean` covariate
-(otherwise it is omitted). Outputs — script 15: `tables/table_s_methods_crosswalk.csv`,
+wired into `run_all.R` after the heatwave module). The small Kumagai comparator
+inputs needed for the cross-substrate panel and cold-spell covariate are tracked in
+`data/external/kumagai2024/`, with environment-variable overrides available for
+local development. Outputs — script 15: `tables/table_s_methods_crosswalk.csv`,
 `tables/table_s_methods_multiverse.csv`, `tables/table_s_methods_decomposition.csv`,
 `plots/fig_s_methods_multiverse.{pdf,png}`; script 16:
 `tables/table_s_mpa_env_covariates.csv`, `tables/table_s_env_moderators.csv`,

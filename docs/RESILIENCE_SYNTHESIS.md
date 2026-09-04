@@ -22,7 +22,7 @@ standalone suite with `source(here::here("code","R","run_resilience.R"))`.*
 **California MPAs confer a robust, repeatable increase in giant-kelp resilience to
 climate shocks — but the finer claims (the urchin-mediated mechanism, predator
 diversity/compensation, and which reserves will be most effective) are
-specification-sensitive, stressor-specific, or unpredictable.** The strongest,
+specification-sensitive, stressor-specific, or only weakly predictable.** The strongest,
 most defensible statement is about the *foundation species* and the *average* effect;
 the weakest links are *mechanism attribution* and *among-reserve prediction*.
 
@@ -38,7 +38,7 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
 | **Stability** | Does protection damp variability? | `21` | **No clear effect** — kelp trends more stable inside (ns); urchins more variable inside. Resilience is in the *mean*, not the *variance* |
 | **Robustness / attribution** | How much do method & data change the story? | `15` | Kelp resilience is method-invariant; urchin inference hinges on the AR1 choice; the **dataset is the single largest lever** |
 | **Moderators** | What environmental gradients modulate the effect? | `16` | **None survive FDR** (35 tests, the full Kumagai PCA set): kelp effect not modulated by MHW/cold-spell intensity, latitude, reserve size, wave exposure, nutrients (nitrate), or human gravity — all now obtained per-MPA incl. the islands (Bell 2023 EDI sbc.162 + Kumagai gravity grid) |
-| **Predictability** | Can we predict which MPAs are most effective? | `18` | **No** — leave-one-out CV R² is negative; among-reserve variation is real but idiosyncratic |
+| **Predictability** | Can we predict which MPAs are most effective? | `18` | **Weak / method-dependent** — no univariate predictor survives FDR and RF out-of-bag R² is negative, but one small-k kelp LOO model is positive (R² = 0.401); avoid strong prediction claims |
 | **Cross-study reproduction** | Does the paired-design literature reproduce? | `17` | Eisaguirre (2020) design-level results reproduce; the partial size-structure/diversity mechanism does **not** robustly reproduce |
 
 ## What is robust (report with confidence)
@@ -75,13 +75,13 @@ the weakest links are *mechanism attribution* and *among-reserve prediction*.
    beyond total predation pressure; it is confounded with protection and reverses by
    subset. The "compensation" pattern is consistent with protection/abundance, not
    with diversity per se.
-3. **Among-reserve effectiveness is consistent but unexplained.** Reserve responses
-   are *repeatable* across the two heatwaves (script 23) — yet *not predictable* from
-   environmental, design, or trophic covariates (script 18, negative LOO-CV R²). So
-   reserves differ reliably and persistently, but we cannot yet say *why*: report the
-   average effect and its heterogeneity (τ²/I²), and note that the heterogeneity is a
-   stable reserve property awaiting better (e.g. wave, governance, connectivity)
-   covariates — not a modelling target with current data.
+3. **Among-reserve effectiveness is consistent but only weakly explained.** Reserve
+   responses are *repeatable* across the two heatwaves (script 23), but script 18
+   gives mixed prediction evidence: no univariate predictor survives FDR, RF
+   out-of-bag R² is negative, purple-urchin LOO-CV is strongly negative, and only a
+   small-k top-three kelp LOO model is positive (R² = 0.401). So reserves differ
+   reliably and persistently, but we should report the average effect and its
+   heterogeneity (τ²/I²) rather than claim a robust predictor set.
 
 ## Limitations that cut across the suite
 
@@ -124,6 +124,6 @@ Run `code/R/run_all.R` for the manuscript pipeline. It sources
 claims, and SI-supporting resilience outputs still match the manuscript. Run
 `code/R/run_resilience.R` for the broader standalone suite; it also tries
 `17/18/20` when raw PISCO or comparison inputs are available. Per-analysis docs:
-`heatwave_section_draft.md`, `heatwave_replication.md`, `compound_disturbance.md`,
+`heatwave_replication.md`, `compound_disturbance.md`,
 `methods_comparison_supplement.md`, `eisaguirre_reproduction.md`,
 `mpa_effectiveness_predictors.md`; tables in `tables/`, figures in `plots/`.

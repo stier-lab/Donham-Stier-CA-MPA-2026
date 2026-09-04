@@ -386,10 +386,10 @@ The harmonized CSVs (~1 MB) are tracked in git under `data/harmonized/`. You don
 ### Running the pipeline
 
 ```r
-# Full pipeline (~2.3 min in the latest complete run)
+# Full pipeline (~5 min in the latest complete run)
 source(here::here("code", "R", "run_all.R"))
 
-# Figures only (~17 sec, uses cached snapshot)
+# Figures only (~1 min for all figures, uses cached snapshot)
 source(here::here("code", "R", "run_figures_only.R"))
 ```
 

@@ -35,8 +35,7 @@
 #   default normal test treats SE^2 as known and is badly anticonservative. Even
 #   so these tests are EXPLORATORY -- low k, univariate moderators screened one at
 #   a time, and the thermal/biogeographic moderators are mutually collinear (see
-#   Known Limitations -> Moderator power in CLAUDE.md). Benjamini-Hochberg FDR
-#   across all moderator tests.
+#   docs/RESILIENCE_SYNTHESIS.md). Benjamini-Hochberg FDR across all moderator tests.
 #
 # OUTPUTS:
 #   tables/table_s_mpa_env_covariates.csv  - the per-MPA environmental covariate table
@@ -57,6 +56,13 @@ suppressMessages(library(metafor))
 taxa <- unname(RESILIENCE_TAXA_SHORT)
 role <- setNames(RESILIENCE_TAXA_ROLE, RESILIENCE_TAXA_SHORT)
 safe <- function(expr) tryCatch(suppressWarnings(suppressMessages(expr)), error = function(e) NULL)
+external_file <- function(envvar, repo_rel, fallback) {
+  override <- Sys.getenv(envvar, unset = "")
+  if (nzchar(override)) return(path.expand(override))
+  local <- here::here(repo_rel)
+  if (file.exists(local)) return(local)
+  path.expand(fallback)
+}
 
 # ---------------------------------------------------------------------------
 # 1. Per-MPA environmental covariate table
@@ -84,10 +90,14 @@ mhw_during <- aggregate(mhw_icum_mpa ~ CA_MPA_Name_Short,
 names(mhw_during) <- c("MPA", "mhw_during")
 
 # Cold-spell climatology (per-MPA nearest cell of Kumagai's 1-km cold-spell grid)
-cs_path <- "~/kumagai2024-comparison/repo/Processed_data/SST/CS_cummulative_intensity_1km.rds"
+cs_path <- external_file(
+  "KUMAGAI_CS_GRID",
+  file.path("data", "external", "kumagai2024", "CS_cummulative_intensity_1km.rds"),
+  "~/kumagai2024-comparison/repo/Processed_data/SST/CS_cummulative_intensity_1km.rds"
+)
 mpa_ll <- unique(ss[, c("MPA", "Lat", "Lon")])
-if (file.exists(path.expand(cs_path))) {
-  cs <- readRDS(path.expand(cs_path))
+if (file.exists(cs_path)) {
+  cs <- readRDS(cs_path)
   csagg <- aggregate(CS_cummulative ~ long + lat, data = cs, FUN = mean)  # climatological mean per cell
   nearest_cs <- function(la, lo) {
     d <- (csagg$lat - la)^2 + (csagg$long - lo)^2
@@ -95,7 +105,7 @@ if (file.exists(path.expand(cs_path))) {
   }
   mpa_ll$cs_mean <- mapply(nearest_cs, mpa_ll$Lat, mpa_ll$Lon)
 } else {
-  message("  [16] cold-spell grid not found; cs_mean omitted.")
+  message("  [16] cold-spell grid not found at ", cs_path, "; cs_mean omitted.")
   mpa_ll$cs_mean <- NA_real_
 }
 

@@ -25,7 +25,7 @@
 #'   ROBUSTNESS / ATTRIBUTION (how much do method, data, covariates change the story?)
 #'     15_methods_comparison.R       - analytical multiverse vs Kumagai (method vs data)
 #'     16_environmental_moderators.R - env covariates Kumagai only mapped (null after FDR)
-#'     18_mpa_effectiveness_predictors.R - can we predict which MPAs are effective? (no)
+#'     18_mpa_effectiveness_predictors.R - weak/mixed prediction of which MPAs are effective
 #'   CROSS-STUDY REPRODUCTION
 #'     17_eisaguirre_reproduction.R  - rebuild Eisaguirre 2020 from raw PISCO
 #'
@@ -34,12 +34,10 @@
 #'
 #' DATA NEEDS
 #'   14, 19, 21, 22, 23 use only the tracked harmonized CSVs (always run; also in run_all.R).
-#'   15, 16 additionally read data/sumstats_final.csv (tracked) and the Kumagai
-#'     mirror (~/kumagai2024-comparison) for cross-substrate/cold-spell parts.
-#'     The paper-grade concordance gate expects those comparison inputs.
-#'   18 also reads data/sumstats_final.csv and comparison covariates.
-#'   17, 20 read raw PISCO from the sibling data repo (~/Donham-Stier-CA-MPA-Data-2026).
-#'   Scripts skip gracefully (with a message) if their external inputs are absent.
+#'   15, 16, 18 use tracked analysis outputs and the small Kumagai comparator
+#'     inputs vendored in data/external/kumagai2024/ (env-var overrides supported).
+#'   17, 20 read optional raw PISCO from DONHAM_DATA_REPO_PISCO or the default
+#'     local data-repo path. They skip gracefully if those inputs are absent.
 #'
 #' USAGE
 #'   source(here::here("code", "R", "run_resilience.R"))

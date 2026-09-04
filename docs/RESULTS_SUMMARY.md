@@ -1,6 +1,6 @@
 # Results Summary: CA MPA Kelp Forest Analysis
 
-**Generated:** 2026-09-02 15:18:37
+**Generated:** 2026-09-03 18:23:18
 **Pipeline version:** Modular pBACIPS v2.0
 
 ---

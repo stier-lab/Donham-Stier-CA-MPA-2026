@@ -102,6 +102,13 @@ tidy_paired <- function(cmat, est = 1, se = 2, p = ncol(cmat)) {
     dAB = g("periodafter",  est), dAB_se = g("periodafter",  se), dAB_p = g("periodafter",  p))
 }
 safe <- function(expr) tryCatch(suppressWarnings(suppressMessages(expr)), error = function(e) NULL)
+external_file <- function(envvar, repo_rel, fallback) {
+  override <- Sys.getenv(envvar, unset = "")
+  if (nzchar(override)) return(path.expand(override))
+  local <- here::here(repo_rel)
+  if (file.exists(local)) return(local)
+  path.expand(fallback)
+}
 
 # ===========================================================================
 # Build the two substrates in a common long format:
@@ -136,13 +143,17 @@ ours_paired <- data.frame(taxon = orr$y, MPA = orr$CA_MPA_Name_Short, year = orr
 ours_paired <- subset(ours_paired, is.finite(lnRR))
 
 # --- THEIRS (Kumagai South Coast; Full vs Reference) -----------------------
-theirs_path <- "~/kumagai2024-comparison/repo/Processed_data/MLPA_data_summarized_wo_siteblocks.csv"
+theirs_path <- external_file(
+  "KUMAGAI_SUBTIDAL_CSV",
+  file.path("data", "external", "kumagai2024", "MLPA_data_summarized_wo_siteblocks.csv"),
+  "~/kumagai2024-comparison/repo/Processed_data/MLPA_data_summarized_wo_siteblocks.csv"
+)
 theirs_cols <- c("Panulirus interruptus" = "PANINT_d", "Semicossyphus pulcher" = "SPUL_d",
                  "Strongylocentrotus purpuratus" = "STRPURAD_d",
                  "Mesocentrotus franciscanus" = "MESFRAAD_d", "Macrocystis pyrifera" = "MACPYRAD_d")
-have_theirs <- file.exists(path.expand(theirs_path))
+have_theirs <- file.exists(theirs_path)
 if (have_theirs) {
-  kd <- read.csv(path.expand(theirs_path), stringsAsFactors = FALSE)
+  kd <- read.csv(theirs_path, stringsAsFactors = FALSE)
   kd <- subset(kd, region == "South_Coast" & mpa_status %in% c("Full", "Reference") & year >= 2002)
   kd$period <- hw_period(kd$year)
   kd$status <- factor(ifelse(kd$mpa_status == "Full", "mpa", "reference"),

@@ -17,7 +17,7 @@ Rplots.pdf
 # Pipeline logs (keep directory, ignore contents)
 logs/*.log
 
-# Large data files (download from Dryad or symlink from Google Drive — see README.md)
+# Large raw-data directories. The public analysis uses tracked harmonized CSVs.
 data/MBON
 data/PISCO
 data/LTER

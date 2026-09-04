@@ -12,6 +12,9 @@ analysis.
 - Main analysis entry point remains `source(here::here("code", "R", "run_all.R"))`.
 - Fast figure regeneration remains `source(here::here("code", "R", "run_figures_only.R"))`.
 - Resilience concordance gate remains `code/R/24_resilience_pipeline_check.R`.
+- Small public Kumagai comparator inputs are vendored under
+  `data/external/kumagai2024/`, so the main pipeline no longer depends on a
+  user-specific mirror for the method-vs-data and environmental-moderator gates.
 
 ## Cleanup Decisions
 
@@ -25,6 +28,13 @@ analysis.
   `local_archive/2026-09-03_public_repo_cleanup/`.
 - Moved ignored root-level scratch files (`Rplots.pdf`, Firebase/excalidraw
   logs, and `.DS_Store`) into the same local archive.
+- Removed tracked legacy code archives from the public head and preserved local
+  copies under `local_archive/2026-09-03_public_repo_harsh_cleanup/`.
+- Removed the old heatwave manuscript-text draft from the public head; the
+  current manuscript prose lives in the manuscript repo.
+- Replaced the placeholder Dryad/raw-data downloader with an explicit
+  harmonized-data availability check.
+- Added `docs/CONCORDANCE_AUDIT.md` as a reviewer-facing claim ledger.
 
 ## Residual Risk
 

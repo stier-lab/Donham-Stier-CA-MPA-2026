@@ -60,8 +60,15 @@ PYC_HI <- 0.5   # pre-SSWD sunflower-star density (per 60 m2) threshold for "had
 # ---------------------------------------------------------------------------
 # (A) Pycnopodia distribution + crash (raw PISCO swath, SoCal)
 # ---------------------------------------------------------------------------
-DR <- path.expand("~/Donham-Stier-CA-MPA-Data-2026/data/PISCO")
+DR <- path.expand(Sys.getenv(
+  "DONHAM_DATA_REPO_PISCO",
+  unset = "~/Donham-Stier-CA-MPA-Data-2026/data/PISCO"
+))
 have_swath <- dir.exists(DR)
+if (!have_swath) {
+  message("  [20] Raw PISCO data not found at ", DR,
+          "; skipping compound-disturbance regeneration. Existing tracked outputs remain available.")
+} else {
 pyc_grp <- NULL
 if (have_swath) {
   st <- fread(file.path(DR, "master_site_table_Emilyedit.csv"))
@@ -204,3 +211,4 @@ if (have_swath) { cat("Pycnopodia = only", round(100*pyc_share,1), "% of large-s
 cat("\n=== Cascade response: high vs low Pycnopodia reserves ===\n")
 print(mod_tab, row.names = FALSE)
 cat("\n  Tables + figure written.\n")
+}

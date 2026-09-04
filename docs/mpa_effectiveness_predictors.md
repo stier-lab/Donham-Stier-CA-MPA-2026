@@ -27,33 +27,33 @@ year), and trophic context (per-MPA lobster / sheephead / urchin density lnRR).
 out-of-bag R²; **(4) leave-one-out cross-validated R² — the real test of *prediction*
 vs *fitting*.**
 
-## Result: the variation is real but essentially unpredictable from what we have
+## Result: the variation is real, but prediction is weak and method-dependent
 
 | Target | k MPAs | in-sample pseudo-R² | RF out-of-bag R² | **LOO-CV R²** |
 |---|---|---|---|---|
-| Giant kelp effectiveness | 12 | 0.65 | **−0.53** | **−0.40** |
-| Purple-urchin suppression | 10 | 0.00 | **−0.64** | **−4.6** |
+| Giant kelp effectiveness | 12 | 0.714 | **-0.256** | **0.401** |
+| Purple-urchin suppression | 10 | 0.000 | **-0.614** | **-4.664** |
 
 - **No predictor survives FDR** in the univariate screen (0 of 21).
-- The kelp in-sample pseudo-R² of 0.65 is a **pure overfitting artifact** (7
-  predictors, 12 MPAs). Both honest out-of-sample metrics are **negative** — the
-  models predict *worse than the grand mean*. In the random forest, most predictors
-  have **negative importance** (they degrade prediction); only latitude is weakly
-  positive.
-- Leave-one-out predictions are a cloud off the 1:1 line (`fig_s_effectiveness_predictors.png`).
+- The kelp in-sample pseudo-R² is high for a 7-predictor model with only 12 MPAs,
+  so it should not be read as strong explanatory evidence.
+- The two out-of-sample checks disagree for kelp: random-forest OOB R² is negative,
+  while the top-three linear LOO model (`smr + cs_mean + est_year`) is positive. That is
+  a weak, small-k signal, not a robust prediction result.
+- Purple-urchin prediction remains poor by both out-of-sample checks.
 
 ## Interpretation
 
-**Among-MPA variation in effectiveness is large but idiosyncratic — not captured by
-the available environmental, design, or trophic predictors at this sample size.**
-This is the consistent thread of the whole comparison exercise: the *average* MPA
-effect (kelp resilience) is robust and reproducible, but *which* reserve will be how
-effective is not predictable from these covariates. Three non-exclusive reasons:
+**Among-MPA variation in effectiveness is large, but the current predictors do not
+support a stable, general prediction claim.** This is the consistent thread of the
+whole comparison exercise: the *average* MPA effect (kelp resilience) is robust and
+reproducible, while *which* reserve will be how effective remains only weakly
+resolved from these covariates. Three non-exclusive reasons:
 
-1. **Power.** With ~10–17 MPAs and several near-constant design variables (most are
+1. **Power.** With ~10–19 MPAs and several near-constant design variables (most are
    SMRs, most established within a couple of years), there is little leverage to
-   detect moderators even if they exist. The negative CV R² is partly a small-k
-   verdict, not only a "no signal" verdict.
+   detect moderators even if they exist. The mixed CV/OOB result is partly a
+   small-k verdict, not only a "no signal" verdict.
 2. **Genuine idiosyncrasy.** MPA outcomes depend on local history (pre-establishment
    state, recruitment pulses, SSWD/heatwave timing, enforcement, larval connectivity)
    that our standardized covariates do not encode.
@@ -62,10 +62,9 @@ effective is not predictable from these covariates. Three non-exclusive reasons:
    per-MPA (wave exposure and nutrients ARE now tested as moderators in script 16, also null).
 
 **Practical upshot:** report the robust *average* MPA effect with its among-reserve
-heterogeneity (the meta-analytic τ²/I²), but do **not** claim to explain or predict
-which MPAs are most effective from these data. A predictive model of MPA
-effectiveness would need many more reserves and per-MPA habitat/oceanographic and
-governance covariates.
+heterogeneity (the meta-analytic τ²/I²), and treat reserve-level prediction as
+exploratory. A defensible predictive model of MPA effectiveness would need many
+more reserves and per-MPA habitat/oceanographic and governance covariates.
 
 ## Reproducibility
 
@@ -81,5 +80,6 @@ grid for `cs_mean`, skips it if absent). Outputs:
 for giant-kelp effectiveness (per-MPA biomass lnRR); negative values indicate
 predictors that degrade out-of-bag prediction. (b) Leave-one-out cross-validated
 predictions vs observed kelp effectiveness (dotted = 1:1); the cross-validated R² is
-negative (−0.40), i.e. the predictors do not predict among-MPA effectiveness better
-than the mean.
+positive in this small-k linear LOO check (0.401), while the random-forest
+out-of-bag result remains negative. This supports only cautious, exploratory
+prediction language.

@@ -24,18 +24,18 @@
 #
 #   Plus HUMAN GRAVITY (human-pressure / accessibility index, Cinner et al. 2018
 #   framework: population within 50 km weighted by inverse-square travel distance),
-#   per kelp patch, from Kumagai et al. (2024)'s repository
-#   (~/kumagai2024-comparison/repo/Data/Population/human_gravity_for_kelp_patches.csv;
-#   0 = no population within 50 km). Joined by nearest grid point; NA if the mirror
-#   is absent. This completes the set of environmental covariates Kumagai mapped.
+#   per kelp patch, from the vendored Kumagai comparator file in
+#   data/external/kumagai2024/ (or KUMAGAI_HUMAN_GRAVITY); 0 = no population within
+#   50 km. Joined by nearest grid point; NA if the file is absent. This completes
+#   the set of environmental covariates Kumagai mapped.
 #
 # METHOD:
 #   Per covariate, take the climatological (time-mean) value at each kelp-pixel
 #   station, then average over all stations within 3 km of the MPA (nearest station
 #   if none within 3 km). Haversine distance. One row per MPA.
 #
-# INPUT  (external, not tracked):  ~/sbc-kelp-env/CAkelpCanopyEnv_sbc162.nc
-#        (download instructions + full metadata in ~/sbc-kelp-env/PROVENANCE.md)
+# INPUT  (external, not tracked):  SBC_KELP_ENV_NETCDF or the default local
+#        Bell 2023 NetCDF development path.
 # OUTPUT (tracked):                data/per_mpa_kelp_env.csv
 #        columns: MPA, Lat, Lon, nearest_km, n_stations, wave_hs, nitrate,
 #                 temperature, npp, depth_m, gravity, island, coverage
@@ -49,11 +49,14 @@
 cat("Extracting per-MPA kelp-forest environmental covariates from Bell 2023 NetCDF...\n")
 suppressMessages({library(ncdf4); library(data.table)})
 
-NC <- path.expand("~/sbc-kelp-env/CAkelpCanopyEnv_sbc162.nc")
+NC <- path.expand(Sys.getenv(
+  "SBC_KELP_ENV_NETCDF",
+  unset = "~/sbc-kelp-env/CAkelpCanopyEnv_sbc162.nc"
+))
 if (!file.exists(NC)) {
   message("  [env] Source NetCDF not found at ", NC,
           "\n        Download EDI knb-lter-sbc.162.1 entity 5fbcb7b9780ad84157e3d4bbb0ab0947",
-          "\n        to that path (see ~/sbc-kelp-env/PROVENANCE.md). Skipping; the tracked",
+          "\n        to that path or set SBC_KELP_ENV_NETCDF. Skipping; the tracked",
           "\n        data/per_mpa_kelp_env.csv is used by the analyses as-is.")
 } else {
   RADIUS_KM <- 3
@@ -87,7 +90,12 @@ if (!file.exists(NC)) {
   res[, coverage := ifelse(nearest_km <= 5, "valid", "far")]
 
   # human gravity (human-pressure index) from Kumagai's per-kelp-patch grid (nearest point)
-  GRAV <- path.expand("~/kumagai2024-comparison/repo/Data/Population/human_gravity_for_kelp_patches.csv")
+  GRAV <- {
+    override <- Sys.getenv("KUMAGAI_HUMAN_GRAVITY", unset = "")
+    local <- here::here("data", "external", "kumagai2024", "human_gravity_for_kelp_patches.csv")
+    if (nzchar(override)) path.expand(override) else if (file.exists(local)) local else
+      path.expand("~/kumagai2024-comparison/repo/Data/Population/human_gravity_for_kelp_patches.csv")
+  }
   if (file.exists(GRAV)) {
     g <- as.data.table(read.csv(GRAV, stringsAsFactors = FALSE))
     res[, gravity := vapply(seq_len(.N), function(i) {

@@ -8,7 +8,8 @@
 #' HOW TO RUN THE FULL ANALYSIS:
 #'   Open R in the project directory, then:
 #'     source(here::here("code", "R", "run_all.R"))
-#'   This takes ~2 minutes and produces all tables, figures, and summary docs.
+#'   This takes about 5 minutes in the current pipeline and produces all tables,
+#'   figures, and summary docs.
 #'
 #' HOW TO REGENERATE JUST THE FIGURES (faster, ~17 seconds):
 #'     source(here::here("code", "R", "run_figures_only.R"))
